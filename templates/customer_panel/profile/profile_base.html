@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load customer_tags %}
+{% unread_notifications_count as sidebar_notif_count %}
+{% unread_support_count as sidebar_support_count %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'customer_panel/css/user_profile.css' %}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    /* ── زنگوله نوتیفیکیشن ── */
+    .notif-bell-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      width: 100%;
+      color: #4a5568;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+      margin-bottom: 4px;
+    }
+    .notif-bell-link:hover,
+    .notif-bell-link.active { background: rgba(0,0,0,0.05); color: #1e40af; }
+    .notif-bell-icon { position: relative; font-size: 18px; }
+    .notif-badge {
+      position: absolute;
+      top: -6px;
+      left: -7px;
+      background: #e53e3e;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 17px;
+      height: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 3px;
+      display: none;
+    }
+    /* انیمیشن تکان‌خوردن زنگوله */
+    @keyframes bellRing {
+      0%,100%{ transform: rotate(0deg); }
+      10%{ transform: rotate(18deg); }
+      20%{ transform: rotate(-16deg); }
+      30%{ transform: rotate(14deg); }
+      40%{ transform: rotate(-10deg); }
+      50%{ transform: rotate(8deg); }
+      60%{ transform: rotate(-5deg); }
+      70%{ transform: rotate(3deg); }
+    }
+    .notif-bell-icon.ringing { animation: bellRing 1s ease infinite; }
+
+    /* بج شمارش کنار آیتم‌های سایدبار */
+    .sidebar-count-badge {
+      margin-right: auto;
+      background: #e53e3e;
+      color: #fff;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+    }
+  </style>
+
+  <style>
+    /* ── آواتار سایدبار ── */
+    .sidebar-avatar-wrap {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 10px;
+    }
+    .sidebar-avatar-img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid rgba(255,255,255,0.25);
+    }
+    .sidebar-avatar-default {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 52px;
+      color: rgba(255,255,255,0.6);
+    }
+    .avatar-upload-btn {
+      position: absolute;
+      bottom: 2px;
+      left: 2px;
+      background: #3498db;
+      color: #fff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .avatar-upload-btn:hover { background: #2980b9; }
+  </style>
+
+  {% block profile_extra_css %}
+
+  {% endblock %}
+{% endblock %}
+
+{% block content %}
+  <div class="profile-layout">
+    <!-- Sidebar -->
+    <aside class="profile-sidebar">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar-wrap" id="sidebarAvatarWrap">
+          {% if request.user.customer_profile.avatar %}
+            <img src="{{ request.user.customer_profile.avatar.url }}" alt="آواتار" class="sidebar-avatar-img" id="sidebarAvatarImg" />
+          {% else %}
+            <div class="sidebar-avatar-default" id="sidebarAvatarDefault">
+              <i class="fas fa-user-circle"></i>
+            </div>
+          {% endif %}
+          <label for="avatarUploadInput" class="avatar-upload-btn" title="تغییر تصویر پروفایل">
+            <i class="fas fa-camera"></i>
+          </label>
+          <input type="file" id="avatarUploadInput" accept="image/*" style="display:none;" />
+        </div>
+
+        <h3>
+          {{ request.user.first_name }}
+          {{ request.user.last_name }}
+        </h3>
+
+        <span>{{ request.user.mobile }}</span>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a href="{% url 'customer:profile_dashboard' %}" class="{% if request.resolver_match.url_name == 'profile_dashboard' %}active{% endif %}">
+          <i class="fas fa-chart-line"></i>
+          داشبورد
+        </a>
+
+        <a href="{% url 'customer:profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+          <i class="fas fa-user"></i>
+          اطلاعات حساب
+        </a>
+
+        <a href="{% url 'customer:order_list' %}" class="{% if request.resolver_match.url_name == 'order_list' %}active{% endif %}">
+          <i class="fas fa-box"></i>
+          سفارشات من
+        </a>
+
+        <a href="{% url 'customer:documents' %}" class="{% if request.resolver_match.url_name == 'documents' %}active{% endif %}">
+          <i class="fas fa-id-card"></i>
+          مدارک هویتی
+        </a>
+
+        <!-- ── زنگوله نوتیفیکیشن ── -->
+        <a href="{% url 'customer:notifications_list' %}" class="notif-bell-link {% if 'notifications' in request.path %}active{% endif %}" aria-label="اعلان‌ها">
+          <span class="notif-bell-icon" id="notifBellIcon">
+            <i class="fas fa-bell"></i>
+            <span class="notif-badge" id="notifBadge" {% if sidebar_notif_count == 0 %}style="display:none"{% endif %}>{{ sidebar_notif_count }}</span>
+          </span>
+          <span>اعلان‌ها</span>
+          {% if sidebar_notif_count > 0 %}
+            <span class="sidebar-count-badge">{{ sidebar_notif_count }}</span>
+          {% endif %}
+        </a>
+
+        <a href="{% url 'customer_support:ticket_list' %}" class="{% if 'support' in request.path %}active{% endif %}">
+          <i class="fas fa-headset"></i>
+          پشتیبانی
+          {% if sidebar_support_count > 0 %}
+            <span class="sidebar-count-badge">{{ sidebar_support_count }}</span>
+          {% endif %}
+        </a>
+
+        <!-- Logout Button -->
+        <button type="button" class="sidebar-logout-btn" onclick="openLogoutModal()">
+          <i class="fas fa-sign-out-alt"></i>
+          خروج از حساب
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Content -->
+    <section class="profile-content">
+      {% block profile_content %}
+
+      {% endblock %}
+    </section>
+  </div>
+
+  <!-- Logout Modal -->
+  <div id="logoutModal" class="logout-modal-overlay" aria-hidden="true">
+    <div class="logout-modal-box" role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle">
+      <button type="button" class="logout-modal-close" onclick="closeLogoutModal()" aria-label="بستن"><i class="fas fa-times"></i></button>
+
+      <div class="logout-modal-icon">
+        <i class="fas fa-sign-out-alt"></i>
+      </div>
+
+      <h3 id="logoutModalTitle">خروج از حساب کاربری</h3>
+
+      <p>آیا مطمئن هستید که می‌خواهید از حساب کاربری خود خارج شوید؟ برای ورود مجدد باید دوباره شماره موبایل و رمز عبور خود را وارد کنید.</p>
+
+      <div class="logout-modal-actions">
+        <button type="button" class="logout-btn-cancel" onclick="closeLogoutModal()">انصراف</button>
+
+        <form method="post" action="{% url 'customer:logout' %}" class="logout-confirm-form">
+          {% csrf_token %}
+          <button type="submit" class="logout-btn-confirm">بله، خارج می‌شوم</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── اسکریپت نوتیفیکیشن ── -->
+  <script>
+  (function () {
+    var NOTIF_URL    = "{% url 'customer:notifications_api' %}";
+    var bellIcon     = document.getElementById('notifBellIcon');
+    var badge        = document.getElementById('notifBadge');
+    var currentCount = 0;
+
+    function fetchNotifs() {
+      fetch(NOTIF_URL, { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var count = data.count || 0;
+          if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.style.display = 'flex';
+          } else {
+            badge.style.display = 'none';
+          }
+          if (count > 0 && count !== currentCount) {
+            bellIcon.classList.add('ringing');
+            setTimeout(function () { bellIcon.classList.remove('ringing'); }, 3000);
+          }
+          currentCount = count;
+        })
+        .catch(function () {});
+    }
+
+    fetchNotifs();
+    setInterval(fetchNotifs, 60000);
+  })();
+  </script>
+
+  <script>
+  // ── آپلود آواتار ──
+  (function () {
+    var input  = document.getElementById('avatarUploadInput');
+    if (!input) return;
+    input.addEventListener('change', function () {
+      if (!this.files || !this.files[0]) return;
+      var fd = new FormData();
+      fd.append('avatar', this.files[0]);
+      fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+      fetch("{% url 'customer:upload_avatar' %}", { method: 'POST', body: fd, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.success) {
+            var existing = document.getElementById('sidebarAvatarImg');
+            var def = document.getElementById('sidebarAvatarDefault');
+            if (def) def.style.display = 'none';
+            if (existing) {
+              existing.src = data.avatar_url + '?t=' + Date.now();
+            } else {
+              var img = document.createElement('img');
+              img.id = 'sidebarAvatarImg';
+              img.className = 'sidebar-avatar-img';
+              img.src = data.avatar_url;
+              var wrap = document.getElementById('sidebarAvatarWrap');
+              wrap.insertBefore(img, wrap.firstChild);
+            }
+          } else {
+            alert(data.error || 'خطا در آپلود تصویر');
+          }
+        })
+        .catch(function () { alert('خطا در ارتباط با سرور'); });
+    });
+  })();
+  </script>
+
+  <script>
+    function openLogoutModal() {
+      const modal = document.getElementById('logoutModal')
+    
+      if (modal) {
+        modal.classList.add('show')
+        modal.setAttribute('aria-hidden', 'false')
+        document.body.classList.add('logout-modal-open')
+      }
+    }
+    
+    function closeLogoutModal() {
+      const modal = document.getElementById('logoutModal')
+    
+      if (modal) {
+        modal.classList.remove('show')
+        modal.setAttribute('aria-hidden', 'true')
+        document.body.classList.remove('logout-modal-open')
+      }
+    }
+    
+    document.addEventListener('click', function (event) {
+      const modal = document.getElementById('logoutModal')
+    
+      if (modal && event.target === modal) {
+        closeLogoutModal()
+      }
+    })
+    
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        closeLogoutModal()
+      }
+    })
+  </script>
+{% endblock %}

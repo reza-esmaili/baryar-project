@@ -1,0 +1,209 @@
+{% load humanize %}
+{% load jformat %}
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <style>{{ css_content }}</style>
+</head>
+<body>
+<div class="invoice-box">
+
+  <!-- ══ HEADER ══ -->
+  <table class="header-table">
+    <tr>
+      <td class="header-logo" style="width:80px">
+        {% if logo_data_url %}<img src="{{ logo_data_url }}" alt="logo" />{% endif %}
+      </td>
+      <td class="header-title-cell">
+        <div class="invoice-title">فاکتور رسمی خدمات حمل و نقل</div>
+        <div class="invoice-subtitle">سامانه مدیریت حمل و نقل هوشمند</div>
+      </td>
+      <td class="header-meta-cell" style="width:185px">
+        <table class="meta-tbl">
+          <tr><td class="meta-lbl">شماره فاکتور</td><td class="meta-val">INV-{{ order.id }}</td></tr>
+          <tr><td class="meta-lbl">تاریخ صدور</td><td class="meta-val">{{ order.created_at|jformat:'%Y/%m/%d' }}</td></tr>
+          <tr><td class="meta-lbl">تاریخ چاپ</td><td class="meta-val">{{ today|jformat:'%Y/%m/%d' }}</td></tr>
+          <tr><td class="meta-lbl">وضعیت</td><td class="meta-val status-ok">{{ order.get_status_display }}</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ══ TWO-COLUMN INFO ══ -->
+  <table class="info-row">
+    <tr>
+      <!-- فرستنده -->
+      <td>
+        <div class="info-card">
+          <div class="card-title">مشخصات فرستنده</div>
+          <table class="kv-tbl">
+            <tr><td class="kv-lbl">نام</td><td>{{ order.sender_name|default:'ثبت نشده' }}</td></tr>
+            <tr><td class="kv-lbl">کد ملی</td><td>{{ order.sender_national_id|default:'---' }}</td></tr>
+            <tr><td class="kv-lbl">تلفن</td><td>{{ order.sender_phone|default:'---' }}</td></tr>
+            <tr><td class="kv-lbl">آدرس</td><td>{{ order.sender_address|default:'ثبت نشده' }}</td></tr>
+          </table>
+        </div>
+      </td>
+      <!-- فورواردر -->
+      <td>
+        <div class="info-card forwarder-card">
+          <div class="card-title">شرکت فورواردر</div>
+          {% if order.selected_rate %}
+          <table class="kv-tbl">
+            {% if order.selected_rate.forwarder %}
+            <tr><td class="kv-lbl">نام شرکت</td><td class="fw-name">{{ order.selected_rate.forwarder.company_name }}</td></tr>
+            <tr><td class="kv-lbl">مدیرعامل</td><td>{{ order.selected_rate.forwarder.ceo_first_name }} {{ order.selected_rate.forwarder.ceo_last_name }}</td></tr>
+            {% endif %}
+            {% if order.selected_rate.branch %}
+            <tr><td class="kv-lbl">شعبه</td><td>{{ order.selected_rate.branch.name }}</td></tr>
+            {% endif %}
+            <tr><td class="kv-lbl">روش حمل</td><td>{{ order.get_transport_mode_display }}</td></tr>
+            <tr><td class="kv-lbl">رویه ارسال</td><td>{{ order.selected_rate.get_shipping_procedure_display }}</td></tr>
+          </table>
+          {% else %}
+          <p class="no-data">اطلاعات فورواردر ثبت نشده</p>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ══ ROUTE & CARGO ══ -->
+  <div class="section-title">مسیر و مشخصات محموله</div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>مبدا</th>
+        <th>کشور مقصد</th>
+        <th>بندر مقصد</th>
+        <th>نوع کالا</th>
+        <th>وزن واقعی</th>
+        <th>وزن محاسباتی</th>
+        <th>بسته‌بندی</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ order.origin_city.name }}</td>
+        <td>{{ order.destination_port.city.country.name }}</td>
+        <td>{{ order.destination_port.name }}</td>
+        <td>{{ order.cargo_type.name }}</td>
+        <td>{{ order.actual_weight }} KG</td>
+        <td>{{ order.chargeable_weight|default:order.actual_weight }} KG</td>
+        <td>{% if order.container_size %}{{ order.container_count }} کانتینر {{ order.get_container_size_display }}{% else %}بر اساس ابعاد{% endif %}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ══ CARGO ITEMS ══ -->
+  {% with items=order.cargo_items.all %}{% if items %}
+  <div class="section-title">اقلام کالا</div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:5%">#</th>
+        <th style="width:32%">زیردسته</th>
+        <th style="width:38%">نوع دقیق کالا</th>
+        <th style="width:25%">نوع ورود</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ item.subcategory.name }}</td>
+        <td>{% if item.is_other %}{{ item.other_child_name|default:'سایر' }}{% elif item.child %}{{ item.child.name }}{% else %}—{% endif %}</td>
+        <td>{% if item.is_other %}<span class="badge-other">دلخواه</span>{% else %}انتخابی{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}{% endwith %}
+
+  <!-- ══ DIMENSIONS ══ -->
+  {% if order.dimensions.exists %}
+  <div class="section-title">جزئیات ابعاد</div>
+  <table class="data-table">
+    <thead>
+      <tr><th>#</th><th>طول (cm)</th><th>عرض (cm)</th><th>ارتفاع (cm)</th><th>تعداد</th><th>حجم</th></tr>
+    </thead>
+    <tbody>
+      {% for dim in order.dimensions.all %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ dim.length }}</td><td>{{ dim.width }}</td><td>{{ dim.height }}</td>
+        <td>{{ dim.quantity }}</td><td>{{ dim.volume_cm3 }} cm³</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <!-- ══ PRICE ══ -->
+  <table class="price-outer">
+    <tr>
+      <td class="price-rows-cell">
+        <div class="price-rows">
+          <table class="price-row-tbl">
+            {% if order.base_shipping_price %}
+            <tr><td class="price-lbl">کرایه پایه حمل</td><td class="price-amt">{{ order.base_shipping_price|intcomma }} ریال</td></tr>
+            {% endif %}
+            {% if order.office_packaging_price %}
+            <tr><td class="price-lbl">بسته‌بندی دفتری</td><td class="price-amt">{{ order.office_packaging_price|intcomma }} ریال</td></tr>
+            {% endif %}
+            {% if order.onsite_packaging_price %}
+            <tr><td class="price-lbl">بسته‌بندی درب منزل</td><td class="price-amt">{{ order.onsite_packaging_price|intcomma }} ریال</td></tr>
+            {% endif %}
+            {% if order.doorstep_packaging_price %}
+            <tr><td class="price-lbl">سرویس درب به درب</td><td class="price-amt">{{ order.doorstep_packaging_price|intcomma }} ریال</td></tr>
+            {% endif %}
+            {% if order.vat_amount %}
+            <tr class="vat-bg"><td class="price-lbl">مالیات بر ارزش افزوده</td><td class="price-amt">{{ order.vat_amount|intcomma }} ریال</td></tr>
+            {% endif %}
+          </table>
+        </div>
+      </td>
+      <td class="price-total-cell">
+        <div class="price-total-box">
+          <div class="price-total-lbl">جمع کل قابل پرداخت</div>
+          <div class="price-total-amt">{{ order.final_price|intcomma }} ریال</div>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  {% if order.other_cargo_details %}
+  <div class="notes-box"><strong>توضیحات:</strong> {{ order.other_cargo_details }}</div>
+  {% endif %}
+
+  <!-- ══ SIGNATURE ══ -->
+  <table class="signature-tbl">
+    <tr>
+      <td>
+        <div class="sign-box">
+          <div class="sign-title">مهر و امضای شرکت فورواردر</div>
+          {% if order.selected_rate.forwarder %}
+          <div class="sign-name">{{ order.selected_rate.forwarder.company_name }}</div>
+          {% endif %}
+        </div>
+      </td>
+      <td>
+        <div class="sign-box">
+          <div class="sign-title">مهر و امضای مشتری</div>
+          <div class="sign-name">{{ order.sender_name|default:'' }}</div>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ══ FOOTER ══ -->
+  <div class="footer">
+    این فاکتور به‌صورت سیستمی صادر شده و معتبر می‌باشد &nbsp;|&nbsp;
+    کد رهگیری: INV-{{ order.id }}-{{ order.created_at|jformat:'%Y%m%d' }}
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{% extends 'customer_panel/profile/profile_base.html' %}
+{% load static %}
+
+{% block title %}
+  بارگذاری مدرک
+{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'customer_panel/css/user_profile.css' %}" />
+{% endblock %}
+
+{% block profile_content %}
+  <div class="profile-page">
+    <div class="profile-card">
+      <div class="card-title">بارگذاری مدرک هویتی</div>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-grid">
+          {% for field in form %}
+            <p>
+              {{ field.label_tag }}
+
+              {{ field }}
+
+              {% if field.errors %}
+                <small class="error-text">{{ field.errors|striptags }}</small>
+              {% endif %}
+            </p>
+          {% endfor %}
+        </div>
+
+        <div class="actions-row">
+          <button type="submit" class="btn-success">بارگذاری مدرک</button>
+
+          <a href="{% url 'customer:documents' %}" class="btn-secondary">بازگشت</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

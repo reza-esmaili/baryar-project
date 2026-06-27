@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Database
+db.sqlite3
+
+# Media / uploads
+media/
+identity_docs/
+order_documents/
+tickets/attachments/
+customer_avatars/
+
+# OS
+.DS_Store
+
+# Django static collect (اگر داری)
+staticfiles/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# ERD / generated diagrams
+erd.*
+*.png
+*.svg

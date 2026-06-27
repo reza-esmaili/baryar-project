@@ -1,0 +1,223 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}پنل کاربری - حمل و نقل{% endblock %}</title>
+    
+    <!-- Bootstrap 5 + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- استایل پایه پنل -->
+    <link rel="stylesheet" href="{% static 'css/base_panel_style.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="panel-wrapper">
+        
+        <!-- Sidebar (راست) -->
+        <aside class="sidebar" id="mainSidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-row">
+                    <button id="sidebarToggle" class="sidebar-toggle-btn" title="بستن/باز کردن منو">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <!-- زنگوله اعلان فورواردر -->
+                    <div class="fw-notif-wrap" id="fwNotifWrap">
+                        <button class="fw-notif-btn" id="fwNotifBtn" type="button" title="اعلان‌ها">
+                            <i class="fas fa-bell"></i>
+                            <span class="fw-notif-badge" id="fwNotifBadge" style="display:none">0</span>
+                        </button>
+                        <div class="fw-notif-dropdown" id="fwNotifDropdown">
+                            <div class="fw-notif-header">
+                                <span>اعلان‌های جدید</span>
+                                <button id="fwMarkReadBtn" type="button">همه را خواندم</button>
+                            </div>
+                            <div class="fw-notif-list" id="fwNotifList">
+                                <div class="fw-notif-empty">در حال بارگذاری...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% with company=request.user.forwarder_company %}
+                {% if company and company.logo %}
+                  <img src="{{ company.logo.url }}" id="sidebarLogo" alt="لوگوی شرکت"
+                       style="max-width:120px;max-height:48px;object-fit:contain;margin-top:6px;" />
+                {% else %}
+                  <h4 class="brand-title">Cargo<span>Admin</span></h4>
+                {% endif %}
+                {% endwith %}
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{% url 'forwarder_panel:dashboard' %}">
+                    <i class="fas fa-chart-line"></i><span class="nav-label">داشبورد</span>
+                </a>
+                {% if fw_perms.can_manage_orders %}
+                <a href="{% url 'forwarder_panel:order_list' %}"><i class="fas fa-box"></i><span class="nav-label">مدیریت سفارشات</span></a>
+                {% endif %}
+                {% if fw_perms.can_view_reports %}
+                <a href="{% url 'forwarder_panel:report_page' %}"><i class="fas fa-chart-bar"></i><span class="nav-label">گزارشات</span></a>
+                {% endif %}
+                {% if fw_perms.can_view_rates %}
+                <a href="{% url 'forwarder_panel:rate_list' %}"><i class="fas fa-tags"></i><span class="nav-label">مدیریت نرخ‌ها</span></a>
+                {% endif %}
+                {% if fw_perms.can_view_branches %}
+                <a href="{% url 'forwarder_panel:branch_list' %}"><i class="fas fa-building"></i><span class="nav-label">مدیریت شعب</span></a>
+                {% endif %}
+                {% if fw_perms.can_view_staff %}
+                <a href="{% url 'forwarder_panel:staff_list' %}"><i class="fas fa-users"></i><span class="nav-label">مدیریت کارمندان</span></a>
+                {% endif %}
+                {% if fw_perms.can_view_settings %}
+                <a href="{% url 'forwarder_panel:settings' %}"><i class="fas fa-cog"></i><span class="nav-label">تنظیمات</span></a>
+                {% endif %}
+                {% if fw_perms.can_view_support %}
+                <a href="{% url 'forwarder_support:ticket_list' %}">
+                    <i class="fas fa-headset"></i><span class="nav-label">پشتیبانی</span>
+                </a>
+                {% endif %}
+                {% if user.role == 'forwarder_admin' %}
+                <a href="{% url 'forwarder_panel:documents' %}"><i class="fas fa-file-alt"></i><span class="nav-label">مدارک و مستندات</span></a>
+                {% endif %}
+                <button type="button" class="sidebar-logout-btn" onclick="openFwLogoutModal()">
+                    <i class="fas fa-sign-out-alt"></i><span class="nav-label">خروج از حساب</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- مودال خروج از حساب -->
+    <div id="fwLogoutModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
+            <div style="width:56px;height:56px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:#dc2626;">
+                <i class="fas fa-sign-out-alt"></i>
+            </div>
+            <h5 style="font-weight:700;color:#1e293b;margin-bottom:10px;">خروج از حساب کاربری</h5>
+            <p style="font-size:13px;color:#64748b;margin-bottom:24px;">آیا مطمئن هستید که می‌خواهید از حساب کاربری خارج شوید؟</p>
+            <div style="display:flex;gap:10px;justify-content:center;">
+                <button type="button" onclick="closeFwLogoutModal()"
+                    style="background:#f1f5f9;border:none;border-radius:10px;padding:10px 24px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
+                    انصراف
+                </button>
+                <form method="post" action="{% url 'customer:logout' %}" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit"
+                        style="background:#dc2626;color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
+                        بله، خارج می‌شوم
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/base_panel_script.js' %}"></script>
+    <script>
+    (function () {
+        /* ── سایدبار تاگل ── */
+        var sidebar = document.getElementById('mainSidebar');
+        var btn = document.getElementById('sidebarToggle');
+        if (localStorage.getItem('sidebarCollapsed') === '1') sidebar.classList.add('collapsed');
+        if (btn) btn.addEventListener('click', function () {
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
+        });
+
+        /* ── اعلان‌های فورواردر ── */
+        var FW_NOTIF_URL    = "{% url 'forwarder_panel:notifications_api' %}";
+        var FW_MARK_URL     = "{% url 'forwarder_panel:mark_notifications_read' %}";
+        var FW_CSRF         = "{{ csrf_token }}";
+
+        var fwBtn     = document.getElementById('fwNotifBtn');
+        var fwBadge   = document.getElementById('fwNotifBadge');
+        var fwDrop    = document.getElementById('fwNotifDropdown');
+        var fwList    = document.getElementById('fwNotifList');
+        var fwMarkBtn = document.getElementById('fwMarkReadBtn');
+        var fwIcon    = fwBtn ? fwBtn.querySelector('i') : null;
+        var fwCount   = 0;
+
+        function fetchFwNotifs() {
+            fetch(FW_NOTIF_URL, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var count = data.count || 0;
+                    var items = data.items || [];
+                    fwBadge.textContent = count > 99 ? '99+' : count;
+                    fwBadge.style.display = count > 0 ? 'flex' : 'none';
+                    if (count > 0 && count !== fwCount && fwIcon) {
+                        fwIcon.classList.add('ringing');
+                        setTimeout(function () { fwIcon.classList.remove('ringing'); }, 3000);
+                    }
+                    fwCount = count;
+                    if (items.length === 0) {
+                        fwList.innerHTML = '<div class="fw-notif-empty">هیچ اعلان جدیدی ندارید</div>';
+                    } else {
+                        fwList.innerHTML = items.map(function (n) {
+                            return '<a class="fw-notif-item" href="' + n.url + '">'
+                                + '<div class="fw-notif-title">' + n.title + '</div>'
+                                + '<div class="fw-notif-sub">' + n.subtitle + ' &bull; ' + n.created_at + '</div>'
+                                + '</a>';
+                        }).join('');
+                    }
+                }).catch(function () {});
+        }
+
+        function positionFwDrop() {
+            var rect = fwBtn.getBoundingClientRect();
+            fwDrop.style.top  = (rect.bottom + 6) + 'px';
+            fwDrop.style.right = (window.innerWidth - rect.right) + 'px';
+        }
+
+        if (fwBtn) {
+            fwBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var isOpen = fwDrop.classList.toggle('open');
+                if (isOpen) { positionFwDrop(); fetchFwNotifs(); }
+            });
+        }
+        document.addEventListener('click', function (e) {
+            if (fwBtn && !fwBtn.closest('#fwNotifWrap').contains(e.target)) {
+                fwDrop && fwDrop.classList.remove('open');
+            }
+        });
+        if (fwMarkBtn) {
+            fwMarkBtn.addEventListener('click', function () {
+                fetch(FW_MARK_URL, { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': FW_CSRF } })
+                    .then(function () {
+                        fwBadge.style.display = 'none';
+                        fwCount = 0;
+                        fwList.innerHTML = '<div class="fw-notif-empty">هیچ اعلان جدیدی ندارید</div>';
+                        fwDrop.classList.remove('open');
+                    });
+            });
+        }
+        fetchFwNotifs();
+        setInterval(fetchFwNotifs, 60000);
+    })();
+    </script>
+    <script>
+    function openFwLogoutModal() {
+        var m = document.getElementById('fwLogoutModal');
+        m.style.display = 'flex';
+    }
+    function closeFwLogoutModal() {
+        var m = document.getElementById('fwLogoutModal');
+        m.style.display = 'none';
+    }
+    document.getElementById('fwLogoutModal').addEventListener('click', function(e) {
+        if (e.target === this) closeFwLogoutModal();
+    });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

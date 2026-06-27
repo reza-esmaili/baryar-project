@@ -1,0 +1,335 @@
+{% extends 'forwarder_panel/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+  .staff-page { padding: 28px 0; }
+  .staff-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .staff-page-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+  }
+  .btn-add-staff {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+  .btn-add-staff:hover { opacity: 0.9; color: #fff; }
+
+  .staff-table-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    overflow: hidden;
+  }
+  .staff-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .staff-table thead th {
+    background: #f8fafc;
+    padding: 14px 18px;
+    text-align: right;
+    font-weight: 700;
+    color: #475569;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .staff-table tbody td {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+  }
+  .staff-table tbody tr:last-child td { border-bottom: none; }
+  .staff-table tbody tr:hover td { background: #f8fafc; }
+
+  .staff-name-cell { display: flex; align-items: center; gap: 12px; }
+  .staff-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .staff-name-info strong { display: block; font-weight: 600; color: #1e293b; }
+  .staff-name-info small { color: #64748b; font-size: 12px; }
+
+  .role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #eff6ff;
+    color: #1e40af;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .role-badge.no-role {
+    background: #f1f5f9;
+    color: #94a3b8;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .status-active { background: #dcfce7; color: #16a34a; }
+  .status-inactive { background: #fee2e2; color: #dc2626; }
+
+  .action-btns { display: flex; gap: 6px; }
+  .btn-edit-sm, .btn-delete-sm, .btn-toggle-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+    text-decoration: none;
+  }
+  .btn-edit-sm { background: #e0f2fe; color: #0369a1; }
+  .btn-edit-sm:hover { background: #bae6fd; color: #0369a1; }
+  .btn-delete-sm { background: #fee2e2; color: #dc2626; }
+  .btn-delete-sm:hover { background: #fecaca; color: #dc2626; }
+  .btn-toggle-active { background: #dcfce7; color: #16a34a; }
+  .btn-toggle-active:hover { background: #bbf7d0; color: #15803d; }
+  .btn-toggle-inactive { background: #fef3c7; color: #d97706; }
+  .btn-toggle-inactive:hover { background: #fde68a; color: #b45309; }
+
+  .staff-empty {
+    padding: 60px 20px;
+    text-align: center;
+    color: #94a3b8;
+  }
+  .staff-empty i { font-size: 48px; margin-bottom: 16px; display: block; opacity: 0.3; }
+  .staff-empty p { font-size: 14px; margin: 0 0 16px; }
+
+  /* Delete confirm modal */
+  .delete-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+  }
+  .delete-modal-overlay.open { display: flex; }
+  .delete-modal-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    direction: rtl;
+  }
+  .delete-modal-box .del-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #fee2e2;
+    color: #dc2626;
+    font-size: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .delete-modal-box h3 { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+  .delete-modal-box p { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+  .delete-modal-actions { display: flex; gap: 10px; justify-content: center; }
+  .delete-modal-actions .btn-cancel {
+    padding: 10px 24px; border-radius: 8px; border: 1px solid #e2e8f0;
+    background: #fff; color: #475569; font-size: 14px; cursor: pointer;
+  }
+  .delete-modal-actions .btn-confirm-del {
+    padding: 10px 24px; border-radius: 8px; border: none;
+    background: #dc2626; color: #fff; font-size: 14px; cursor: pointer; font-weight: 600;
+  }
+
+  /* Messages */
+  .alert-staff {
+    padding: 12px 18px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .alert-success { background: #dcfce7; color: #16a34a; }
+  .alert-error { background: #fee2e2; color: #dc2626; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="staff-page">
+
+  {% for msg in messages %}
+    <div class="alert-staff {% if msg.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+      <i class="fas {% if msg.tags == 'error' %}fa-times-circle{% else %}fa-check-circle{% endif %}" style="margin-left:6px;"></i>
+      {{ msg }}
+    </div>
+  {% endfor %}
+
+  <div class="staff-page-header">
+    <h2><i class="fas fa-users" style="margin-left:10px;color:#1e40af;"></i>مدیریت کارمندان</h2>
+    <a href="{% url 'forwarder_panel:staff_create' %}" class="btn-add-staff">
+      <i class="fas fa-user-plus"></i>
+      افزودن کارمند جدید
+    </a>
+  </div>
+
+  <div class="staff-table-card">
+    {% if staff %}
+    <table class="staff-table">
+      <thead>
+        <tr>
+          <th>کارمند</th>
+          <th>کد ملی</th>
+          <th>شماره موبایل</th>
+          <th>نقش</th>
+          <th>وضعیت</th>
+          <th>تاریخ افزودن</th>
+          <th>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for person in staff %}
+        <tr>
+          <td>
+            <div class="staff-name-cell">
+              <div class="staff-avatar">
+                {{ person.user.first_name|first }}
+              </div>
+              <div class="staff-name-info">
+                <strong>{{ person.user.first_name }} {{ person.user.last_name }}</strong>
+                <small>{{ person.user.get_role_display }}</small>
+              </div>
+            </div>
+          </td>
+          <td>{{ person.national_code|default:"—" }}</td>
+          <td>{{ person.user.mobile }}</td>
+          <td>
+            {% if person.role %}
+              <span class="role-badge"><i class="fas fa-shield-alt"></i>{{ person.role.name }}</span>
+            {% else %}
+              <span class="role-badge no-role"><i class="fas fa-minus"></i>بدون نقش</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if person.is_active %}
+              <span class="status-badge status-active"><i class="fas fa-circle" style="font-size:8px;"></i>فعال</span>
+            {% else %}
+              <span class="status-badge status-inactive"><i class="fas fa-circle" style="font-size:8px;"></i>غیرفعال</span>
+            {% endif %}
+          </td>
+          <td>{{ person.created_at|date:"Y/m/d" }}</td>
+          <td>
+            <div class="action-btns">
+              <a href="{% url 'forwarder_panel:staff_edit' person.pk %}" class="btn-edit-sm">
+                <i class="fas fa-edit"></i>
+                ویرایش
+              </a>
+              <form method="post" action="{% url 'forwarder_panel:staff_toggle_active' person.pk %}" style="display:inline;">
+                {% csrf_token %}
+                {% if person.is_active %}
+                  <button type="submit" class="btn-toggle-sm btn-toggle-active" title="غیرفعال کردن">
+                    <i class="fas fa-toggle-on"></i>
+                    فعال
+                  </button>
+                {% else %}
+                  <button type="submit" class="btn-toggle-sm btn-toggle-inactive" title="فعال کردن">
+                    <i class="fas fa-toggle-off"></i>
+                    غیرفعال
+                  </button>
+                {% endif %}
+              </form>
+              <button type="button" class="btn-delete-sm"
+                      data-url="{% url 'forwarder_panel:staff_delete' person.pk %}"
+                      onclick="openDeleteModal(this, '{{ person.user.first_name }} {{ person.user.last_name }}')">
+                <i class="fas fa-trash"></i>
+                حذف
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="staff-empty">
+      <i class="fas fa-users"></i>
+      <p>هنوز کارمندی به شرکت افزوده نشده است.</p>
+      <a href="{% url 'forwarder_panel:staff_create' %}" class="btn-add-staff">
+        <i class="fas fa-user-plus"></i>
+        افزودن اولین کارمند
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="delete-modal-overlay" id="deleteModal">
+  <div class="delete-modal-box">
+    <div class="del-icon"><i class="fas fa-trash"></i></div>
+    <h3>حذف کارمند</h3>
+    <p id="deleteModalText">آیا مطمئن هستید؟</p>
+    <div class="delete-modal-actions">
+      <button class="btn-cancel" onclick="closeDeleteModal()">انصراف</button>
+      <form id="deleteForm" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn-confirm-del">بله، حذف شود</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openDeleteModal(btn, staffName) {
+  document.getElementById('deleteModalText').textContent =
+    'آیا مطمئن هستید که می‌خواهید کارمند «' + staffName + '» را حذف کنید؟';
+  document.getElementById('deleteForm').action = btn.dataset.url;
+  document.getElementById('deleteModal').classList.add('open');
+}
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('open');
+}
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDeleteModal();
+});
+</script>
+{% endblock %}

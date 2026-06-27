@@ -1,0 +1,864 @@
+digraph model_graph {
+  // Dotfile by Django-Extensions graph_models
+  // Created: 2026-06-19 19:18
+  // Cli Options: accounts forwarders locations rates core customer orders support documents -g --disable-fields -o erd.dot
+
+  fontname = "Roboto"
+  fontsize = 8
+  splines  = true
+  rankdir = "TB"
+  
+
+  node [
+    fontname = "Roboto"
+    fontsize = 8
+    shape = "plaintext"
+  ]
+
+  edge [
+    fontname = "Roboto"
+    fontsize = 8
+  ]
+
+  // Labels
+  subgraph cluster_accounts {
+    label=<
+          <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER">
+          <FONT FACE="Roboto" COLOR="Black" POINT-SIZE="10">
+          <B>accounts</B>
+          </FONT>
+          </TD></TR>
+          </TABLE>
+          >
+    color=olivedrab4
+    style="rounded"
+  
+    core_models_TimeStampedModel [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      TimeStampedModel
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    django_contrib_auth_base_user_AbstractBaseUser [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      AbstractBaseUser
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    django_contrib_auth_models_PermissionsMixin [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      PermissionsMixin
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    accounts_models_User [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      User<BR/>&lt;<FONT FACE="Roboto"><I>AbstractBaseUser,PermissionsMixin,TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    accounts_models_OTPCode [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      OTPCode<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    accounts_models_CustomerProfile [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      CustomerProfile<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    accounts_models_CustomerCompanyProfile [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      CustomerCompanyProfile<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    accounts_models_CustomerBusinessInfo [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      CustomerBusinessInfo<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    accounts_models_IdentityDocument [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      IdentityDocument<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+
+  }
+  subgraph cluster_forwarders {
+    label=<
+          <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER">
+          <FONT FACE="Roboto" COLOR="Black" POINT-SIZE="10">
+          <B>forwarders</B>
+          </FONT>
+          </TD></TR>
+          </TABLE>
+          >
+    color=olivedrab4
+    style="rounded"
+  
+    core_models_TimeStampedModel [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      TimeStampedModel
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    forwarders_models_ForwarderCompany [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      ForwarderCompany<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    forwarders_models_ForwarderBranch [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      ForwarderBranch<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    forwarders_models_ForwarderStaff [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      ForwarderStaff<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+
+  }
+  subgraph cluster_locations {
+    label=<
+          <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER">
+          <FONT FACE="Roboto" COLOR="Black" POINT-SIZE="10">
+          <B>locations</B>
+          </FONT>
+          </TD></TR>
+          </TABLE>
+          >
+    color=olivedrab4
+    style="rounded"
+  
+    core_models_TimeStampedModel [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      TimeStampedModel
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    locations_models_Country [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      Country<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    locations_models_Province [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      Province<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    locations_models_City [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      City<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    locations_models_DestinationCity [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      DestinationCity<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    locations_models_Port [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      Port<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+
+  }
+  subgraph cluster_rates {
+    label=<
+          <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER">
+          <FONT FACE="Roboto" COLOR="Black" POINT-SIZE="10">
+          <B>rates</B>
+          </FONT>
+          </TD></TR>
+          </TABLE>
+          >
+    color=olivedrab4
+    style="rounded"
+  
+    rates_models_CargoType [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      CargoType
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    rates_models_CargoSubCategory [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      CargoSubCategory
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    rates_models_Rate [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      Rate
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    rates_models_RateTier [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      RateTier
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+
+  }
+  subgraph cluster_core {
+    label=<
+          <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER">
+          <FONT FACE="Roboto" COLOR="Black" POINT-SIZE="10">
+          <B>core</B>
+          </FONT>
+          </TD></TR>
+          </TABLE>
+          >
+    color=olivedrab4
+    style="rounded"
+  
+    core_models_SmsLog [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      SmsLog
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+
+  }
+  subgraph cluster_orders {
+    label=<
+          <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER">
+          <FONT FACE="Roboto" COLOR="Black" POINT-SIZE="10">
+          <B>orders</B>
+          </FONT>
+          </TD></TR>
+          </TABLE>
+          >
+    color=olivedrab4
+    style="rounded"
+  
+    core_models_TimeStampedModel [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      TimeStampedModel
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    orders_models_CargoRequest [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      CargoRequest<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    orders_models_CargoDimension [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      CargoDimension
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    orders_models_OrderHistory [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      OrderHistory<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+
+  }
+  subgraph cluster_support {
+    label=<
+          <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER">
+          <FONT FACE="Roboto" COLOR="Black" POINT-SIZE="10">
+          <B>support</B>
+          </FONT>
+          </TD></TR>
+          </TABLE>
+          >
+    color=olivedrab4
+    style="rounded"
+  
+    support_models_SupportDepartment [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      SupportDepartment
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    support_models_TicketTopic [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      TicketTopic
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    support_models_SupportAgent [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      SupportAgent
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    support_models_Ticket [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      Ticket
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    support_models_TicketMessage [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      TicketMessage
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    support_models_TicketTransfer [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      TicketTransfer
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    support_models_TicketActivity [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      TicketActivity
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+
+  }
+  subgraph cluster_documents {
+    label=<
+          <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER">
+          <FONT FACE="Roboto" COLOR="Black" POINT-SIZE="10">
+          <B>documents</B>
+          </FONT>
+          </TD></TR>
+          </TABLE>
+          >
+    color=olivedrab4
+    style="rounded"
+  
+    core_models_TimeStampedModel [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      TimeStampedModel
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    documents_models_DocumentType [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      DocumentType<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    documents_models_DocumentRule [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      DocumentRule<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    documents_models_OrderDocument [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      OrderDocument<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    documents_models_AdditionalDocumentRequest [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      AdditionalDocumentRequest<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+  
+    documents_models_AdditionalDocumentUpload [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      AdditionalDocumentUpload<BR/>&lt;<FONT FACE="Roboto"><I>TimeStampedModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+      </TABLE>
+      >]
+
+  }
+
+
+  // Relations
+  django_contrib_auth_models_Group [label=<
+  <TABLE BGCOLOR="white" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+  <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#1b563f">
+  <FONT FACE="Roboto" POINT-SIZE="12" COLOR="white">Group</FONT>
+  </TD></TR>
+  </TABLE>
+  >]
+  accounts_models_User -> django_contrib_auth_models_Group
+  [label=" groups (user)"] [arrowhead=dot arrowtail=dot, dir=both];
+  django_contrib_auth_models_Permission [label=<
+  <TABLE BGCOLOR="white" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+  <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#1b563f">
+  <FONT FACE="Roboto" POINT-SIZE="12" COLOR="white">Permission</FONT>
+  </TD></TR>
+  </TABLE>
+  >]
+  accounts_models_User -> django_contrib_auth_models_Permission
+  [label=" user_permissions (user)"] [arrowhead=dot arrowtail=dot, dir=both];
+
+  accounts_models_User -> django_contrib_auth_base_user_AbstractBaseUser
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  accounts_models_User -> django_contrib_auth_models_PermissionsMixin
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  accounts_models_User -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  accounts_models_OTPCode -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  accounts_models_CustomerProfile -> accounts_models_User
+  [label=" user (customer_profile)"] [arrowhead=none, arrowtail=none, dir=both];
+
+  accounts_models_CustomerProfile -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  accounts_models_CustomerCompanyProfile -> accounts_models_User
+  [label=" user (customer_company_profile)"] [arrowhead=none, arrowtail=none, dir=both];
+
+  accounts_models_CustomerCompanyProfile -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  accounts_models_CustomerBusinessInfo -> accounts_models_User
+  [label=" customer (business_info)"] [arrowhead=none, arrowtail=none, dir=both];
+
+  accounts_models_CustomerBusinessInfo -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  accounts_models_IdentityDocument -> forwarders_models_ForwarderCompany
+  [label=" company (identity_documents)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  accounts_models_IdentityDocument -> accounts_models_User
+  [label=" user (documents)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  accounts_models_IdentityDocument -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+
+  forwarders_models_ForwarderCompany -> accounts_models_User
+  [label=" admin_user (forwarder_company)"] [arrowhead=none, arrowtail=none, dir=both];
+
+  forwarders_models_ForwarderCompany -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  forwarders_models_ForwarderBranch -> forwarders_models_ForwarderCompany
+  [label=" company (branches)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  forwarders_models_ForwarderBranch -> accounts_models_User
+  [label=" branch_user (forwarder_branch)"] [arrowhead=none, arrowtail=none, dir=both];
+
+  forwarders_models_ForwarderBranch -> locations_models_Province
+  [label=" province (forwarderbranch)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  forwarders_models_ForwarderBranch -> locations_models_City
+  [label=" city (forwarderbranch)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  forwarders_models_ForwarderBranch -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  forwarders_models_ForwarderStaff -> forwarders_models_ForwarderCompany
+  [label=" company (staff)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  forwarders_models_ForwarderStaff -> accounts_models_User
+  [label=" user (forwarder_staff)"] [arrowhead=none, arrowtail=none, dir=both];
+
+  forwarders_models_ForwarderStaff -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+
+  locations_models_Country -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  locations_models_Province -> locations_models_Country
+  [label=" country (provinces)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  locations_models_Province -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  locations_models_City -> locations_models_Province
+  [label=" province (cities)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  locations_models_City -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  locations_models_DestinationCity -> locations_models_Country
+  [label=" country (cities)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  locations_models_DestinationCity -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  locations_models_Port -> locations_models_DestinationCity
+  [label=" city (ports)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  locations_models_Port -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+
+  rates_models_CargoSubCategory -> rates_models_CargoType
+  [label=" category (subcategories)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  rates_models_Rate -> forwarders_models_ForwarderCompany
+  [label=" forwarder (rates)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  rates_models_Rate -> forwarders_models_ForwarderBranch
+  [label=" branch (rates)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  rates_models_Rate -> locations_models_Country
+  [label=" origin_country (origin_rates)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  rates_models_Rate -> locations_models_Province
+  [label=" origin_province (origin_rates)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  rates_models_Rate -> locations_models_City
+  [label=" origin_city (origin_rates)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  rates_models_Rate -> locations_models_Country
+  [label=" destination_country (destination_rates)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  rates_models_Rate -> locations_models_DestinationCity
+  [label=" destination_city (destination_rates)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  rates_models_Rate -> locations_models_Port
+  [label=" destination_port (destination_rates)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  rates_models_Rate -> rates_models_CargoType
+  [label=" cargo_types (rates)"] [arrowhead=dot arrowtail=dot, dir=both];
+
+  rates_models_RateTier -> rates_models_Rate
+  [label=" rate (tiers)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+
+
+  orders_models_CargoRequest -> accounts_models_User
+  [label=" customer (cargo_requests)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_CargoRequest -> locations_models_Country
+  [label=" origin_country (origin_requests)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_CargoRequest -> locations_models_Province
+  [label=" origin_province (origin_requests)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_CargoRequest -> locations_models_City
+  [label=" origin_city (origin_requests)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_CargoRequest -> locations_models_Port
+  [label=" destination_port (cargorequest)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_CargoRequest -> rates_models_CargoType
+  [label=" cargo_type (cargorequest)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_CargoRequest -> rates_models_Rate
+  [label=" selected_rate (orders)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_CargoRequest -> locations_models_Province
+  [label=" sender_province (sender_requests)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_CargoRequest -> locations_models_City
+  [label=" sender_city (sender_city_requests)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_CargoRequest -> rates_models_CargoSubCategory
+  [label=" cargo_subcategories (requests)"] [arrowhead=dot arrowtail=dot, dir=both];
+
+  orders_models_CargoRequest -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  orders_models_CargoDimension -> orders_models_CargoRequest
+  [label=" cargo_request (dimensions)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_OrderHistory -> orders_models_CargoRequest
+  [label=" order (history)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_OrderHistory -> accounts_models_User
+  [label=" changed_by (orderhistory)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  orders_models_OrderHistory -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+
+  support_models_TicketTopic -> support_models_SupportDepartment
+  [label=" department (topics)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_SupportAgent -> accounts_models_User
+  [label=" user (supportagent)"] [arrowhead=none, arrowtail=none, dir=both];
+
+  support_models_SupportAgent -> support_models_SupportDepartment
+  [label=" departments (agents)"] [arrowhead=dot arrowtail=dot, dir=both];
+
+  support_models_Ticket -> accounts_models_User
+  [label=" user (tickets)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_Ticket -> support_models_SupportDepartment
+  [label=" department (ticket)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_Ticket -> support_models_TicketTopic
+  [label=" topic (ticket)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_Ticket -> support_models_SupportAgent
+  [label=" assigned_agent (ticket)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_TicketMessage -> support_models_Ticket
+  [label=" ticket (messages)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_TicketMessage -> accounts_models_User
+  [label=" sender (ticketmessage)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_TicketTransfer -> support_models_Ticket
+  [label=" ticket (transfers)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_TicketTransfer -> support_models_SupportDepartment
+  [label=" from_department (transfer_from)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_TicketTransfer -> support_models_SupportDepartment
+  [label=" to_department (transfer_to)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_TicketTransfer -> accounts_models_User
+  [label=" transferred_by (tickettransfer)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_TicketActivity -> support_models_Ticket
+  [label=" ticket (activities)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  support_models_TicketActivity -> accounts_models_User
+  [label=" user (ticketactivity)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+
+  documents_models_DocumentType -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  documents_models_DocumentRule -> documents_models_DocumentType
+  [label=" document_type (rules)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_DocumentRule -> locations_models_Province
+  [label=" origin_province (document_rules)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_DocumentRule -> locations_models_City
+  [label=" origin_city (document_rules)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_DocumentRule -> locations_models_Country
+  [label=" destination_country (document_rules)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_DocumentRule -> locations_models_DestinationCity
+  [label=" destination_city (document_rules)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_DocumentRule -> locations_models_Port
+  [label=" destination_port (document_rules)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_DocumentRule -> rates_models_CargoType
+  [label=" cargo_type (document_rules)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_DocumentRule -> rates_models_CargoSubCategory
+  [label=" cargo_subcategory (document_rules)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_DocumentRule -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  documents_models_OrderDocument -> orders_models_CargoRequest
+  [label=" order (required_documents)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_OrderDocument -> documents_models_DocumentType
+  [label=" document_type (order_documents)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_OrderDocument -> documents_models_DocumentRule
+  [label=" source_rule (generated_documents)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_OrderDocument -> accounts_models_User
+  [label=" uploaded_by (uploaded_order_documents)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_OrderDocument -> accounts_models_User
+  [label=" reviewed_by (reviewed_order_documents)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_OrderDocument -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  documents_models_AdditionalDocumentRequest -> orders_models_CargoRequest
+  [label=" order (additional_document_requests)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_AdditionalDocumentRequest -> accounts_models_User
+  [label=" requested_by (created_additional_document_requests)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_AdditionalDocumentRequest -> documents_models_DocumentType
+  [label=" document_type (additional_requests)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_AdditionalDocumentRequest -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+  documents_models_AdditionalDocumentUpload -> documents_models_AdditionalDocumentRequest
+  [label=" request (uploads)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_AdditionalDocumentUpload -> accounts_models_User
+  [label=" uploaded_by (additional_document_uploads)"] [arrowhead=none, arrowtail=dot, dir=both];
+
+  documents_models_AdditionalDocumentUpload -> core_models_TimeStampedModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
+
+}

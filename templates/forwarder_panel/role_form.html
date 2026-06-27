@@ -1,0 +1,269 @@
+{% extends 'forwarder_panel/base.html' %}
+{% load static %}
+{% load panel_tags %}
+
+{% block title %}{% if role %}ویرایش نقش{% else %}نقش جدید{% endif %} | تنظیمات{% endblock %}
+
+{% block extra_css %}
+<style>
+  .role-form-page { padding: 28px 0; max-width: 820px; }
+  .rf-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    padding: 28px;
+  }
+  .rf-card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .rf-card-title i { color: #1e40af; }
+  .form-group-r { margin-bottom: 20px; }
+  .form-group-r label { display: block; font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 7px; }
+  .form-group-r input[type="text"] {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  .form-group-r input[type="text"]:focus { outline: none; border-color: #1e40af; }
+
+  /* گروه‌های درختی */
+  .perm-group {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .perm-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    cursor: pointer;
+    user-select: none;
+  }
+  .perm-group-header:hover { background: #eff6ff; }
+  .perm-group-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .perm-group-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+  .perm-group-chevron { color: #94a3b8; font-size: 12px; transition: transform 0.2s; }
+  .perm-group-chevron.rotated { transform: rotate(180deg); }
+  .perm-group-select-all {
+    font-size: 11px;
+    color: #1e40af;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-family: inherit;
+  }
+  .perm-group-select-all:hover { background: #dbeafe; }
+  .perm-group-body {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 8px;
+    padding: 14px 16px;
+  }
+  .perm-group-body.collapsed { display: none; }
+
+  /* آیتم چک‌باکس */
+  .perm-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+    border: 1.5px solid transparent;
+  }
+  .perm-item:hover { background: #eff6ff; border-color: #bfdbfe; }
+  .perm-item input[type="checkbox"] { display: none; }
+  .perm-check {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    border: 2px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    font-size: 12px;
+    color: transparent;
+  }
+  .perm-item input:checked ~ .perm-check {
+    background: #1e40af;
+    border-color: #1e40af;
+    color: #fff;
+  }
+  .perm-item input:checked ~ .perm-check::after { content: '✓'; }
+  .perm-label { font-size: 13px; color: #374151; font-weight: 500; line-height: 1.4; }
+
+  .rf-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+  .btn-save-role {
+    background: #1e40af; color: #fff; border: none;
+    border-radius: 10px; padding: 12px 28px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: inherit;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: background 0.2s;
+  }
+  .btn-save-role:hover { background: #1d3a8a; }
+  .btn-cancel-role {
+    background: #f1f5f9; color: #374151; border: none;
+    border-radius: 10px; padding: 12px 24px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: inherit; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: background 0.2s;
+  }
+  .btn-cancel-role:hover { background: #e2e8f0; }
+
+  .global-actions { display: flex; gap: 10px; margin-bottom: 18px; }
+  .btn-global {
+    background: #f1f5f9; color: #374151; border: none;
+    border-radius: 8px; padding: 7px 16px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: background 0.15s; font-family: inherit;
+  }
+  .btn-global:hover { background: #dbeafe; color: #1e40af; }
+  .btn-global.red:hover { background: #fee2e2; color: #dc2626; }
+
+  .perm-section-title {
+    font-size: 12px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: .05em;
+    margin: 22px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="role-form-page container-fluid">
+  <div class="rf-card">
+    <div class="rf-card-title">
+      <i class="fas fa-user-shield"></i>
+      {% if role %}ویرایش نقش «{{ role.name }}»{% else %}تعریف نقش جدید{% endif %}
+    </div>
+
+    <form method="post" id="roleForm">
+      {% csrf_token %}
+
+      <div class="form-group-r">
+        <label>نام نقش <span style="color:#dc2626;">*</span></label>
+        <input type="text" name="name" value="{{ role.name|default:'' }}"
+               placeholder="مثال: کارشناس فروش" required />
+      </div>
+
+      <div class="perm-section-title">دسترسی‌های نقش</div>
+
+      <div class="global-actions">
+        <button type="button" class="btn-global" onclick="setAllPerms(true)">
+          <i class="fas fa-check-double"></i> انتخاب همه
+        </button>
+        <button type="button" class="btn-global red" onclick="setAllPerms(false)">
+          <i class="fas fa-times"></i> حذف همه
+        </button>
+      </div>
+
+      {% for group in perm_groups %}
+      <div class="perm-group">
+        <div class="perm-group-header" onclick="toggleGroup('{{ group.id }}')">
+          <div class="perm-group-header-left">
+            <span class="perm-group-icon"
+                  style="background:{{ group.icon_bg }};color:{{ group.icon_color }};">
+              <i class="{{ group.icon }}"></i>
+            </span>
+            {{ group.label }}
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button type="button" class="perm-group-select-all"
+                    onclick="event.stopPropagation();setGroupPerms('{{ group.id }}',true)">
+              همه
+            </button>
+            <i class="fas fa-chevron-down perm-group-chevron" id="chevron-{{ group.id }}"></i>
+          </div>
+        </div>
+        <div class="perm-group-body" id="body-{{ group.id }}">
+          {% for perm_pair in group.perms %}
+          <label class="perm-item">
+            <input type="checkbox" name="{{ perm_pair.0 }}"
+              {% if role and role|getattr_val:perm_pair.0 %}checked{% endif %} />
+            <span class="perm-check"></span>
+            <span class="perm-label">{{ perm_pair.1 }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="rf-actions">
+        <button type="submit" class="btn-save-role">
+          <i class="fas fa-save"></i> ذخیره نقش
+        </button>
+        <a href="{% url 'forwarder_panel:settings' %}?tab=roles" class="btn-cancel-role">
+          <i class="fas fa-arrow-right"></i> انصراف
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleGroup(id) {
+  var body = document.getElementById('body-' + id);
+  var chevron = document.getElementById('chevron-' + id);
+  if (!body) return;
+  body.classList.toggle('collapsed');
+  if (chevron) chevron.classList.toggle('rotated', body.classList.contains('collapsed'));
+}
+
+function setGroupPerms(id, checked) {
+  var body = document.getElementById('body-' + id);
+  if (!body) return;
+  body.querySelectorAll('input[type="checkbox"]').forEach(function(cb) { cb.checked = checked; });
+}
+
+function setAllPerms(checked) {
+  document.querySelectorAll('#roleForm input[type="checkbox"]').forEach(function(cb) { cb.checked = checked; });
+}
+</script>
+{% endblock %}

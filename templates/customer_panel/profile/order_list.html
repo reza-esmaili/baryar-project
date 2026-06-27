@@ -1,0 +1,208 @@
+{% extends 'customer_panel/profile/profile_base.html' %}
+{% load static %}
+{% load humanize %}
+{% load jformat %}
+
+{% block profile_extra_css %}
+  <link rel="stylesheet" href="{% static 'customer_panel/css/order_list.css' %}" />
+  <style>
+    /* ── Status pills ── */
+    .status-pill {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .status-pill--draft {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    .status-pill--pending {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    .status-pill--accepted {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .status-pill--rejected {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .status-pill--completed {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .status-pill--cancelled {
+      background: #f1f5f9;
+      color: #475569;
+      text-decoration: line-through;
+    }
+  </style>
+{% endblock %}
+
+{% block profile_content %}
+  <div class="content-card orders-card">
+    <div class="orders-header">
+      <h2>سفارشات من</h2>
+    </div>
+
+    <div class="orders-filters-wrapper" style="width: 100%; overflow-x: auto;">
+      <div class="filters-bar" style="display: flex; width: 100%; min-width: 700px; gap: 10px; align-items: center; flex-wrap: nowrap;">
+        <div class="filter-field" style="flex: 1; min-width: 120px;">
+          <select id="filter-origin" style="width: 100%;">
+            <option value="">همه مبداها</option>
+            {% for city in origin_cities %}
+              <option value="{{ city.id }}">{{ city.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-field" style="flex: 1; min-width: 110px;">
+          <select id="filter-shipping-procedure" style="width: 100%;">
+            <option value="">همه رویه‌ها</option>
+            <option value="passenger">مسافری</option>
+            <option value="commercial">تجاری</option>
+          </select>
+        </div>
+
+        <div class="filter-field" style="flex: 1; min-width: 120px;">
+          <select id="filter-destination" style="width: 100%;">
+            <option value="">همه مقصدها</option>
+            {% for city in destination_cities %}
+              <option value="{{ city.id }}">{{ city.country.name }} - {{ city.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-field" style="flex: 1; min-width: 110px;">
+          <select id="filter-transport" style="width: 100%;">
+            <option value="">همه روش‌های حمل</option>
+            <option value="air">هوایی</option>
+            <option value="sea_lcl">دریایی LCL</option>
+            <option value="sea_fcl">دریایی FCL</option>
+            <option value="land">زمینی</option>
+          </select>
+        </div>
+
+        <div class="filter-field" style="flex: 1; min-width: 110px;">
+          <select id="filter-status" style="width: 100%;">
+            <option value="">همه وضعیت‌ها</option>
+            <option value="draft">پیش‌نویس</option>
+            <option value="pending">در انتظار تایید</option>
+            <option value="accepted">تایید شده</option>
+            <option value="rejected">رد شده</option>
+            <option value="completed">تکمیل شده</option>
+            <option value="cancelled">لغو شده</option>
+          </select>
+        </div>
+
+        <div class="filter-field filter-date-field" style="flex: 1; min-width: 120px;">
+          <input type="date" id="filter-date" style="width: 100%;" />
+        </div>
+
+        <button type="button" id="clear-filters" class="clear-filters-btn" title="حذف فیلترها" style="background: none !important; border: none; color: #ef4444; cursor: pointer; padding: 5px; flex-shrink: 0;"><i class="fas fa-times-circle" style="font-size: 20px;"></i></button>
+      </div>
+    </div>
+
+    <div class="orders-table-wrapper">
+      <table class="modern-table orders-table">
+        <thead>
+          <tr>
+            <th>شماره</th>
+            <th>مبدا</th>
+            <th>مقصد</th>
+            <th>نوع حمل</th>
+            <th>وضعیت</th>
+            <th>تاریخ</th>
+            <th>مبلغ</th>
+            <th>جزئیات</th>
+          </tr>
+        </thead>
+
+        <tbody id="orders-table">
+          {% include 'customer_panel/profile/partials/orders_table_rows.html' %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const filterUrl = "{% url 'customer:filter_orders' %}"
+
+    function loadOrders() {
+      const origin = document.getElementById('filter-origin').value
+      const destination = document.getElementById('filter-destination').value
+      const transport = document.getElementById('filter-transport').value
+      const date = document.getElementById('filter-date').value
+      const shippingProcedure = document.getElementById('filter-shipping-procedure').value
+      const status = document.getElementById('filter-status').value
+      const tableBody = document.getElementById('orders-table')
+      tableBody.classList.add('orders-table-loading')
+
+      const params = new URLSearchParams()
+
+      if (origin) {
+        params.append('origin', origin)
+      }
+      if (shippingProcedure) {
+        params.append('shipping_procedure', shippingProcedure)
+      }
+      if (destination) {
+        params.append('destination', destination)
+      }
+      if (transport) {
+        params.append('transport', transport)
+      }
+      if (status) {
+        params.append('status', status)
+      }
+      if (date) {
+        params.append('date', date)
+      }
+
+      fetch(`${filterUrl}?${params.toString()}`, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('خطا در دریافت سفارش‌ها')
+          }
+          return response.text()
+        })
+        .then((data) => {
+          tableBody.innerHTML = data
+        })
+        .catch((error) => {
+          console.error(error)
+          tableBody.innerHTML = `
+                              <tr class="orders-empty-row">
+                                <td colspan="8">خطا در دریافت اطلاعات سفارش‌ها.</td>
+                              </tr>
+                            `
+        })
+        .finally(() => {
+          tableBody.classList.remove('orders-table-loading')
+        })
+    }
+
+    document.querySelectorAll('#filter-origin, #filter-destination, #filter-transport, #filter-date, #filter-shipping-procedure, #filter-status').forEach((el) => {
+      el.addEventListener('change', loadOrders)
+    })
+
+    document.getElementById('clear-filters').addEventListener('click', function () {
+      document.getElementById('filter-origin').value = ''
+      document.getElementById('filter-destination').value = ''
+      document.getElementById('filter-transport').value = ''
+      document.getElementById('filter-date').value = ''
+      document.getElementById('filter-shipping-procedure').value = ''
+      document.getElementById('filter-status').value = ''
+
+      loadOrders()
+    })
+  </script>
+{% endblock %}

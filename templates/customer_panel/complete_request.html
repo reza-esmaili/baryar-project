@@ -1,0 +1,649 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}تکمیل سفارش{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'customer_panel/css/complete_order.css' %}" />
+<style>
+/* ── اضافات طراحی حرفه‌ای ── */
+
+/* هدر قهرمان بهبود یافته */
+.complete-hero {
+  padding: 36px 40px;
+  position: relative;
+  overflow: hidden;
+}
+.complete-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px; left: -40px;
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  background: rgba(37,99,235,0.15);
+  pointer-events: none;
+}
+.hero-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #93c5fd;
+}
+.hero-route {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 14px 20px;
+}
+.hero-route-city { font-weight: 700; font-size: 15px; color: #fff; }
+.hero-route-city small { display: block; font-size: 11px; color: #94a3b8; font-weight: 400; margin-top: 2px; }
+.hero-route-arrow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #60a5fa;
+  font-size: 13px;
+}
+.hero-route-arrow::before,
+.hero-route-arrow::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(96,165,250,0.4);
+}
+.hero-forwarder {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #e2e8f0;
+}
+.hero-forwarder img { height: 28px; border-radius: 6px; }
+
+/* ── شاخص مراحل بهبود یافته ── */
+.complete-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 28px 0;
+  direction: rtl;
+}
+.complete-step-item {
+  flex: 1;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 12px 8px;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  background: transparent;
+}
+.complete-step-item::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: 0;
+  width: 50%;
+  height: 2px;
+  background: #e2e8f0;
+}
+.complete-step-item::before {
+  content: '';
+  position: absolute;
+  top: 22px;
+  right: 0;
+  width: 50%;
+  height: 2px;
+  background: #e2e8f0;
+}
+.complete-step-item:first-child::before { display: none; }
+.complete-step-item:last-child::after  { display: none; }
+.complete-step-item.done::after,
+.complete-step-item.done::before,
+.complete-step-item.active::before { background: #10b981; }
+
+.complete-step-item span {
+  position: relative;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 2px solid #e2e8f0;
+  color: #94a3b8;
+  font-size: 14px;
+}
+.complete-step-item p { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+.complete-step-item.active span { background: #1d72f3; border-color: #1d72f3; color: #fff; }
+.complete-step-item.active p   { color: #1d72f3; font-weight: 700; }
+.complete-step-item.done span  { background: #10b981; border-color: #10b981; color: #fff; }
+.complete-step-item.done p     { color: #10b981; }
+
+/* ── کارت فورواردر در خلاصه ── */
+.forwarder-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  padding: 18px 22px;
+  margin-bottom: 22px;
+}
+.forwarder-summary-logo {
+  width: 60px; height: 60px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.forwarder-summary-logo img { width: 100%; height: 100%; object-fit: contain; }
+.forwarder-summary-logo i   { font-size: 28px; color: #94a3b8; }
+.forwarder-summary-info { flex: 1; }
+.forwarder-summary-name { font-size: 16px; font-weight: 700; color: #1e293b; }
+.forwarder-summary-meta { font-size: 12px; color: #64748b; margin-top: 3px; }
+
+/* ── گرید خلاصه بهبود یافته ── */
+.summary-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+.summary-item {
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.summary-item-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: #eff6ff;
+  display: flex; align-items: center; justify-content: center;
+  color: #1e40af;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+.summary-item span { color: #64748b; font-size: 12px; }
+.summary-item strong { font-size: 15px; color: #1e293b; }
+
+/* ── قیمت نهایی برجسته ── */
+.summary-price-card {
+  background: linear-gradient(135deg, #1e40af, #2563eb);
+  border-radius: 18px;
+  padding: 20px 24px;
+  margin-top: 18px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.summary-price-label { font-size: 14px; opacity: .85; }
+.summary-price-value { font-size: 26px; font-weight: 800; }
+.summary-price-unit  { font-size: 12px; opacity: .7; }
+
+/* ── آپلود مدارک بهبود یافته ── */
+.doc-upload-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  transition: border-color 0.2s;
+}
+.doc-upload-item:hover { border-color: #93c5fd; }
+.doc-upload-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e40af;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.doc-upload-body { flex: 1; }
+.doc-title { font-weight: 700; color: #1e293b; font-size: 13px; }
+.doc-subtitle { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.doc-input { flex-shrink: 0; }
+.doc-input input[type="file"] {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  background: #f8fafc;
+  cursor: pointer;
+  width: auto;
+  min-height: auto;
+  font-family: inherit;
+}
+.doc-input input[type="file"]:focus {
+  outline: none;
+  border-color: #1d72f3;
+  box-shadow: 0 0 0 3px rgba(29, 114, 243, 0.1);
+}
+
+/* ── باکس خطا بهتر ── */
+.error-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 16px;
+  padding: 18px 22px;
+}
+.error-box__title {
+  font-weight: 700;
+  color: #991b1b;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.error-box__body { color: #dc2626; font-size: 13px; }
+
+@media (max-width: 768px) {
+  .hero-top { flex-direction: column; align-items: flex-start; }
+  .hero-route { flex-direction: column; align-items: flex-start; }
+  .hero-route-arrow { width: 100%; }
+  .complete-steps { flex-wrap: wrap; }
+  .complete-step-item { min-width: 80px; }
+  .summary-grid { grid-template-columns: 1fr 1fr; }
+  .summary-price-card { flex-direction: column; gap: 8px; text-align: center; }
+  .forwarder-summary-card { flex-direction: column; text-align: center; }
+  .doc-upload-item { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 480px) {
+  .summary-grid { grid-template-columns: 1fr; }
+  .complete-hero { padding: 24px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="complete-page">
+
+{# داده‌های کاربر برای JS #}
+<span id="current_user_data"
+  data-first-name="{{ request.user.first_name }}"
+  data-last-name="{{ request.user.last_name }}"
+  data-national-id="{{ user_national_id|default:'' }}"
+  data-phone="{{ user_phone|default:request.user.mobile|default:'' }}"
+  data-address="{{ user_address|default:'' }}"
+  style="display:none;"></span>
+
+<!-- ═══════════════ هدر ═══════════════ -->
+<section class="complete-hero">
+  <div class="hero-top">
+    <div>
+      <div class="hero-badge">
+        <i class="fas fa-shopping-cart"></i>
+        تکمیل سفارش #{{ cargo_request.id }}
+      </div>
+      <h1 style="margin:12px 0 6px;font-size:26px;font-weight:800;color:#fff;">
+        بررسی و تکمیل اطلاعات سفارش
+      </h1>
+      <p style="margin:0;color:#94a3b8;font-size:14px;">
+        مراحل زیر را به‌ترتیب تکمیل کنید تا سفارش شما ثبت نهایی شود
+      </p>
+    </div>
+    {% if cargo_request.selected_rate and cargo_request.selected_rate.forwarder %}
+      <div class="hero-forwarder">
+        {% if cargo_request.selected_rate.forwarder.logo %}
+          <img src="{{ cargo_request.selected_rate.forwarder.logo.url }}"
+               alt="{{ cargo_request.selected_rate.forwarder.company_name }}" />
+        {% else %}
+          <i class="fas fa-building"></i>
+        {% endif %}
+        {{ cargo_request.selected_rate.forwarder.company_name }}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="hero-route">
+    <div class="hero-route-city">
+      <i class="fas fa-map-marker-alt" style="color:#60a5fa;margin-left:5px;"></i>
+      {{ cargo_request.origin_city.name }}
+      <small>{{ cargo_request.origin_city.province.name }}</small>
+    </div>
+    <div class="hero-route-arrow">
+      <i class="fas fa-{% if cargo_request.transport_mode == 'air' %}plane{% elif cargo_request.transport_mode == 'sea' %}ship{% else %}truck{% endif %}"></i>
+      {{ cargo_request.get_transport_mode_display }}
+    </div>
+    <div class="hero-route-city" style="text-align:left;">
+      <i class="fas fa-anchor" style="color:#60a5fa;margin-left:5px;"></i>
+      {{ cargo_request.destination_port.name }}
+      <small>{{ cargo_request.destination_port.city.country.name }}</small>
+    </div>
+  </div>
+</section>
+
+<form method="post" enctype="multipart/form-data" id="complete-order-form">
+{% csrf_token %}
+
+{% if form.errors %}
+<div class="error-box">
+  <div class="error-box__title"><i class="fas fa-exclamation-circle" style="margin-left:6px;"></i>لطفاً خطاهای فرم را بررسی کنید</div>
+  <div class="error-box__body">{{ form.errors }}</div>
+</div>
+{% endif %}
+
+<!-- ═══════════════ شاخص مراحل ═══════════════ -->
+<div class="complete-steps">
+  <div class="complete-step-item active" data-step-indicator="1">
+    <span><i class="fas fa-user"></i></span>
+    <p>مالک بار</p>
+  </div>
+  <div class="complete-step-item" data-step-indicator="2">
+    <span><i class="fas fa-map-marker-alt"></i></span>
+    <p>آدرس مبدا</p>
+  </div>
+  <div class="complete-step-item" data-step-indicator="3">
+    <span><i class="fas fa-box"></i></span>
+    <p>جزئیات کالا</p>
+  </div>
+  <div class="complete-step-item" data-step-indicator="4">
+    <span><i class="fas fa-clipboard-list"></i></span>
+    <p>خلاصه</p>
+  </div>
+  <div class="complete-step-item" data-step-indicator="5">
+    <span><i class="fas fa-file-upload"></i></span>
+    <p>مدارک</p>
+  </div>
+</div>
+
+{# ═══════════════ STEP 1 — مالک بار ═══════════════ #}
+<section class="complete-card complete-step-panel active" data-step="1">
+  <div class="section-title">
+    <h2><i class="fas fa-user-circle" style="color:#1d72f3;margin-left:10px;"></i>اطلاعات مالک بار</h2>
+    <p>اطلاعات تماس فرستنده کالا را وارد کنید</p>
+  </div>
+
+  <div class="checkbox-box">
+    {{ form.is_for_other }}
+    <label for="is_for_other_checkbox" style="cursor:pointer;">{{ form.is_for_other.label }}</label>
+  </div>
+
+  <div class="form-grid grid-2">
+    <div class="form-group">
+      <label>نام <span style="color:#ef4444;">*</span></label>
+      {{ form.sender_first_name }}
+      {{ form.sender_first_name.errors }}
+    </div>
+    <div class="form-group">
+      <label>نام خانوادگی <span style="color:#ef4444;">*</span></label>
+      {{ form.sender_last_name }}
+      {{ form.sender_last_name.errors }}
+    </div>
+  </div>
+
+  <div class="form-grid grid-2" style="margin-top:18px;">
+    <div class="form-group">
+      <label>کد ملی <span style="color:#ef4444;">*</span></label>
+      {{ form.sender_national_id }}
+      {{ form.sender_national_id.errors }}
+    </div>
+    <div class="form-group">
+      <label>شماره تماس <span style="color:#ef4444;">*</span></label>
+      {{ form.sender_phone }}
+      {{ form.sender_phone.errors }}
+    </div>
+  </div>
+</section>
+
+{# ═══════════════ STEP 2 — آدرس مبدا ═══════════════ #}
+<section class="complete-card complete-step-panel" data-step="2">
+  <div class="section-title">
+    <h2><i class="fas fa-map-marked-alt" style="color:#1d72f3;margin-left:10px;"></i>آدرس مبدا جهت هماهنگی</h2>
+    <p>استان و شهر از اطلاعات درخواست اولیه دریافت شده‌اند</p>
+  </div>
+
+  <div class="info-box">
+    <i class="fas fa-info-circle" style="margin-left:6px;"></i>
+    استان و شهر مبدا قابل تغییر نیستند.
+    {% if not form.is_for_other.value %}
+      آدرسی که اینجا وارد می‌کنید در پروفایل شما نیز ذخیره می‌شود.
+    {% endif %}
+  </div>
+
+  <div class="form-grid grid-2">
+    <div class="form-group">
+      <label>استان</label>
+      {{ form.sender_province }}
+      {{ form.sender_province.errors }}
+    </div>
+    <div class="form-group">
+      <label>شهر</label>
+      {{ form.sender_city }}
+      {{ form.sender_city.errors }}
+    </div>
+  </div>
+
+  <div class="form-group" style="margin-top:18px;">
+    <label>آدرس دقیق <span style="color:#ef4444;">*</span></label>
+    {{ form.sender_address }}
+    {{ form.sender_address.errors }}
+  </div>
+</section>
+
+{# ═══════════════ STEP 3 — جزئیات کالا ═══════════════ #}
+<section class="complete-card complete-step-panel" data-step="3">
+  <div class="section-title">
+    <h2><i class="fas fa-boxes" style="color:#1d72f3;margin-left:10px;"></i>جزئیات کالا</h2>
+    <p>زیردسته و نوع دقیق کالا را برای «{{ cargo_request.cargo_type.name }}» مشخص کنید</p>
+  </div>
+
+  <span id="cargo-meta"
+        data-cargo-type-id="{{ cargo_request.cargo_type.id }}"
+        data-subcat-url="{% url 'orders:ajax_load_subcategories' %}"
+        data-child-url="{% url 'orders:ajax_load_subcategory_children' %}"
+        style="display:none;"></span>
+
+  <div class="cargo-items-head">
+    <h3>اقلام کالا</h3>
+    <button type="button" id="add-cargo-item-btn" class="add-cargo-item-btn">
+      <i class="fas fa-plus" style="margin-left:5px;"></i>افزودن قلم کالا
+    </button>
+  </div>
+
+  <div id="cargo-items-container">
+    <div class="cargo-item-row">
+      <div class="cargo-item-grid">
+        <div class="form-group">
+          <label>زیردسته</label>
+          <select name="item_subcategory[]" class="item-subcategory form-select">
+            <option value="">در حال بارگذاری...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>نوع دقیق</label>
+          <select name="item_child[]" class="item-child form-select" disabled>
+            <option value="">ابتدا زیردسته را انتخاب کنید</option>
+          </select>
+        </div>
+        <div class="form-group item-other-wrap" style="display:none;">
+          <label>عنوان دلخواه</label>
+          <input type="text" name="item_other_text[]" class="item-other-text form-control"
+                 placeholder="عنوان کالا را وارد کنید" />
+        </div>
+        <div class="form-group cargo-item-delete-wrap">
+          <label>&nbsp;</label>
+          <button type="button" class="cargo-item-delete-btn">حذف</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-group" style="margin-top:18px;">
+    <label>توضیحات تکمیلی کالا</label>
+    {{ form.other_cargo_details }}
+    {{ form.other_cargo_details.errors }}
+  </div>
+</section>
+
+{# ═══════════════ STEP 4 — خلاصه ═══════════════ #}
+<section class="complete-card complete-step-panel" data-step="4">
+  <div class="section-title">
+    <h2><i class="fas fa-clipboard-check" style="color:#1d72f3;margin-left:10px;"></i>خلاصه سفارش</h2>
+    <p>اطلاعات محاسبه‌شده را پیش از ثبت نهایی بررسی کنید</p>
+  </div>
+
+  {# کارت فورواردر #}
+  {% if cargo_request.selected_rate and cargo_request.selected_rate.forwarder %}
+  <div class="forwarder-summary-card">
+    <div class="forwarder-summary-logo">
+      {% if cargo_request.selected_rate.forwarder.logo %}
+        <img src="{{ cargo_request.selected_rate.forwarder.logo.url }}"
+             alt="{{ cargo_request.selected_rate.forwarder.company_name }}" />
+      {% else %}
+        <i class="fas fa-building"></i>
+      {% endif %}
+    </div>
+    <div class="forwarder-summary-info">
+      <div class="forwarder-summary-name">{{ cargo_request.selected_rate.forwarder.company_name }}</div>
+      <div class="forwarder-summary-meta">
+        <i class="fas fa-tag" style="margin-left:4px;color:#60a5fa;"></i>
+        فورواردر انتخاب‌شده برای این سفارش
+        {% if cargo_request.selected_rate.forwarder.phone %}
+          &nbsp;&bull;&nbsp;<i class="fas fa-phone" style="margin-left:4px;color:#60a5fa;"></i>{{ cargo_request.selected_rate.forwarder.phone }}
+        {% endif %}
+      </div>
+    </div>
+    <div style="background:#fff;border-radius:10px;padding:10px 16px;text-align:center;flex-shrink:0;">
+      <div style="font-size:11px;color:#64748b;">روش حمل</div>
+      <div style="font-size:14px;font-weight:700;color:#1e293b;margin-top:3px;">{{ cargo_request.get_transport_mode_display }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="summary-grid">
+    <div class="summary-item">
+      <div class="summary-item-icon"><i class="fas fa-route"></i></div>
+      <span>مبدا</span>
+      <strong>{{ cargo_request.origin_city.name }}</strong>
+    </div>
+    <div class="summary-item">
+      <div class="summary-item-icon"><i class="fas fa-anchor"></i></div>
+      <span>مقصد</span>
+      <strong>{{ cargo_request.destination_port.name }}</strong>
+    </div>
+    <div class="summary-item">
+      <div class="summary-item-icon"><i class="fas fa-box-open"></i></div>
+      <span>نوع کالا</span>
+      <strong>{{ cargo_request.cargo_type.name }}</strong>
+    </div>
+    {% if cargo_request.chargeable_weight %}
+    <div class="summary-item">
+      <div class="summary-item-icon"><i class="fas fa-weight-hanging"></i></div>
+      <span>وزن محاسباتی</span>
+      <strong>{{ cargo_request.chargeable_weight|floatformat:0|intcomma }} کیلوگرم</strong>
+    </div>
+    {% endif %}
+    {% if cargo_request.container_count %}
+    <div class="summary-item">
+      <div class="summary-item-icon"><i class="fas fa-cube"></i></div>
+      <span>تعداد کانتینر</span>
+      <strong>{{ cargo_request.container_count }} عدد {{ cargo_request.container_size }}</strong>
+    </div>
+    {% endif %}
+    <div class="summary-item">
+      <div class="summary-item-icon" style="background:#fff7ed;color:#ea580c;"><i class="fas fa-shipping-fast"></i></div>
+      <span>نوع حمل</span>
+      <strong>{{ cargo_request.get_transport_mode_display }}</strong>
+    </div>
+  </div>
+
+  {% if cargo_request.final_price %}
+  <div class="summary-price-card">
+    <div>
+      <div class="summary-price-label"><i class="fas fa-receipt" style="margin-left:6px;"></i>جمع کل هزینه سفارش</div>
+      <div style="font-size:12px;opacity:.6;margin-top:2px;">شامل مالیات و کلیه هزینه‌ها</div>
+    </div>
+    <div style="text-align:left;">
+      <div class="summary-price-value">{{ cargo_request.final_price|floatformat:0|intcomma }}</div>
+      <div class="summary-price-unit">ریال</div>
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+{# ═══════════════ STEP 5 — مدارک ═══════════════ #}
+<section class="complete-card complete-step-panel" data-step="5">
+  <div class="section-title">
+    <h2><i class="fas fa-file-alt" style="color:#1d72f3;margin-left:10px;"></i>بارگذاری مدارک</h2>
+    <p>مدارک مورد نیاز برای ثبت نهایی سفارش را بارگذاری کنید</p>
+  </div>
+
+  {% if documents %}
+    <div class="documents-upload-grid">
+      {% for doc in documents %}
+      <div class="doc-upload-item">
+        <div class="doc-upload-icon">
+          <i class="fas fa-file-{% if doc.document_type.title|lower|slice:':3' == 'پاس' %}passport{% else %}alt{% endif %}"></i>
+        </div>
+        <div class="doc-upload-body">
+          <div class="doc-title">
+            {{ doc.document_type.title }}
+            {% if doc.is_required %}<span class="required-star">*</span>{% endif %}
+          </div>
+          {% if doc.file %}
+            <div class="doc-subtitle" style="color:#10b981;">
+              <i class="fas fa-check-circle"></i> فایل قبلاً بارگذاری شده
+            </div>
+          {% else %}
+            <div class="doc-subtitle">فایل انتخاب نشده</div>
+          {% endif %}
+        </div>
+        <div class="doc-input">
+          <input type="file" name="doc_{{ doc.id }}"
+                 {% if doc.is_required and not doc.file %}required{% endif %} />
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="info-box">
+      <i class="fas fa-info-circle" style="margin-left:6px;"></i>
+      بعد از تایید اطلاعات، مدارک مورد نیاز برای سفارش ایجاد می‌شوند.
+    </div>
+  {% endif %}
+</section>
+
+<!-- ═══════════════ دکمه‌های ناوبری ═══════════════ -->
+<section class="complete-card complete-navigation">
+  <button type="button" id="complete-prev-btn" class="complete-nav-btn complete-prev-btn">
+    <i class="fas fa-chevron-right" style="margin-left:6px;"></i>بازگشت
+  </button>
+  <button type="button" id="complete-next-btn" class="complete-nav-btn complete-next-btn">
+    ادامه<i class="fas fa-chevron-left" style="margin-right:6px;"></i>
+  </button>
+  <button type="submit" id="submit-btn" class="submit-btn complete-submit-btn">
+    <i class="fas fa-check-circle" style="margin-left:8px;"></i>ثبت نهایی سفارش
+  </button>
+</section>
+
+</form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'customer_panel/js/complete_order.js' %}"></script>
+{% endblock %}

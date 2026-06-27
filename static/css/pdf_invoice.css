@@ -1,0 +1,154 @@
+/* @font-face is injected at runtime via base64 by the PDF view */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'BYekan', 'Tahoma', sans-serif;
+    direction: rtl;
+    color: #1e293b;
+    font-size: 11px;
+    line-height: 1.5;
+    background: #fff;
+}
+
+@page {
+    size: A4;
+    margin: 1cm 1.2cm;
+}
+
+/* ══ HEADER ══ */
+.header-table {
+    width: 100%;
+    border-bottom: 3px solid #2563eb;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+.header-table td { vertical-align: middle; }
+.header-logo img { height: 52px; }
+.header-title-cell { text-align: center; }
+.invoice-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #2563eb;
+}
+.invoice-subtitle { font-size: 9px; color: #64748b; }
+.header-meta-cell { text-align: left; }
+
+.meta-tbl { border-collapse: collapse; font-size: 10px; }
+.meta-tbl td { padding: 2px 5px; border: 1px solid #e2e8f0; }
+.meta-lbl { background: #f1f5f9; font-weight: bold; color: #475569; white-space: nowrap; }
+.meta-val { min-width: 85px; }
+.status-ok { color: #16a34a; font-weight: bold; }
+
+/* ══ INFO CARDS (two-column via table) ══ */
+.info-row { width: 100%; border-collapse: separate; border-spacing: 8px 0; margin-bottom: 10px; }
+.info-row td { vertical-align: top; width: 50%; }
+
+.info-card { border: 1px solid #e2e8f0; border-radius: 5px; overflow: hidden; }
+.card-title {
+    background: #2563eb;
+    color: #fff;
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: bold;
+}
+.forwarder-card .card-title { background: #0f172a; }
+
+.kv-tbl { width: 100%; border-collapse: collapse; }
+.kv-tbl tr:nth-child(even) td { background: #f8fafc; }
+.kv-tbl td { padding: 4px 7px; border-bottom: 1px solid #f1f5f9; font-size: 10px; }
+.kv-lbl { color: #64748b; font-weight: bold; width: 35%; white-space: nowrap; }
+.fw-name { font-weight: bold; color: #1d4ed8; font-size: 11.5px; }
+.no-data { padding: 8px; color: #94a3b8; font-size: 10px; }
+
+/* ══ SECTION TITLES ══ */
+.section-title {
+    background: #1e40af;
+    color: #fff;
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+/* ══ DATA TABLES ══ */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+    background: #dbeafe;
+    color: #1e3a8a;
+    padding: 4px 5px;
+    font-size: 10px;
+    text-align: center;
+    border: 1px solid #bfdbfe;
+}
+.data-table td {
+    border: 1px solid #e2e8f0;
+    padding: 4px 5px;
+    text-align: center;
+    font-size: 10px;
+}
+.data-table tbody tr:nth-child(even) td { background: #f8fafc; }
+
+.badge-other {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 1px 4px;
+    font-size: 9px;
+}
+
+/* ══ PRICE SECTION (table-based) ══ */
+.price-outer { width: 100%; border-collapse: separate; border-spacing: 8px 0; margin-top: 10px; }
+.price-outer td { vertical-align: top; }
+.price-rows-cell { width: 65%; }
+.price-total-cell { width: 35%; }
+
+.price-rows { border: 1px solid #e2e8f0; border-radius: 5px; overflow: hidden; }
+.price-row-tbl { width: 100%; border-collapse: collapse; }
+.price-row-tbl td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; font-size: 10px; }
+.price-row-tbl tr:last-child td { border-bottom: none; }
+.price-lbl { color: #475569; }
+.price-amt { text-align: left; font-weight: bold; color: #1e293b; direction: ltr; }
+.vat-bg { background: #fefce8; }
+
+.price-total-box {
+    background: #1e40af;
+    color: #fff;
+    border-radius: 5px;
+    padding: 14px 10px;
+    text-align: center;
+}
+.price-total-lbl { font-size: 10px; margin-bottom: 5px; opacity: 0.9; }
+.price-total-amt { font-size: 14px; font-weight: bold; direction: ltr; }
+
+/* ══ NOTES ══ */
+.notes-box {
+    margin-top: 7px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-right: 3px solid #2563eb;
+    padding: 5px 9px;
+    font-size: 10px;
+    color: #475569;
+}
+
+/* ══ SIGNATURE ══ */
+.signature-tbl { width: 100%; border-collapse: separate; border-spacing: 30px 0; margin-top: 14px; }
+.sign-box {
+    border: 1px dashed #94a3b8;
+    border-radius: 5px;
+    padding: 9px;
+    text-align: center;
+    height: 52px;
+}
+.sign-title { font-size: 10px; color: #64748b; }
+.sign-name { font-size: 10px; font-weight: bold; margin-top: 3px; }
+
+/* ══ FOOTER ══ */
+.footer {
+    margin-top: 8px;
+    text-align: center;
+    font-size: 9px;
+    color: #94a3b8;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 5px;
+}

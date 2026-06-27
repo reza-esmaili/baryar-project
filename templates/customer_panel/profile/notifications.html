@@ -1,0 +1,192 @@
+{% extends 'customer_panel/profile/profile_base.html' %}
+{% load static %}
+{% load jformat %}
+
+{% block profile_extra_css %}
+<style>
+  .notif-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .notif-page-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+  }
+  .notif-page-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    overflow: hidden;
+  }
+  .notif-page-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s;
+  }
+  .notif-page-item:last-child { border-bottom: none; }
+  .notif-page-item:hover { background: #f8fafc; }
+  .notif-page-item.is-read {
+    opacity: 0.55;
+  }
+  .notif-page-item.is-unread {
+    background: #eff6ff;
+  }
+  .notif-page-item.is-unread:hover { background: #dbeafe; }
+  .notif-icon-wrap {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .notif-icon-wrap.unread { background: #1e40af; color: #fff; }
+  .notif-icon-wrap.read   { background: #e2e8f0; color: #94a3b8; }
+  .notif-page-body { flex: 1; min-width: 0; }
+  .notif-page-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .notif-page-item.is-read .notif-page-title {
+    font-weight: 400;
+    color: #64748b;
+  }
+  .notif-page-sub {
+    font-size: 12px;
+    color: #64748b;
+  }
+  .notif-page-time {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: #94a3b8;
+    white-space: nowrap;
+    margin-top: 3px;
+  }
+  .notif-unread-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #3b82f6;
+    margin-top: 6px;
+  }
+  .notif-empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: #94a3b8;
+  }
+  .notif-empty-state i { font-size: 48px; margin-bottom: 16px; display: block; opacity: 0.4; }
+  .notif-empty-state p { font-size: 14px; margin: 0; }
+  /* صفحه‌بندی */
+  .notif-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .notif-pagination a,
+  .notif-pagination span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .notif-pagination a { background: #f1f5f9; color: #334155; }
+  .notif-pagination a:hover { background: #1e40af; color: #fff; }
+  .notif-pagination .current-page { background: #1e40af; color: #fff; }
+  .notif-pagination .disabled { background: #f1f5f9; color: #cbd5e1; pointer-events: none; }
+</style>
+{% endblock %}
+
+{% block profile_content %}
+<div class="notif-page-header">
+  <h2><i class="fas fa-bell" style="margin-left:8px;color:#1e40af;"></i>همه اعلان‌ها</h2>
+  <span style="font-size:12px;color:#94a3b8;">
+    صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+    ({{ page_obj.paginator.count }} اعلان)
+  </span>
+</div>
+
+<div class="notif-page-card">
+  {% if page_obj.object_list %}
+    {% for notif in page_obj %}
+      <a href="{{ notif.url|default:'#' }}"
+         class="notif-page-item {% if notif.is_read %}is-read{% else %}is-unread{% endif %}">
+        <div class="notif-icon-wrap {% if notif.is_read %}read{% else %}unread{% endif %}">
+          <i class="fas fa-bell"></i>
+        </div>
+        <div class="notif-page-body">
+          <div class="notif-page-title">{{ notif.title }}</div>
+          {% if notif.subtitle %}
+            <div class="notif-page-sub">{{ notif.subtitle }}</div>
+          {% endif %}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <span class="notif-page-time">{{ notif.created_at|jformat:"%Y/%m/%d - %H:%M" }}</span>
+          {% if not notif.is_read %}
+            <span class="notif-unread-dot"></span>
+          {% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  {% else %}
+    <div class="notif-empty-state">
+      <i class="fas fa-bell-slash"></i>
+      <p>هیچ اعلانی وجود ندارد</p>
+    </div>
+  {% endif %}
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="notif-pagination">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}">
+      <i class="fas fa-chevron-right"></i>
+    </a>
+  {% else %}
+    <span class="disabled"><i class="fas fa-chevron-right"></i></span>
+  {% endif %}
+
+  {% for num in page_obj.paginator.page_range %}
+    {% if num == page_obj.number %}
+      <span class="current-page">{{ num }}</span>
+    {% elif num >= page_obj.number|add:"-3" and num <= page_obj.number|add:"3" %}
+      <a href="?page={{ num }}">{{ num }}</a>
+    {% endif %}
+  {% endfor %}
+
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}">
+      <i class="fas fa-chevron-left"></i>
+    </a>
+  {% else %}
+    <span class="disabled"><i class="fas fa-chevron-left"></i></span>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
