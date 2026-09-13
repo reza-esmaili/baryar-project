@@ -4,13 +4,15 @@
     src: url('../fonts/BYekan.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
+    font-display: swap;
 }
 
 @font-face {
-    font-family: 'BYekan'; 
+    font-family: 'BYekan';
     src: url('../fonts/BYekanBold.ttf') format('truetype');
     font-weight: bold;
     font-style: normal;
+    font-display: swap;
 }
 * {
     margin: 0;
@@ -289,4 +291,35 @@ body {
     .main-content {
         margin-right: 0;
     }
+}
+
+/* ==================== ناوبری بدون رفرش (AJAX) ==================== */
+#panelLoadingBar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 3px;
+    background: #3498db;
+    z-index: 100000;
+    width: 0;
+    opacity: 0;
+    transform-origin: right;
+    transition: width 0.2s ease, opacity 0.2s ease;
+}
+#panelLoadingBar.loading {
+    width: 70%;
+    opacity: 1;
+    transition: width 8s cubic-bezier(0.1, 0.5, 0.1, 1), opacity 0.2s ease;
+}
+#panelLoadingBar.done {
+    width: 100%;
+    opacity: 0;
+    transition: width 0.2s ease, opacity 0.3s ease 0.15s;
+}
+
+.main-content.is-loading {
+    opacity: 0.55;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
 }

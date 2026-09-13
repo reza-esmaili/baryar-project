@@ -1,0 +1,36 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}انواع کالا{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">انواع کالا (دسته اصلی)</h1>
+        <div style="display:flex;gap:8px;">
+            <a href="{% url 'staff_dashboard:cargo_type_import' %}" class="btn-soft btn-soft-gray"><i class="fas fa-file-excel"></i> ایمپورت اکسل</a>
+            <a href="{% url 'staff_dashboard:lookup_add' 'cargo-types' %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> دسته جدید</a>
+        </div>
+    </div>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead><tr><th>نام</th><th>روش حمل</th><th>تعداد زیردسته</th><th>عملیات</th></tr></thead>
+            <tbody>
+                {% for ct in cargo_types %}
+                <tr>
+                    <td>{{ ct.name }}</td>
+                    <td>{{ ct.get_transport_mode_display }}</td>
+                    <td>{{ ct.subcategories.count }}</td>
+                    <td style="display:flex;gap:6px;">
+                        <a href="{% url 'staff_dashboard:cargo_subcategory_hub' ct.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-list"></i> زیردسته‌ها</a>
+                        <a href="{% url 'staff_dashboard:lookup_edit' 'cargo-types' ct.id %}" class="btn-soft btn-soft-gray"><i class="fas fa-edit"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:24px;">دسته‌ای ثبت نشده است.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

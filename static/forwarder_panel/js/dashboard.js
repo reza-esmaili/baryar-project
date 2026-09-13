@@ -1,6 +1,6 @@
 // statics/forwarder_panel/js/dashboard.js
 
-document.addEventListener('DOMContentLoaded', function() {
+panelReady(function () {
     // تابعی برای تبدیل اعداد بزرگ به فرمت خوانا (میلیون/میلیارد) مشابه تصویر
     function formatLargeNumbers() {
         const amountElements = document.querySelectorAll('.format-large-number');

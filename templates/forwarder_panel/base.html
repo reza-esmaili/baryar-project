@@ -5,16 +5,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{% block title %}پنل کاربری - حمل و نقل{% endblock %}</title>
-    
-    <!-- Bootstrap 5 + Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- استایل پایه پنل -->
+
+    <script>
+    // تابع panelReady عمداً همین‌جا (خیلی زود، قبل از body) تعریف می‌شود، نه در
+    // یک فایل جدا در پایین صفحه؛ چون بعضی قالب‌ها (مثل order_list.html)
+    // اسکریپت خودشان را داخل content می‌گذارند که در DOM زودتر از اسکریپت‌های
+    // پایین body پردازش می‌شود. اگر panelReady دیرتر تعریف می‌شد، فراخوانی آن
+    // از چنان صفحاتی در بارگذاری کامل (غیر AJAX) خطای «not defined» می‌داد.
+    window.__panelEpoch = window.__panelEpoch || 0;
+    window.panelReady = function (fn) {
+        var scriptEl = document.currentScript;
+        function runIfStillCurrent() {
+            var scriptEpoch = scriptEl && scriptEl.dataset ? scriptEl.dataset.panelEpoch : undefined;
+            if (scriptEpoch !== undefined && Number(scriptEpoch) !== window.__panelEpoch) {
+                return; // اسکریپت متعلق به ناوبری قبلی است؛ صفحه‌ی جاری دیگر این صفحه نیست
+            }
+            fn();
+        }
+        if (document.readyState !== 'loading') {
+            runIfStillCurrent();
+        } else {
+            document.addEventListener('DOMContentLoaded', runIfStillCurrent, { once: true });
+        }
+    };
+    </script>
+
+    <!-- اتصال زودهنگام به دامنه‌های CDN (کاهش تاخیر DNS/TLS) -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+
+    <!-- فونت اصلی پنل: پیش‌بارگذاری برای جلوگیری از تاخیر نمایش متن -->
+    <link rel="preload" href="{% static 'fonts/BYekan.ttf' %}" as="font" type="font/ttf" crossorigin>
+
+    <!-- Bootstrap 5 + Font Awesome: بارگذاری غیرمسدودکننده (preload + swap).
+         این‌ها باید قبل از base_panel_style.css در DOM بیایند تا فونت اصلی
+         پنل (BYekan) در ترتیب cascade برنده باشد؛ عکسِ این ترتیب باعث می‌شد
+         فونت پیش‌فرض بوت‌استرپ روی خیلی از المان‌ها اعمال شود. -->
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    </noscript>
+
+    <!-- استایل پایه پنل: بعد از بوت‌استرپ/فونت‌اوسم می‌آید تا قوانین آن
+         (از جمله فونت BYekan) در تعارض هم‌اولویتی برنده شوند. -->
     <link rel="stylesheet" href="{% static 'css/base_panel_style.css' %}">
-    
+
+    <!--panel-page-css:start-->
     {% block extra_css %}{% endblock %}
+    <!--panel-page-css:end-->
 </head>
 <body>
     <div class="panel-wrapper">
@@ -27,7 +71,9 @@
                         <i class="fas fa-bars"></i>
                     </button>
                     <!-- زنگوله اعلان فورواردر -->
-                    <div class="fw-notif-wrap" id="fwNotifWrap">
+                    <div class="fw-notif-wrap" id="fwNotifWrap"
+                         data-notif-url="{% url 'forwarder_panel:notifications_api' %}"
+                         data-mark-url="{% url 'forwarder_panel:mark_notifications_read' %}">
                         <button class="fw-notif-btn" id="fwNotifBtn" type="button" title="اعلان‌ها">
                             <i class="fas fa-bell"></i>
                             <span class="fw-notif-badge" id="fwNotifBadge" style="display:none">0</span>
@@ -90,10 +136,13 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="main-content" id="panelMainContent">
             {% block content %}{% endblock %}
         </main>
     </div>
+
+    <!-- نوار پیشرفت بارگذاری صفحه (ناوبری بدون رفرش) -->
+    <div id="panelLoadingBar"></div>
 
     <!-- مودال خروج از حساب -->
     <div id="fwLogoutModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
@@ -119,105 +168,16 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Scripts: بدون defer، چون باید قبل از اسکریپت‌های اختصاصی هر صفحه
+         (که خودشان معمولی/blocking هستند) اجرا شوند و تابع panelReady را
+         تعریف کنند؛ defer باعث می‌شد این‌ها بعد از آن‌ها اجرا شوند. -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/base_panel_script.js' %}"></script>
-    <script>
-    (function () {
-        /* ── سایدبار تاگل ── */
-        var sidebar = document.getElementById('mainSidebar');
-        var btn = document.getElementById('sidebarToggle');
-        if (localStorage.getItem('sidebarCollapsed') === '1') sidebar.classList.add('collapsed');
-        if (btn) btn.addEventListener('click', function () {
-            sidebar.classList.toggle('collapsed');
-            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
-        });
+    <script src="{% static 'forwarder_panel/js/panel_chrome.js' %}"></script>
+    <script src="{% static 'forwarder_panel/js/panel_ajax_nav.js' %}"></script>
 
-        /* ── اعلان‌های فورواردر ── */
-        var FW_NOTIF_URL    = "{% url 'forwarder_panel:notifications_api' %}";
-        var FW_MARK_URL     = "{% url 'forwarder_panel:mark_notifications_read' %}";
-        var FW_CSRF         = "{{ csrf_token }}";
-
-        var fwBtn     = document.getElementById('fwNotifBtn');
-        var fwBadge   = document.getElementById('fwNotifBadge');
-        var fwDrop    = document.getElementById('fwNotifDropdown');
-        var fwList    = document.getElementById('fwNotifList');
-        var fwMarkBtn = document.getElementById('fwMarkReadBtn');
-        var fwIcon    = fwBtn ? fwBtn.querySelector('i') : null;
-        var fwCount   = 0;
-
-        function fetchFwNotifs() {
-            fetch(FW_NOTIF_URL, { credentials: 'same-origin' })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    var count = data.count || 0;
-                    var items = data.items || [];
-                    fwBadge.textContent = count > 99 ? '99+' : count;
-                    fwBadge.style.display = count > 0 ? 'flex' : 'none';
-                    if (count > 0 && count !== fwCount && fwIcon) {
-                        fwIcon.classList.add('ringing');
-                        setTimeout(function () { fwIcon.classList.remove('ringing'); }, 3000);
-                    }
-                    fwCount = count;
-                    if (items.length === 0) {
-                        fwList.innerHTML = '<div class="fw-notif-empty">هیچ اعلان جدیدی ندارید</div>';
-                    } else {
-                        fwList.innerHTML = items.map(function (n) {
-                            return '<a class="fw-notif-item" href="' + n.url + '">'
-                                + '<div class="fw-notif-title">' + n.title + '</div>'
-                                + '<div class="fw-notif-sub">' + n.subtitle + ' &bull; ' + n.created_at + '</div>'
-                                + '</a>';
-                        }).join('');
-                    }
-                }).catch(function () {});
-        }
-
-        function positionFwDrop() {
-            var rect = fwBtn.getBoundingClientRect();
-            fwDrop.style.top  = (rect.bottom + 6) + 'px';
-            fwDrop.style.right = (window.innerWidth - rect.right) + 'px';
-        }
-
-        if (fwBtn) {
-            fwBtn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                var isOpen = fwDrop.classList.toggle('open');
-                if (isOpen) { positionFwDrop(); fetchFwNotifs(); }
-            });
-        }
-        document.addEventListener('click', function (e) {
-            if (fwBtn && !fwBtn.closest('#fwNotifWrap').contains(e.target)) {
-                fwDrop && fwDrop.classList.remove('open');
-            }
-        });
-        if (fwMarkBtn) {
-            fwMarkBtn.addEventListener('click', function () {
-                fetch(FW_MARK_URL, { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': FW_CSRF } })
-                    .then(function () {
-                        fwBadge.style.display = 'none';
-                        fwCount = 0;
-                        fwList.innerHTML = '<div class="fw-notif-empty">هیچ اعلان جدیدی ندارید</div>';
-                        fwDrop.classList.remove('open');
-                    });
-            });
-        }
-        fetchFwNotifs();
-        setInterval(fetchFwNotifs, 60000);
-    })();
-    </script>
-    <script>
-    function openFwLogoutModal() {
-        var m = document.getElementById('fwLogoutModal');
-        m.style.display = 'flex';
-    }
-    function closeFwLogoutModal() {
-        var m = document.getElementById('fwLogoutModal');
-        m.style.display = 'none';
-    }
-    document.getElementById('fwLogoutModal').addEventListener('click', function(e) {
-        if (e.target === this) closeFwLogoutModal();
-    });
-    </script>
+    <div id="panelPageScripts">
     {% block extra_js %}{% endblock %}
+    </div>
 </body>
 </html>

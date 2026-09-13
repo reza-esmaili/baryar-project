@@ -1,0 +1,72 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}جزئیات نرخ{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+            <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">جزئیات نرخ #{{ rate.id }}</h1>
+            <p style="color:#64748b;font-size:0.9rem;">{{ rate }}</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+            {% if rate.is_currently_active %}
+                <span class="badge-pill badge-green">فعال</span>
+            {% else %}
+                <span class="badge-pill badge-red">غیرفعال</span>
+            {% endif %}
+            <a href="{% url 'staff_dashboard:rate_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+            <a href="{% url 'staff_dashboard:rate_edit' rate.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-edit"></i> ویرایش</a>
+            <form method="post" action="{% url 'staff_dashboard:rate_delete' rate.id %}" style="margin:0;" onsubmit="return confirm('این نرخ برای همیشه حذف می‌شود. ادامه می‌دهید؟');">
+                {% csrf_token %}
+                <button type="submit" class="btn-soft btn-soft-red"><i class="fas fa-trash"></i> حذف</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <h3>مالکیت و مسیر</h3>
+        <div class="detail-row"><span class="label">فورواردر</span><span class="value">
+            {% if rate.forwarder %}<a href="{% url 'staff_dashboard:forwarder_detail' rate.forwarder.id %}">{{ rate.forwarder.company_name }}</a>{% else %}-{% endif %}
+        </span></div>
+        <div class="detail-row"><span class="label">شعبه</span><span class="value">{{ rate.branch.name|default:"-" }}</span></div>
+        <div class="detail-row"><span class="label">روش حمل</span><span class="value">{{ rate.get_transport_mode_display }}</span></div>
+        <div class="detail-row"><span class="label">رویه ارسال</span><span class="value">{{ rate.get_shipping_procedure_display }}</span></div>
+        <div class="detail-row"><span class="label">مبدا</span><span class="value">{{ rate.origin_country.name|default:"-" }} / {{ rate.origin_province.name|default:"-" }} / {{ rate.origin_city.name }}</span></div>
+        <div class="detail-row"><span class="label">مقصد</span><span class="value">{{ rate.destination_country.name }} / {{ rate.destination_city.name }} / {{ rate.destination_port.name }}</span></div>
+        <div class="detail-row"><span class="label">انواع کالای قابل حمل</span><span class="value">
+            {% for ct in rate.cargo_types.all %}{{ ct.name }}{% if not forloop.last %}، {% endif %}{% empty %}-{% endfor %}
+        </span></div>
+        <div class="detail-row"><span class="label">تاریخ اعتبار</span><span class="value">{{ rate.valid_until|date:"Y/m/d" }}</span></div>
+    </div>
+
+    <div class="detail-card">
+        <h3>هزینه‌های جانبی</h3>
+        <div class="detail-row"><span class="label">بسته‌بندی در دفتر</span><span class="value">{{ rate.get_office_packaging_charge_type_display }}{% if rate.office_packaging_price %} — {{ rate.office_packaging_price }}{% endif %}</span></div>
+        <div class="detail-row"><span class="label">بسته‌بندی در محل</span><span class="value">{{ rate.get_onsite_packaging_charge_type_display }}{% if rate.onsite_packaging_price %} — {{ rate.onsite_packaging_price }}{% endif %}</span></div>
+        <div class="detail-row"><span class="label">حمل و بسته‌بندی در محل</span><span class="value">{{ rate.get_doorstep_packaging_charge_type_display }}{% if rate.doorstep_packaging_price %} — {{ rate.doorstep_packaging_price }}{% endif %}</span></div>
+        <div class="detail-row"><span class="label">ارزش افزوده</span><span class="value">{% if rate.add_vat %}اعمال می‌شود{% else %}اعمال نمی‌شود{% endif %}</span></div>
+    </div>
+
+    <div class="detail-card">
+        <h3>پلکان‌های نرخ‌گذاری ({{ tiers.count }})</h3>
+        <table class="data-table">
+            <thead><tr><th>واحد قیمت‌گذاری</th><th>از وزن</th><th>تا وزن</th><th>ابعاد کانتینر</th><th>نوع کانتینر</th><th>مبلغ</th></tr></thead>
+            <tbody>
+                {% for tier in tiers %}
+                <tr>
+                    <td>{{ tier.get_pricing_unit_display }}</td>
+                    <td>{{ tier.weight_from|default:"-" }}</td>
+                    <td>{{ tier.weight_to|default:"-" }}</td>
+                    <td>{{ tier.get_container_size_display|default:"-" }}</td>
+                    <td>{{ tier.get_container_type_display|default:"-" }}</td>
+                    <td>{{ tier.price }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:16px;">پلکانی ثبت نشده است.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

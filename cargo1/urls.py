@@ -13,6 +13,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('rates/', include('rates.urls')), 
     path('panel/', include('panel.urls', namespace='forwarder_panel')),
+    path('staff/', include('admin_dashboard.urls', namespace='staff_dashboard')),
     path('auth/', include('customer.urls', namespace='customer')),
 
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

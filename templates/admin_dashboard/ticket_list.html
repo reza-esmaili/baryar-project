@@ -1,0 +1,65 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}تیکت‌های پشتیبانی{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">تیکت‌های پشتیبانی</h1>
+    </div>
+
+    <form method="get" class="data-toolbar">
+        <input type="text" name="q" value="{{ q }}" placeholder="شماره تیکت، موضوع یا موبایل...">
+        <select name="status">
+            <option value="">همه وضعیت‌ها</option>
+            {% for value, label in statuses %}
+                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit"><i class="fas fa-search"></i> جستجو</button>
+    </form>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>شماره</th>
+                    <th>کاربر</th>
+                    <th>موضوع</th>
+                    <th>دپارتمان</th>
+                    <th>اولویت</th>
+                    <th>وضعیت</th>
+                    <th>تاریخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in page_obj %}
+                <tr>
+                    <td><a class="row-link" href="{% url 'staff_dashboard:ticket_detail' ticket.id %}">{{ ticket.number }}</a></td>
+                    <td>{{ ticket.user.mobile }}</td>
+                    <td>{{ ticket.subject }}</td>
+                    <td>{{ ticket.department.name }}</td>
+                    <td>{{ ticket.get_priority_display }}</td>
+                    <td>
+                        {% if ticket.status == 'open' %}
+                            <span class="badge-pill badge-blue">{{ ticket.get_status_display }}</span>
+                        {% elif ticket.status == 'pending' %}
+                            <span class="badge-pill badge-amber">{{ ticket.get_status_display }}</span>
+                        {% elif ticket.status == 'answered' %}
+                            <span class="badge-pill badge-green">{{ ticket.get_status_display }}</span>
+                        {% else %}
+                            <span class="badge-pill badge-gray">{{ ticket.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ ticket.created_at|date:"Y/m/d" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px;">تیکتی یافت نشد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'admin_dashboard/partials/pagination.html' %}
+</div>
+{% endblock %}

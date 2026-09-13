@@ -1,0 +1,63 @@
+{% load static %}
+{% if request.user.is_authenticated %}
+<!-- زنگوله اعلان -->
+<div class="nav-notif-wrap" style="position:relative;display:inline-flex;align-items:center;margin-left:8px;">
+    <button class="nav-notif-btn" id="navNotifBtn" type="button" title="اعلان‌ها" style="background:none;border:none;cursor:pointer;position:relative;padding:6px;color:#555;font-size:1.1rem;">
+        <i class="fas fa-bell"></i>
+        <span id="navNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#e53e3e;color:#fff;border-radius:50%;font-size:10px;font-weight:700;min-width:16px;height:16px;align-items:center;justify-content:center;padding:0 2px;"></span>
+    </button>
+    <div id="navNotifDropdown" style="display:none;position:absolute;left:0;top:calc(100% + 8px);width:280px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.16);z-index:9999;overflow:hidden;direction:rtl;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#1e40af;color:#fff;font-size:13px;font-weight:700;">
+            <span>اعلان‌ها</span>
+            <button id="navMarkReadBtn" type="button" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;color:#fff;font-size:11px;padding:3px 8px;cursor:pointer;">همه را خواندم</button>
+        </div>
+        <div id="navNotifList" style="max-height:280px;overflow-y:auto;">
+            <div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">در حال بارگذاری...</div>
+        </div>
+    </div>
+</div>
+<!-- آواتار کاربر + منو -->
+<div class="nav-user-wrap" style="position:relative;display:inline-flex;align-items:center;">
+    <button class="nav-user-btn" id="navUserBtn" type="button" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;color:#333;transition:background .2s;">
+        <i class="fas fa-user-circle" style="font-size:1.4rem;color:#3498db;"></i>
+        <i class="fas fa-chevron-down" style="font-size:0.7rem;color:#888;"></i>
+    </button>
+    <div id="navUserDropdown" style="display:none;position:absolute;left:0;top:calc(100% + 8px);width:220px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.16);z-index:9999;overflow:hidden;direction:rtl;">
+        <div style="display:block;padding:14px 16px;border-bottom:1px solid #f1f5f9;font-weight:700;color:#1e293b;font-size:14px;background:#f8fafc;">
+            {{ request.user.get_full_name|default:request.user.mobile }}
+        </div>
+        {% if request.user.is_staff or request.user.role == 'platform_admin' %}
+        <a href="/staff/" style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #f1f5f9;color:#374151;font-size:13px;text-decoration:none;transition:background .15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+            <i class="fas fa-user-shield" style="color:#6b7280;width:16px;"></i> داشبورد ادمین
+        </a>
+        {% elif request.user.role == 'forwarder_admin' or request.user.role == 'forwarder_expert' or request.user.role == 'forwarder_finance' %}
+        <a href="/panel/" style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #f1f5f9;color:#374151;font-size:13px;text-decoration:none;transition:background .15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+            <i class="fas fa-building" style="color:#6b7280;width:16px;"></i> پنل فورواردر
+        </a>
+        {% endif %}
+        {% if request.user.role == 'customer' %}
+        <a href="{% url 'customer:profile' %}" style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #f1f5f9;color:#374151;font-size:13px;text-decoration:none;transition:background .15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+            <i class="fas fa-user" style="color:#6b7280;width:16px;"></i> اطلاعات حساب
+        </a>
+        <a href="{% url 'customer:order_list' %}" style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #f1f5f9;color:#374151;font-size:13px;text-decoration:none;transition:background .15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+            <i class="fas fa-box" style="color:#6b7280;width:16px;"></i> سفارشات من
+        </a>
+        <a href="{% url 'customer_support:ticket_list' %}" style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #f1f5f9;color:#374151;font-size:13px;text-decoration:none;transition:background .15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+            <i class="fas fa-headset" style="color:#6b7280;width:16px;"></i> پشتیبانی
+        </a>
+        {% endif %}
+        <form method="post" action="{% url 'customer:logout' %}" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" style="display:flex;align-items:center;gap:10px;width:100%;padding:11px 16px;border:none;background:none;color:#dc2626;font-size:13px;cursor:pointer;font-family:inherit;text-align:right;transition:background .15s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">
+                <i class="fas fa-sign-out-alt" style="width:16px;"></i> خروج از حساب
+            </button>
+        </form>
+    </div>
+</div>
+{% else %}
+<a href="{% url 'customer:login' %}" class="btn-auth-split">
+    <span>ورود</span>
+    <span class="auth-divider">|</span>
+    <span>ثبت‌نام</span>
+</a>
+{% endif %}

@@ -1,0 +1,72 @@
+{% if request.user.is_authenticated %}
+<script>
+(function () {
+    var NOTIF_URL   = "{% url 'customer:notifications_api' %}";
+    var MARK_URL    = "{% url 'customer:mark_notifications_read' %}";
+    var CSRF        = "{{ csrf_token }}";
+    var navBtn      = document.getElementById('navNotifBtn');
+    var navDrop     = document.getElementById('navNotifDropdown');
+    var navBadge    = document.getElementById('navNotifBadge');
+    var navList     = document.getElementById('navNotifList');
+    var navMarkBtn  = document.getElementById('navMarkReadBtn');
+    var userBtn     = document.getElementById('navUserBtn');
+    var userDrop    = document.getElementById('navUserDropdown');
+
+    function fetchNavNotifs() {
+        fetch(NOTIF_URL, { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var count = data.count || 0;
+                var items = data.items || [];
+                navBadge.textContent = count > 99 ? '99+' : count;
+                navBadge.style.display = count > 0 ? 'flex' : 'none';
+                if (items.length === 0) {
+                    navList.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">هیچ اعلان جدیدی ندارید</div>';
+                } else {
+                    navList.innerHTML = items.map(function (n) {
+                        return '<a href="' + n.url + '" style="display:block;padding:10px 14px;border-bottom:1px solid #f1f5f9;text-decoration:none;color:#1e293b;transition:background .15s;" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'\'">'
+                            + '<div style="font-size:13px;font-weight:700;">' + n.title + '</div>'
+                            + '<div style="font-size:11px;color:#64748b;margin-top:2px;">' + n.subtitle + ' &bull; ' + n.created_at + '</div>'
+                            + '</a>';
+                    }).join('');
+                }
+            }).catch(function () {});
+    }
+
+    if (navBtn) {
+        navBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var open = navDrop.style.display === 'block';
+            navDrop.style.display = open ? 'none' : 'block';
+            userDrop.style.display = 'none';
+            if (!open) fetchNavNotifs();
+        });
+    }
+    if (userBtn) {
+        userBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var open = userDrop.style.display === 'block';
+            userDrop.style.display = open ? 'none' : 'block';
+            navDrop.style.display = 'none';
+        });
+    }
+    document.addEventListener('click', function () {
+        if (navDrop) navDrop.style.display = 'none';
+        if (userDrop) userDrop.style.display = 'none';
+    });
+    if (navMarkBtn) {
+        navMarkBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            fetch(MARK_URL, { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': CSRF } })
+                .then(function () {
+                    navBadge.style.display = 'none';
+                    navList.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">هیچ اعلان جدیدی ندارید</div>';
+                    navDrop.style.display = 'none';
+                });
+        });
+    }
+    fetchNavNotifs();
+    setInterval(fetchNavNotifs, 60000);
+})();
+</script>
+{% endif %}

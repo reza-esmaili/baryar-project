@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from locations.models import City, DestinationCity
@@ -32,15 +33,22 @@ from .forms import (
 # Role Based Redirect Helpers
 # =============================================================================
 
-def redirect_based_on_role(user):
+def get_role_based_redirect_url(user):
     """
-    هدایت کاربر بعد از ورود یا ثبت‌نام بر اساس نقش.
+    آدرس مقصد بر اساس نقش کاربر را برمی‌گرداند (رشته URL، نه HttpResponse).
 
+    - کارکنان پلتفرم (is_staff یا role=platform_admin) به داشبورد مدیریت منتقل می‌شوند.
     - کاربران مرتبط با فورواردر به پنل فورواردر منتقل می‌شوند.
     - سایر کاربران، از جمله مشتری، به صفحه اصلی سایت منتقل می‌شوند.
 
-    این تابع به صورت مرکزی استفاده می‌شود تا منطق redirect در چند View تکرار نشود.
+    این تابع منبع واحد این منطق است تا در چند View (ورود با رمز، ورود با OTP،
+    ثبت‌نام) تکرار/ناهماهنگ نشود — قبلاً وب_login_verify_otp نسخه‌ی جداگانه و
+    ناقص همین منطق را داشت که به آدرس نادرست/hardcoded «/forwarder-panel/»
+    (به‌جای «/panel/» واقعی) هدایت می‌کرد.
     """
+
+    if user.is_staff or user.role == User.Role.PLATFORM_ADMIN:
+        return reverse("staff_dashboard:home")
 
     panel_roles = [
         User.Role.FORWARDER_ADMIN,
@@ -49,9 +57,14 @@ def redirect_based_on_role(user):
     ]
 
     if user.role in panel_roles:
-        return redirect("forwarder_panel:dashboard")
+        return reverse("forwarder_panel:dashboard")
 
-    return redirect("/")
+    return "/"
+
+
+def redirect_based_on_role(user):
+    """هدایت کاربر بعد از ورود یا ثبت‌نام بر اساس نقش (نسخه HttpResponse)."""
+    return redirect(get_role_based_redirect_url(user))
 
 
 def _get_post_login_redirect(request, user):
@@ -246,13 +259,7 @@ def web_login_verify_otp(request):
         if request.session.get('crosssite_token'):
             redirect_url = "/orders/crosssite-login/"
         else:
-            redirect_url = "/"
-            if user.role in [
-                User.Role.FORWARDER_ADMIN,
-                User.Role.FORWARDER_EXPERT,
-                User.Role.FORWARDER_FINANCE,
-            ]:
-                redirect_url = "/forwarder-panel/"
+            redirect_url = get_role_based_redirect_url(user)
 
         return JsonResponse({
             "ok": True,
@@ -382,10 +389,8 @@ def web_register_verify_otp(request):
     # اگر از فرآیند cross-site آمده، به ادامه پروسه ثبت سفارش هدایت کن
     if request.session.get('crosssite_token'):
         redirect_url = "/orders/crosssite-login/"
-    elif user.role == User.Role.FORWARDER_ADMIN:
-        redirect_url = "/panel/"
     else:
-        redirect_url = "/"
+        redirect_url = get_role_based_redirect_url(user)
 
     return JsonResponse({
         "ok": True,
@@ -861,7 +866,6 @@ def upload_avatar(request):
 
     profile, _ = request.user.customer_profile.__class__.objects.get_or_create(
         user=request.user,
-        defaults={'national_code': '0000000000'},
     )
     if profile.avatar:
         try:

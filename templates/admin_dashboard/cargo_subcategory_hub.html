@@ -1,0 +1,43 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}زیردسته‌های {{ category.name }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">زیردسته‌های «{{ category.name }}»</h1>
+        <div style="display:flex;gap:8px;">
+            <a href="{% url 'staff_dashboard:cargo_type_hub' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+            <a href="{% url 'staff_dashboard:lookup_add' 'cargo-subcategories' %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> زیردسته جدید</a>
+        </div>
+    </div>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead><tr><th>نام</th><th>توضیحات</th><th>تعداد زیرمجموعه</th><th>عملیات</th></tr></thead>
+            <tbody>
+                {% for sub in subcategories %}
+                <tr>
+                    <td>{{ sub.name }}</td>
+                    <td>{{ sub.description|default:"-"|truncatechars:60 }}</td>
+                    <td>{{ sub.children.count }}</td>
+                    <td style="display:flex;gap:6px;">
+                        <a href="{% url 'staff_dashboard:lookup_edit' 'cargo-subcategories' sub.id %}" class="btn-soft btn-soft-gray"><i class="fas fa-edit"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:24px;">زیردسته‌ای ثبت نشده است.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="detail-card" style="margin-top:20px;">
+        <h3>مدیریت زیرمجموعه‌ها</h3>
+        <p style="color:#64748b;font-size:0.85rem;margin-bottom:12px;">
+            برای مدیریت زیرمجموعه‌های هر زیردسته (سطح سوم دسته‌بندی کالا)، از لیست کلی زیرمجموعه‌ها استفاده کنید.
+        </p>
+        <a href="{% url 'staff_dashboard:lookup_list' 'cargo-subcategory-children' %}" class="btn-soft btn-soft-blue"><i class="fas fa-list"></i> لیست زیرمجموعه‌ها</a>
+    </div>
+</div>
+{% endblock %}

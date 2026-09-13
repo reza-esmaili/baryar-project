@@ -12,12 +12,17 @@ env/
 # Database
 db.sqlite3
 
+# Environment / secrets
+.env
+
 # Media / uploads
 media/
 identity_docs/
 order_documents/
-tickets/attachments/
+additional_documents/
 customer_avatars/
+forwarder_logos/
+tickets/attachments/
 
 # OS
 .DS_Store

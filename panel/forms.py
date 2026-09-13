@@ -277,7 +277,16 @@ class BranchForm(forms.ModelForm):
             except (ValueError, TypeError):
                 pass
         elif self.instance.pk and self.instance.province:
-            self.fields["city"].queryset = self.instance.province.city_set.order_by("name")
+            self.fields["city"].queryset = self.instance.province.cities.order_by("name")
+
+    def clean_representative_mobile(self):
+        mobile = self.cleaned_data["representative_mobile"]
+        qs = User.objects.filter(mobile=mobile)
+        if self.instance.pk and self.instance.branch_user_id:
+            qs = qs.exclude(pk=self.instance.branch_user_id)
+        if qs.exists():
+            raise forms.ValidationError("این شماره موبایل قبلاً ثبت شده است.")
+        return mobile
 
     @transaction.atomic
     def save(self, forwarder_company, commit=True):

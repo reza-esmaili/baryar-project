@@ -6,16 +6,27 @@ from pathlib import Path
 import os
 from datetime import timedelta
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / '.env')
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-__6!3*&f!g4w1*l58ykh-k&oqjnmbc&r8a_6f6ig(4b!$@!_1#'
+# مقدار واقعی از فایل .env (که کامیت نمی‌شود) خوانده می‌شود؛ مقدار پیش‌فرض
+# فقط یک نگهبان ایمنی برای زمانی است که .env به هر دلیلی موجود نباشد.
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-fallback-key-set-DJANGO_SECRET_KEY-in-env',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') if h.strip()
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -41,12 +52,14 @@ INSTALLED_APPS = [
     'django_extensions',
     'corsheaders',
     'panel',
+    'admin_dashboard',
 ]
 
 ASGI_APPLICATION = "cargo1.asgi.application"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -103,8 +116,25 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
+# Media (uploaded) files — باید در پوشه اختصاصی media/ باشند، نه ریشه پروژه؛
+# در غیر این صورت وقتی DEBUG=True است، هر فایلی در ریشه پروژه (از جمله
+# settings.py و db.sqlite3) از طریق آدرس‌دهی مستقیم قابل دانلود می‌شود.
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = 'customer:login'
+
+# --- تنظیمات امنیتی که فقط در production (DEBUG=False) فعال می‌شوند ---
+# در DEBUG=True فعال نمی‌شوند چون کوکی/HTTPS اجباری، توسعه محلی روی HTTP
+# ساده را می‌شکند.
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG
+if not DEBUG:
+    SECURE_HSTS_SECONDS = 31536000  # ۱ سال
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
@@ -136,7 +166,7 @@ SIMPLE_JWT = {
 
 # --- SMS Configuration ---
 SMS_PROVIDER = "smsir"
-SMSIR_API_KEY = "P79YVb0ftsfwfVAhdYXO7gvOi939ZregN5vKPhRzb60mJyOR"
+SMSIR_API_KEY = os.environ.get('SMSIR_API_KEY', '')
 SMSIR_VERIFY_BASE_URL = "https://api.sms.ir/v1/send/verify"
 
 SMS_TEMPLATES = {

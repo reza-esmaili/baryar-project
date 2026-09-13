@@ -1,0 +1,43 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}قوانین مدارک{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">قوانین مدارک</h1>
+        <div style="display:flex;gap:8px;">
+            <a href="{% url 'staff_dashboard:lookup_list' 'document-types' %}" class="btn-soft btn-soft-gray"><i class="fas fa-tags"></i> انواع مدرک</a>
+            <a href="{% url 'staff_dashboard:document_rule_add' %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> قانون جدید</a>
+        </div>
+    </div>
+
+    <form method="get" class="data-toolbar">
+        <input type="text" name="q" value="{{ q }}" placeholder="عنوان قانون یا نوع مدرک...">
+        <button type="submit"><i class="fas fa-search"></i> جستجو</button>
+    </form>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead><tr><th>عنوان</th><th>نوع مدرک</th><th>سطح قانون</th><th>اولویت</th><th>اجباری</th><th>وضعیت</th><th></th></tr></thead>
+            <tbody>
+                {% for rule in page_obj %}
+                <tr>
+                    <td>{{ rule.title }}</td>
+                    <td>{{ rule.document_type.title }}</td>
+                    <td>{{ rule.get_requirement_level_display }}</td>
+                    <td>{{ rule.priority }}</td>
+                    <td>{% if rule.is_required %}بله{% else %}خیر{% endif %}</td>
+                    <td>{% if rule.is_active %}<span class="badge-pill badge-green">فعال</span>{% else %}<span class="badge-pill badge-red">غیرفعال</span>{% endif %}</td>
+                    <td><a href="{% url 'staff_dashboard:document_rule_edit' rule.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-edit"></i></a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px;">قانونی ثبت نشده است.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'admin_dashboard/partials/pagination.html' %}
+</div>
+{% endblock %}

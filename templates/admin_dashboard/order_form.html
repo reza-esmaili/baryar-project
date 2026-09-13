@@ -1,0 +1,109 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}ویرایش سفارش #{{ order.id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fc-field { margin-bottom: 14px; }
+    .fc-field label { display:block;font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:5px; }
+    .fc-field select, .fc-field input:not([type=checkbox]), .fc-field textarea {
+        width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.85rem;font-family:inherit;
+    }
+    .fc-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px; }
+    @media (max-width:900px){ .fc-grid { grid-template-columns:1fr 1fr; } }
+    .fc-error { color:#dc2626;font-size:0.8rem;margin-top:4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">ویرایش سفارش #{{ order.id }}</h1>
+        <a href="{% url 'staff_dashboard:order_detail' order.id %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+    </div>
+
+    {% if form.non_field_errors %}
+    <div class="alert-box alert-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="detail-card">
+            <h3>مشتری</h3>
+            <div class="detail-row"><span class="label">مشتری</span><span class="value">
+                <a href="{% url 'staff_dashboard:user_detail' order.customer.id %}">{{ order.customer.first_name }} {{ order.customer.last_name }} ({{ order.customer.mobile }})</a>
+            </span></div>
+            <p style="color:#94a3b8;font-size:0.8rem;margin-top:8px;">صاحب سفارش قابل تغییر نیست.</p>
+        </div>
+
+        <div class="detail-card">
+            <h3>وضعیت</h3>
+            <div class="fc-field"><label>{{ form.status.label }}</label>{{ form.status }}{% if form.status.errors %}<div class="fc-error">{{ form.status.errors }}</div>{% endif %}</div>
+        </div>
+
+        <div class="detail-card">
+            <h3>مسیر و کالا</h3>
+            <div class="fc-grid">
+                <div class="fc-field"><label>{{ form.origin_country.label }}</label>{{ form.origin_country }}{% if form.origin_country.errors %}<div class="fc-error">{{ form.origin_country.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.origin_province.label }}</label>{{ form.origin_province }}{% if form.origin_province.errors %}<div class="fc-error">{{ form.origin_province.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.origin_city.label }}</label>{{ form.origin_city }}{% if form.origin_city.errors %}<div class="fc-error">{{ form.origin_city.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.destination_port.label }}</label>{{ form.destination_port }}{% if form.destination_port.errors %}<div class="fc-error">{{ form.destination_port.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.transport_mode.label }}</label>{{ form.transport_mode }}{% if form.transport_mode.errors %}<div class="fc-error">{{ form.transport_mode.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.shipping_procedure.label }}</label>{{ form.shipping_procedure }}{% if form.shipping_procedure.errors %}<div class="fc-error">{{ form.shipping_procedure.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.cargo_type.label }}</label>{{ form.cargo_type }}{% if form.cargo_type.errors %}<div class="fc-error">{{ form.cargo_type.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.other_cargo_details.label }}</label>{{ form.other_cargo_details }}{% if form.other_cargo_details.errors %}<div class="fc-error">{{ form.other_cargo_details.errors }}</div>{% endif %}</div>
+            </div>
+            <div class="fc-field"><label>{{ form.cargo_subcategories.label }}</label>{{ form.cargo_subcategories }}{% if form.cargo_subcategories.errors %}<div class="fc-error">{{ form.cargo_subcategories.errors }}</div>{% endif %}</div>
+        </div>
+
+        <div class="detail-card">
+            <h3>وزن و کانتینر</h3>
+            <div class="fc-grid">
+                <div class="fc-field"><label>{{ form.actual_weight.label }}</label>{{ form.actual_weight }}{% if form.actual_weight.errors %}<div class="fc-error">{{ form.actual_weight.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.chargeable_weight.label }}</label>{{ form.chargeable_weight }}{% if form.chargeable_weight.errors %}<div class="fc-error">{{ form.chargeable_weight.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.container_size.label }}</label>{{ form.container_size }}{% if form.container_size.errors %}<div class="fc-error">{{ form.container_size.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.container_type.label }}</label>{{ form.container_type }}{% if form.container_type.errors %}<div class="fc-error">{{ form.container_type.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.container_count.label }}</label>{{ form.container_count }}{% if form.container_count.errors %}<div class="fc-error">{{ form.container_count.errors }}</div>{% endif %}</div>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <h3>خدمات بسته‌بندی</h3>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:8px;">{{ form.needs_office_packaging }} {{ form.needs_office_packaging.label }}</label>
+                <label style="display:flex;align-items:center;gap:8px;">{{ form.needs_onsite_packaging }} {{ form.needs_onsite_packaging.label }}</label>
+                <label style="display:flex;align-items:center;gap:8px;">{{ form.needs_doorstep_packaging }} {{ form.needs_doorstep_packaging.label }}</label>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <h3>نرخ و قیمت‌گذاری</h3>
+            <div class="fc-field"><label>{{ form.selected_rate.label }}</label>{{ form.selected_rate }}{% if form.selected_rate.errors %}<div class="fc-error">{{ form.selected_rate.errors }}</div>{% endif %}</div>
+            <div class="fc-grid">
+                <div class="fc-field"><label>{{ form.base_shipping_price.label }}</label>{{ form.base_shipping_price }}{% if form.base_shipping_price.errors %}<div class="fc-error">{{ form.base_shipping_price.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.office_packaging_price.label }}</label>{{ form.office_packaging_price }}{% if form.office_packaging_price.errors %}<div class="fc-error">{{ form.office_packaging_price.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.onsite_packaging_price.label }}</label>{{ form.onsite_packaging_price }}{% if form.onsite_packaging_price.errors %}<div class="fc-error">{{ form.onsite_packaging_price.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.doorstep_packaging_price.label }}</label>{{ form.doorstep_packaging_price }}{% if form.doorstep_packaging_price.errors %}<div class="fc-error">{{ form.doorstep_packaging_price.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.vat_amount.label }}</label>{{ form.vat_amount }}{% if form.vat_amount.errors %}<div class="fc-error">{{ form.vat_amount.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.price_subtotal.label }}</label>{{ form.price_subtotal }}{% if form.price_subtotal.errors %}<div class="fc-error">{{ form.price_subtotal.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.final_price.label }}</label>{{ form.final_price }}{% if form.final_price.errors %}<div class="fc-error">{{ form.final_price.errors }}</div>{% endif %}</div>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <h3>اطلاعات فرستنده</h3>
+            <div class="fc-grid">
+                <div class="fc-field"><label>{{ form.sender_name.label }}</label>{{ form.sender_name }}{% if form.sender_name.errors %}<div class="fc-error">{{ form.sender_name.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.sender_national_id.label }}</label>{{ form.sender_national_id }}{% if form.sender_national_id.errors %}<div class="fc-error">{{ form.sender_national_id.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.sender_phone.label }}</label>{{ form.sender_phone }}{% if form.sender_phone.errors %}<div class="fc-error">{{ form.sender_phone.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.sender_province.label }}</label>{{ form.sender_province }}{% if form.sender_province.errors %}<div class="fc-error">{{ form.sender_province.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.sender_city.label }}</label>{{ form.sender_city }}{% if form.sender_city.errors %}<div class="fc-error">{{ form.sender_city.errors }}</div>{% endif %}</div>
+            </div>
+            <div class="fc-field"><label>{{ form.sender_address.label }}</label>{{ form.sender_address }}{% if form.sender_address.errors %}<div class="fc-error">{{ form.sender_address.errors }}</div>{% endif %}</div>
+        </div>
+
+        <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره</button>
+    </form>
+</div>
+{% endblock %}

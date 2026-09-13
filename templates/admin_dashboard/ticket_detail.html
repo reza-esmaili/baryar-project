@@ -1,0 +1,78 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}{{ ticket.number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ticket-thread { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; padding: 4px; }
+    .ticket-msg { max-width: 75%; padding: 10px 14px; border-radius: 14px; font-size: 0.85rem; line-height: 1.6; }
+    .ticket-msg-staff { background: #1e40af; color: #fff; margin-left: auto; border-bottom-left-radius: 4px; }
+    .ticket-msg-user  { background: #f1f5f9; color: #1e293b; margin-right: auto; border-bottom-right-radius: 4px; }
+    .ticket-msg-meta { font-size: 0.7rem; opacity: .7; margin-top: 4px; }
+    .reply-box { display: flex; gap: 10px; margin-top: 14px; }
+    .reply-box textarea {
+        flex: 1; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px;
+        font-size: 0.85rem; font-family: inherit; resize: vertical; min-height: 60px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+            <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">{{ ticket.number }} — {{ ticket.subject }}</h1>
+            <p style="color:#64748b;font-size:0.9rem;">{{ ticket.user.mobile }} — {{ ticket.department.name }}</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <form method="post" style="margin:0;display:flex;gap:6px;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="set_status">
+                <select name="status" onchange="this.form.submit()" style="border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:0.85rem;font-family:inherit;">
+                    {% for value, label in statuses %}
+                        <option value="{{ value }}" {% if ticket.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <a href="{% url 'staff_dashboard:ticket_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <h3>گفتگو</h3>
+        <div class="ticket-thread">
+            {% for msg in ticket_messages %}
+            <div class="ticket-msg {% if msg.sender_id == ticket.user_id %}ticket-msg-user{% else %}ticket-msg-staff{% endif %}">
+                <div>{{ msg.message }}</div>
+                {% if msg.attachment %}<div><a href="{{ msg.attachment.url }}" target="_blank" style="color:inherit;text-decoration:underline;">پیوست</a></div>{% endif %}
+                <div class="ticket-msg-meta">{{ msg.sender.get_full_name|default:msg.sender.mobile }} — {{ msg.created_at|date:"Y/m/d H:i" }}</div>
+            </div>
+            {% empty %}
+            <p style="text-align:center;color:#94a3b8;">هنوز پیامی ثبت نشده است.</p>
+            {% endfor %}
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="reply-box">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="reply">
+            <textarea name="message" placeholder="پاسخ خود را بنویسید..." required></textarea>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <input type="file" name="attachment" style="font-size:0.75rem;">
+                <button type="submit" class="btn-soft btn-soft-blue" style="height:38px;"><i class="fas fa-paper-plane"></i> ارسال پاسخ</button>
+            </div>
+        </form>
+    </div>
+
+    {% if activities %}
+    <div class="detail-card">
+        <h3>تاریخچه فعالیت‌ها</h3>
+        {% for act in activities %}
+        <div class="detail-row">
+            <span class="label">{{ act.created_at|date:"Y/m/d H:i" }} — {{ act.user|default:"سیستم" }}</span>
+            <span class="value">{{ act.action }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load customer_tags %}
 
 {% block title %}تکمیل سفارش{% endblock %}
 
@@ -142,62 +143,88 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
-  border: 1px solid #bfdbfe;
-  border-radius: 18px;
-  padding: 18px 22px;
-  margin-bottom: 22px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
 }
 .forwarder-summary-logo {
-  width: 60px; height: 60px;
+  width: 56px; height: 56px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  background: #fff;
+  background: #f8fafc;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
   flex-shrink: 0;
 }
 .forwarder-summary-logo img { width: 100%; height: 100%; object-fit: contain; }
-.forwarder-summary-logo i   { font-size: 28px; color: #94a3b8; }
-.forwarder-summary-info { flex: 1; }
-.forwarder-summary-name { font-size: 16px; font-weight: 700; color: #1e293b; }
-.forwarder-summary-meta { font-size: 12px; color: #64748b; margin-top: 3px; }
+.forwarder-summary-logo i   { font-size: 26px; color: #94a3b8; }
+.forwarder-summary-info { flex: 1; min-width: 0; }
+.forwarder-summary-name { font-size: 15px; font-weight: 700; color: #1e293b; }
+.forwarder-summary-meta { font-size: 12px; color: #64748b; margin-top: 4px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.forwarder-summary-meta i { color: #94a3b8; }
+.forwarder-summary-mode {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.forwarder-summary-mode-label { font-size: 11px; color: #64748b; }
+.forwarder-summary-mode-value { font-size: 14px; font-weight: 700; color: #1e293b; margin-top: 3px; }
 
-/* ── گرید خلاصه بهبود یافته ── */
-.summary-grid {
-  grid-template-columns: repeat(3, 1fr);
+/* ── فهرست خلاصه سفارش (سبک رسید حرفه‌ای، آیکون‌های یک‌دست طوسی) ── */
+.summary-list-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
 }
-.summary-item {
-  border-radius: 14px;
-  padding: 16px;
+.summary-row {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f1f5f9;
 }
-.summary-item-icon {
-  width: 36px; height: 36px;
+.summary-row:last-child { border-bottom: none; }
+.summary-row-icon {
+  width: 38px; height: 38px;
   border-radius: 10px;
-  background: #eff6ff;
+  background: #f1f5f9;
+  color: #64748b;
   display: flex; align-items: center; justify-content: center;
-  color: #1e40af;
   font-size: 15px;
-  margin-bottom: 4px;
+  flex-shrink: 0;
 }
-.summary-item span { color: #64748b; font-size: 12px; }
-.summary-item strong { font-size: 15px; color: #1e293b; }
+.summary-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.summary-row-label { color: #64748b; font-size: 13px; }
+.summary-row-value { color: #1e293b; font-size: 14px; font-weight: 700; }
 
 /* ── قیمت نهایی برجسته ── */
 .summary-price-card {
   background: linear-gradient(135deg, #1e40af, #2563eb);
-  border-radius: 18px;
+  border-radius: 16px;
   padding: 20px 24px;
-  margin-top: 18px;
+  margin-top: 16px;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 }
-.summary-price-label { font-size: 14px; opacity: .85; }
+.summary-price-label { font-size: 14px; opacity: .85; display: flex; align-items: center; }
 .summary-price-value { font-size: 26px; font-weight: 800; }
 .summary-price-unit  { font-size: 12px; opacity: .7; }
 
@@ -264,13 +291,13 @@
   .hero-route-arrow { width: 100%; }
   .complete-steps { flex-wrap: wrap; }
   .complete-step-item { min-width: 80px; }
-  .summary-grid { grid-template-columns: 1fr 1fr; }
   .summary-price-card { flex-direction: column; gap: 8px; text-align: center; }
+  .summary-price-label { justify-content: center; }
   .forwarder-summary-card { flex-direction: column; text-align: center; }
+  .summary-row-text { flex-direction: column; align-items: flex-start; gap: 2px; }
   .doc-upload-item { flex-direction: column; align-items: flex-start; }
 }
 @media (max-width: 480px) {
-  .summary-grid { grid-template-columns: 1fr; }
   .complete-hero { padding: 24px; }
 }
 </style>
@@ -518,54 +545,66 @@
     <div class="forwarder-summary-info">
       <div class="forwarder-summary-name">{{ cargo_request.selected_rate.forwarder.company_name }}</div>
       <div class="forwarder-summary-meta">
-        <i class="fas fa-tag" style="margin-left:4px;color:#60a5fa;"></i>
+        <i class="fas fa-tag"></i>
         فورواردر انتخاب‌شده برای این سفارش
         {% if cargo_request.selected_rate.forwarder.phone %}
-          &nbsp;&bull;&nbsp;<i class="fas fa-phone" style="margin-left:4px;color:#60a5fa;"></i>{{ cargo_request.selected_rate.forwarder.phone }}
+          &nbsp;&bull;&nbsp;<i class="fas fa-phone"></i>{{ cargo_request.selected_rate.forwarder.phone }}
         {% endif %}
       </div>
     </div>
-    <div style="background:#fff;border-radius:10px;padding:10px 16px;text-align:center;flex-shrink:0;">
-      <div style="font-size:11px;color:#64748b;">روش حمل</div>
-      <div style="font-size:14px;font-weight:700;color:#1e293b;margin-top:3px;">{{ cargo_request.get_transport_mode_display }}</div>
+    <div class="forwarder-summary-mode">
+      <div class="forwarder-summary-mode-label">روش حمل</div>
+      <div class="forwarder-summary-mode-value">{{ cargo_request.get_transport_mode_display }}</div>
     </div>
   </div>
   {% endif %}
 
-  <div class="summary-grid">
-    <div class="summary-item">
-      <div class="summary-item-icon"><i class="fas fa-route"></i></div>
-      <span>مبدا</span>
-      <strong>{{ cargo_request.origin_city.name }}</strong>
+  <div class="summary-list-card">
+    <div class="summary-row">
+      <div class="summary-row-icon"><i class="fas fa-map-marker-alt"></i></div>
+      <div class="summary-row-text">
+        <span class="summary-row-label">مبدا</span>
+        <span class="summary-row-value">{{ cargo_request.origin_city.name }}</span>
+      </div>
     </div>
-    <div class="summary-item">
-      <div class="summary-item-icon"><i class="fas fa-anchor"></i></div>
-      <span>مقصد</span>
-      <strong>{{ cargo_request.destination_port.name }}</strong>
+    <div class="summary-row">
+      <div class="summary-row-icon"><i class="fas fa-anchor"></i></div>
+      <div class="summary-row-text">
+        <span class="summary-row-label">مقصد</span>
+        <span class="summary-row-value">{{ cargo_request.destination_port.name }}</span>
+      </div>
     </div>
-    <div class="summary-item">
-      <div class="summary-item-icon"><i class="fas fa-box-open"></i></div>
-      <span>نوع کالا</span>
-      <strong>{{ cargo_request.cargo_type.name }}</strong>
+    <div class="summary-row">
+      <div class="summary-row-icon"><i class="fas fa-box-open"></i></div>
+      <div class="summary-row-text">
+        <span class="summary-row-label">نوع کالا</span>
+        <span class="summary-row-value">{{ cargo_request.cargo_type.name }}</span>
+      </div>
     </div>
     {% if cargo_request.chargeable_weight %}
-    <div class="summary-item">
-      <div class="summary-item-icon"><i class="fas fa-weight-hanging"></i></div>
-      <span>وزن محاسباتی</span>
-      <strong>{{ cargo_request.chargeable_weight|floatformat:0|intcomma }} کیلوگرم</strong>
+    <div class="summary-row">
+      <div class="summary-row-icon"><i class="fas fa-weight-hanging"></i></div>
+      <div class="summary-row-text">
+        <span class="summary-row-label">وزن محاسباتی</span>
+        <span class="summary-row-value">{{ cargo_request.chargeable_weight|floatformat:0|intcomma|persian_number }} کیلوگرم</span>
+      </div>
     </div>
     {% endif %}
     {% if cargo_request.container_count %}
-    <div class="summary-item">
-      <div class="summary-item-icon"><i class="fas fa-cube"></i></div>
-      <span>تعداد کانتینر</span>
-      <strong>{{ cargo_request.container_count }} عدد {{ cargo_request.container_size }}</strong>
+    <div class="summary-row">
+      <div class="summary-row-icon"><i class="fas fa-cube"></i></div>
+      <div class="summary-row-text">
+        <span class="summary-row-label">تعداد کانتینر</span>
+        <span class="summary-row-value">{{ cargo_request.container_count|persian_number }} عدد {{ cargo_request.container_size }}</span>
+      </div>
     </div>
     {% endif %}
-    <div class="summary-item">
-      <div class="summary-item-icon" style="background:#fff7ed;color:#ea580c;"><i class="fas fa-shipping-fast"></i></div>
-      <span>نوع حمل</span>
-      <strong>{{ cargo_request.get_transport_mode_display }}</strong>
+    <div class="summary-row">
+      <div class="summary-row-icon"><i class="fas fa-shipping-fast"></i></div>
+      <div class="summary-row-text">
+        <span class="summary-row-label">نوع حمل</span>
+        <span class="summary-row-value">{{ cargo_request.get_transport_mode_display }}</span>
+      </div>
     </div>
   </div>
 
@@ -576,7 +615,7 @@
       <div style="font-size:12px;opacity:.6;margin-top:2px;">شامل مالیات و کلیه هزینه‌ها</div>
     </div>
     <div style="text-align:left;">
-      <div class="summary-price-value">{{ cargo_request.final_price|floatformat:0|intcomma }}</div>
+      <div class="summary-price-value">{{ cargo_request.final_price|floatformat:0|intcomma|persian_number }}</div>
       <div class="summary-price-unit">ریال</div>
     </div>
   </div>

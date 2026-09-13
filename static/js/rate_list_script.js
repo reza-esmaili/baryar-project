@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+panelReady(function () {
     
     // 1. ارسال خودکار فرم فیلتر هنگام تغییر دراپ‌داون‌ها
     const filterSelects = document.querySelectorAll('.filter-select');

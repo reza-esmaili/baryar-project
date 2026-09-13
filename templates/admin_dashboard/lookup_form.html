@@ -1,0 +1,32 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}{{ config.title }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">
+            {% if instance %}ویرایش{% else %}افزودن{% endif %} — {{ config.title }}
+        </h1>
+        <a href="{% url 'staff_dashboard:lookup_list' config.key %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+    </div>
+
+    <div class="detail-card">
+        <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="alert-box alert-error">{{ form.non_field_errors }}</div>
+            {% endif %}
+            {% for field in form %}
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:0.85rem;font-weight:700;color:#334155;margin-bottom:5px;">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<small style="color:#94a3b8;">{{ field.help_text }}</small>{% endif %}
+                {% if field.errors %}<div style="color:#dc2626;font-size:0.8rem;margin-top:4px;">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn-soft btn-soft-blue" style="padding:9px 22px;"><i class="fas fa-save"></i> ذخیره</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

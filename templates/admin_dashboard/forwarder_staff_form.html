@@ -1,0 +1,66 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}{% if is_edit %}ویرایش کارمند{% else %}کارمند جدید{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fc-field { margin-bottom: 14px; }
+    .fc-field label { display:block;font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:5px; }
+    .fc-field select, .fc-field input:not([type=checkbox]), .fc-field textarea {
+        width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.85rem;font-family:inherit;
+    }
+    .fc-field input[readonly] { background:#f8fafc;color:#64748b; }
+    .fc-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:0 16px; }
+    @media (max-width:900px){ .fc-grid { grid-template-columns:1fr; } }
+    .fc-error { color:#dc2626;font-size:0.8rem;margin-top:4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">
+            {% if is_edit %}ویرایش کارمند «{{ staff_obj.user.first_name }} {{ staff_obj.user.last_name }}»{% else %}کارمند جدید برای «{{ company.company_name }}»{% endif %}
+        </h1>
+        <a href="{% url 'staff_dashboard:forwarder_edit' company.id %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+    </div>
+
+    {% if not is_edit %}
+    <div class="alert-box" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;">
+        رمز عبور اولیه کارمند برابر کد ملی وی خواهد بود. لطفاً پس از ایجاد حساب، از کارمند بخواهید رمز خود را تغییر دهد.
+    </div>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+    <div class="alert-box alert-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="detail-card">
+            <h3>اطلاعات شخصی</h3>
+            <div class="fc-grid">
+                <div class="fc-field"><label>{{ form.first_name.label }}</label>{{ form.first_name }}{% if form.first_name.errors %}<div class="fc-error">{{ form.first_name.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.last_name.label }}</label>{{ form.last_name }}{% if form.last_name.errors %}<div class="fc-error">{{ form.last_name.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.national_code.label }}</label>{{ form.national_code }}{% if form.national_code.errors %}<div class="fc-error">{{ form.national_code.errors }}</div>{% endif %}</div>
+                <div class="fc-field">
+                    <label>{{ form.mobile.label }}{% if is_edit %} <span style="color:#94a3b8;font-weight:400;">(غیرقابل تغییر)</span>{% endif %}</label>
+                    {{ form.mobile }}{% if form.mobile.errors %}<div class="fc-error">{{ form.mobile.errors }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <h3>نقش و دسترسی</h3>
+            <div class="fc-field"><label>{{ form.role.label }}</label>{{ form.role }}{% if form.role.errors %}<div class="fc-error">{{ form.role.errors }}</div>{% endif %}</div>
+            {% if is_edit %}
+            <label style="display:flex;align-items:center;gap:8px;">{{ form.is_active }} {{ form.is_active.label }}</label>
+            {% else %}
+            {{ form.is_active }}
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره</button>
+    </form>
+</div>
+{% endblock %}

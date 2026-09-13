@@ -1,0 +1,95 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}{% if branch %}ویرایش شعبه{% else %}شعبه جدید{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fc-field { margin-bottom: 14px; }
+    .fc-field label { display:block;font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:5px; }
+    .fc-field select, .fc-field input:not([type=checkbox]), .fc-field textarea {
+        width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.85rem;font-family:inherit;
+    }
+    .fc-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px; }
+    @media (max-width:900px){ .fc-grid { grid-template-columns:1fr 1fr; } }
+    .fc-error { color:#dc2626;font-size:0.8rem;margin-top:4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">
+            {% if branch %}ویرایش شعبه «{{ branch.name }}»{% else %}شعبه جدید برای «{{ company.company_name }}»{% endif %}
+        </h1>
+        <a href="{% url 'staff_dashboard:forwarder_edit' company.id %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+    </div>
+
+    {% if form.non_field_errors %}
+    <div class="alert-box alert-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="detail-card">
+            <h3>اطلاعات شعبه</h3>
+            <div class="fc-field"><label>{{ form.name.label }}</label>{{ form.name }}{% if form.name.errors %}<div class="fc-error">{{ form.name.errors }}</div>{% endif %}</div>
+            <div class="fc-grid">
+                <div class="fc-field"><label>{{ form.representative_first_name.label }}</label>{{ form.representative_first_name }}{% if form.representative_first_name.errors %}<div class="fc-error">{{ form.representative_first_name.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.representative_last_name.label }}</label>{{ form.representative_last_name }}{% if form.representative_last_name.errors %}<div class="fc-error">{{ form.representative_last_name.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ form.representative_mobile.label }}</label>{{ form.representative_mobile }}{% if form.representative_mobile.errors %}<div class="fc-error">{{ form.representative_mobile.errors }}</div>{% endif %}</div>
+            </div>
+            {% if not branch %}
+            <p style="color:#94a3b8;font-size:0.8rem;margin-top:-6px;margin-bottom:14px;">
+                یک حساب کاربری برای نماینده شعبه ساخته می‌شود. رمز عبور موقت، همان شماره موبایل خواهد بود.
+            </p>
+            {% endif %}
+            <div class="fc-grid">
+                <div class="fc-field"><label>{{ form.province.label }}</label>{{ form.province }}{% if form.province.errors %}<div class="fc-error">{{ form.province.errors }}</div>{% endif %}</div>
+                <div class="fc-field" id="city-container"><label>{{ form.city.label }}</label>{{ form.city }}{% if form.city.errors %}<div class="fc-error">{{ form.city.errors }}</div>{% endif %}</div>
+            </div>
+            <div class="fc-field"><label>{{ form.address.label }}</label>{{ form.address }}{% if form.address.errors %}<div class="fc-error">{{ form.address.errors }}</div>{% endif %}</div>
+            <label style="display:flex;align-items:center;gap:8px;">{{ form.is_active }} {{ form.is_active.label }}</label>
+        </div>
+
+        <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+panelReady(function () {
+    const provinceSelect = document.getElementById('id_province');
+    const citySelect = document.getElementById('id_city');
+    if (!provinceSelect || !citySelect) return;
+
+    provinceSelect.addEventListener('change', function () {
+        const provinceId = this.value;
+        if (!provinceId) {
+            citySelect.innerHTML = '<option value="">ابتدا استان را انتخاب کنید</option>';
+            return;
+        }
+        citySelect.innerHTML = '<option value="">در حال بارگذاری...</option>';
+        fetch(`{% url 'staff_dashboard:ajax_cities' %}?province_id=${provinceId}`)
+            .then(response => response.json())
+            .then(data => {
+                citySelect.innerHTML = '<option value="" selected>انتخاب شهر...</option>';
+                if (data.length === 0) {
+                    citySelect.innerHTML = '<option value="">شهری برای این استان یافت نشد</option>';
+                    return;
+                }
+                data.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.id;
+                    option.textContent = city.name;
+                    citySelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching cities:', error);
+                citySelect.innerHTML = '<option value="">خطا در بارگذاری شهرها</option>';
+            });
+    });
+});
+</script>
+{% endblock %}

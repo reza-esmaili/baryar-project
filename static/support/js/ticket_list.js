@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+panelReady(function () {
 
 const department = document.getElementById("departmentFilter")
 const dateFrom = document.getElementById("dateFrom")

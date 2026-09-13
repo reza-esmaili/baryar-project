@@ -5,10 +5,17 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'forwarder_panel/css/order_detail.css' %}">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- بیلد استاتیک Tailwind (جایگزین CDN زنده cdn.tailwindcss.com که کامپایلر
+         لحظه‌ای است و در شبکه‌های کند/ناپایدار می‌تواند بارگذاری صفحه را برای
+         مدت طولانی معلق نگه دارد). برای بازتولید بعد از تغییر کلاس‌های
+         Tailwind در order_detail.html/order_list.html/rate_list.html، از پوشه‌ی
+         build ابزار Tailwind CLI روی همین سه فایل استفاده کنید. -->
+    <link rel="stylesheet" href="{% static 'forwarder_panel/css/tailwind_compiled.css' %}">
     <style>
-        @import url('https://v1.fontapi.ir/css/Vazir');
-        .font-vazir { font-family: 'Vazir', sans-serif; }
+        /* فونت یکسان با بقیه‌ی پنل (BYekan)؛ قبلاً Vazir از یک فونت API خارجی و
+           کند (v1.fontapi.ir) لود می‌شد که هم ناسازگار با بقیه صفحات بود و هم
+           گاهی اصلاً بارگذاری نمی‌شد. */
+        .font-vazir { font-family: 'BYekan', Tahoma, Arial, sans-serif; }
         .msg-bubble { max-width: 72%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.6; word-break: break-word; }
         .msg-forwarder { background: #1e40af; color: #fff; border-bottom-right-radius: 4px; margin-right: auto; }
         .msg-customer  { background: #f1f5f9; color: #1e293b; border-bottom-left-radius: 4px; margin-left: auto; }

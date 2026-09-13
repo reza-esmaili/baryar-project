@@ -1,0 +1,74 @@
+{% extends 'admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{% if instance %}ویرایش قانون مدرک{% else %}قانون مدرک جدید{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .drf-field { margin-bottom: 14px; }
+    .drf-field label { display:block;font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:5px; }
+    .drf-field select, .drf-field input:not([type=checkbox]), .drf-field textarea {
+        width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.85rem;font-family:inherit;
+    }
+    .drf-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px; }
+    @media (max-width:900px){ .drf-grid { grid-template-columns:1fr 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">{% if instance %}ویرایش قانون مدرک{% else %}قانون مدرک جدید{% endif %}</h1>
+        <a href="{% url 'staff_dashboard:document_rule_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+    </div>
+
+    {% if form.non_field_errors %}<div class="alert-box alert-error">{{ form.non_field_errors }}</div>{% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="detail-card">
+            <h3>اطلاعات پایه</h3>
+            <div class="drf-grid">
+                <div class="drf-field"><label>{{ form.title.label }}</label>{{ form.title }}{{ form.title.errors }}</div>
+                <div class="drf-field"><label>{{ form.document_type.label }}</label>{{ form.document_type }}{{ form.document_type.errors }}</div>
+                <div class="drf-field"><label>{{ form.requirement_level.label }}</label>{{ form.requirement_level }}{{ form.requirement_level.errors }}</div>
+                <div class="drf-field"><label>{{ form.priority.label }}</label>{{ form.priority }}</div>
+                <div class="drf-field" style="display:flex;align-items:center;gap:8px;padding-top:22px;">{{ form.is_required }} <label style="margin:0;">اجباری</label></div>
+                <div class="drf-field" style="display:flex;align-items:center;gap:8px;padding-top:22px;">{{ form.is_active }} <label style="margin:0;">فعال</label></div>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <h3>شرط‌های اعمال قانون</h3>
+            <p style="color:#94a3b8;font-size:0.8rem;margin-bottom:12px;">بر اساس «سطح قانون» بالا، فقط فیلدهای مرتبط قابل مشاهده و پر کردن هستند.</p>
+            <div class="drf-grid">
+                <div class="drf-field field-shipping_procedure"><label>{{ form.shipping_procedure.label }}</label>{{ form.shipping_procedure }}</div>
+                <div class="drf-field field-transport_mode"><label>{{ form.transport_mode.label }}</label>{{ form.transport_mode }}</div>
+                <div class="drf-field field-origin_province"><label>{{ form.origin_province.label }}</label>{{ form.origin_province }}</div>
+                <div class="drf-field field-origin_city"><label>{{ form.origin_city.label }}</label>{{ form.origin_city }}</div>
+                <div class="drf-field field-destination_country"><label>{{ form.destination_country.label }}</label>{{ form.destination_country }}</div>
+                <div class="drf-field field-destination_city"><label>{{ form.destination_city.label }}</label>{{ form.destination_city }}</div>
+                <div class="drf-field field-destination_port"><label>{{ form.destination_port.label }}</label>{{ form.destination_port }}</div>
+                <div class="drf-field field-cargo_type"><label>{{ form.cargo_type.label }}</label>{{ form.cargo_type }}</div>
+                <div class="drf-field field-cargo_subcategory"><label>{{ form.cargo_subcategory.label }}</label>{{ form.cargo_subcategory }}</div>
+            </div>
+            {{ form.origin_province.errors }}{{ form.origin_city.errors }}{{ form.destination_country.errors }}
+            {{ form.destination_city.errors }}{{ form.destination_port.errors }}{{ form.cargo_type.errors }}{{ form.cargo_subcategory.errors }}
+        </div>
+
+        <div class="detail-card">
+            <h3>توضیحات</h3>
+            <div class="drf-field"><label>{{ form.admin_note.label }}</label>{{ form.admin_note }}</div>
+            <div class="drf-field"><label>{{ form.customer_description.label }}</label>{{ form.customer_description }}</div>
+        </div>
+
+        <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'admin_dashboard/js/document_rule_dependent_fields.js' %}"></script>
+<script src="{% static 'admin_dashboard/js/document_rule_dynamic.js' %}"></script>
+{% endblock %}

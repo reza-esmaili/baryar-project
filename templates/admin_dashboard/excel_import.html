@@ -1,0 +1,26 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}ایمپورت اکسل{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4">
+        <h1 style="font-size:1.3rem;font-weight:900;color:#1e293b;">{{ title }}</h1>
+    </div>
+
+    <div class="detail-card">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                {{ form.excel_file.label_tag }}
+                {{ form.excel_file }}
+                {{ form.excel_file.errors }}
+            </div>
+            <p style="color:#94a3b8;font-size:0.8rem;margin-bottom:16px;">
+                سطر اول فایل به عنوان هدر در نظر گرفته می‌شود و پردازش از سطر دوم شروع می‌شود.
+            </p>
+            <button type="submit" class="btn-soft btn-soft-blue" style="padding:9px 24px;"><i class="fas fa-upload"></i> آپلود و پردازش</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

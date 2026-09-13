@@ -4,15 +4,12 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'forwarder_panel/css/order_list.css' %}">
-{% endblock %}
-
-{% block content %}
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- بیلد استاتیک Tailwind به‌جای CDN زنده (توضیح در order_detail.html) -->
+<link rel="stylesheet" href="{% static 'forwarder_panel/css/tailwind_compiled.css' %}">
 <style>
-    @import url('https://v1.fontapi.ir/css/Vazir');
-
+    /* فونت یکسان با بقیه‌ی پنل (BYekan) به‌جای Vazir خارجی و کند */
     .font-vazir {
-        font-family: 'Vazir', sans-serif;
+        font-family: 'BYekan', Tahoma, Arial, sans-serif;
     }
 
     .action-btn {
@@ -54,7 +51,9 @@
         opacity: 0.7;
     }
 </style>
+{% endblock %}
 
+{% block content %}
 <div class="p-8 bg-[#f4f7fc] min-h-screen rtl font-vazir" dir="rtl">
 
     <div class="flex justify-between items-center mb-6">
@@ -376,7 +375,7 @@
 
 <script>
     // اسکریپت مربوط به انتخاب همه چک‌باکس‌ها
-    document.addEventListener("DOMContentLoaded", function () {
+    panelReady(function () {
         const selectAllCheckbox = document.getElementById('selectAll');
 
         if (selectAllCheckbox) {

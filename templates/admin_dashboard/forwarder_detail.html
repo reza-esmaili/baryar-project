@@ -1,0 +1,130 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}{{ company.company_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .doc-review-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .doc-review-form select, .doc-review-form input {
+        border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 8px; font-size: 0.78rem; font-family: inherit;
+    }
+    .doc-review-form button {
+        background: #3498db; color: #fff; border: none; border-radius: 6px;
+        padding: 5px 12px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+            <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">{{ company.company_name }}</h1>
+            <p style="color:#64748b;font-size:0.9rem;">شناسه ملی: {{ company.national_id }}</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+            {% if company.is_verified %}
+                <span class="badge-pill badge-green">تایید شده</span>
+            {% else %}
+                <span class="badge-pill badge-amber">در انتظار تایید</span>
+            {% endif %}
+            <a href="{% url 'staff_dashboard:forwarder_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+            <a href="{% url 'staff_dashboard:forwarder_edit' company.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-edit"></i> ویرایش اطلاعات</a>
+            <form method="post" style="margin:0;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle_active">
+                {% if company.is_active %}
+                    <button type="submit" class="btn-soft btn-soft-red"><i class="fas fa-ban"></i> غیرفعال کردن</button>
+                {% else %}
+                    <button type="submit" class="btn-soft btn-soft-green"><i class="fas fa-check"></i> فعال کردن</button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <h3>اطلاعات شرکت</h3>
+        <div class="detail-row"><span class="label">مدیرعامل</span><span class="value">{{ company.ceo_first_name }} {{ company.ceo_last_name }}</span></div>
+        <div class="detail-row"><span class="label">کاربر ادمین</span><span class="value">
+            <a href="{% url 'staff_dashboard:user_detail' company.admin_user.id %}">{{ company.admin_user.mobile }}</a>
+        </span></div>
+        <div class="detail-row"><span class="label">تلفن</span><span class="value">{{ company.phone }}</span></div>
+        <div class="detail-row"><span class="label">ایمیل</span><span class="value">{{ company.email }}</span></div>
+        <div class="detail-row"><span class="label">آدرس</span><span class="value">{{ company.address }}</span></div>
+    </div>
+
+    <div class="detail-card">
+        <h3>مدارک هویتی — تایید/رد</h3>
+        <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:12px;">
+            وقتی همه‌ی مدارک زیر «تایید شده» باشند، شرکت خودکار تایید می‌شود.
+        </p>
+        <table class="data-table">
+            <thead><tr><th>نوع مدرک</th><th>فایل</th><th>وضعیت فعلی</th><th>یادداشت ادمین</th><th>تغییر وضعیت</th></tr></thead>
+            <tbody>
+                {% for doc in identity_documents %}
+                <tr>
+                    <td>{{ doc.get_doc_type_display }}</td>
+                    <td>{% if doc.file %}<a href="{{ doc.file.url }}" target="_blank">مشاهده فایل</a>{% else %}-{% endif %}</td>
+                    <td>
+                        {% if doc.status == 'approved' %}<span class="badge-pill badge-green">{{ doc.get_status_display }}</span>
+                        {% elif doc.status == 'rejected' %}<span class="badge-pill badge-red">{{ doc.get_status_display }}</span>
+                        {% else %}<span class="badge-pill badge-amber">{{ doc.get_status_display }}</span>{% endif %}
+                    </td>
+                    <td>{{ doc.admin_note|default:"-" }}</td>
+                    <td>
+                        <form method="post" action="{% url 'staff_dashboard:review_identity_document' company.id doc.id %}" class="doc-review-form">
+                            {% csrf_token %}
+                            <select name="status">
+                                {% for value, label in doc_statuses %}
+                                    <option value="{{ value }}" {% if doc.status == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" name="admin_note" placeholder="یادداشت (اختیاری)" value="{{ doc.admin_note }}">
+                            <button type="submit">ثبت</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:16px;">مدرکی ثبت نشده است.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="detail-card">
+        <h3>شعب ({{ branches.count }})</h3>
+        <table class="data-table">
+            <thead><tr><th>نام شعبه</th><th>استان/شهر</th><th>وضعیت</th></tr></thead>
+            <tbody>
+                {% for branch in branches %}
+                <tr>
+                    <td>{{ branch.name }}</td>
+                    <td>{{ branch.province.name }} / {{ branch.city.name }}</td>
+                    <td>{% if branch.is_active %}<span class="badge-pill badge-green">فعال</span>{% else %}<span class="badge-pill badge-red">غیرفعال</span>{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px;">شعبه‌ای ثبت نشده است.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="detail-card">
+        <h3>کارمندان ({{ staff.count }})</h3>
+        <table class="data-table">
+            <thead><tr><th>نام</th><th>نقش</th><th>وضعیت</th></tr></thead>
+            <tbody>
+                {% for member in staff %}
+                <tr>
+                    <td><a class="row-link" href="{% url 'staff_dashboard:user_detail' member.user.id %}">{{ member.user.first_name }} {{ member.user.last_name }}</a></td>
+                    <td>{{ member.role.name|default:"-" }}</td>
+                    <td>{% if member.is_active %}<span class="badge-pill badge-green">فعال</span>{% else %}<span class="badge-pill badge-red">غیرفعال</span>{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px;">کارمندی ثبت نشده است.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

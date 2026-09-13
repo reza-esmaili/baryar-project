@@ -1,0 +1,121 @@
+{% extends 'admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{% if instance %}ویرایش نرخ{% else %}نرخ جدید{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .rate-field { margin-bottom: 14px; }
+    .rate-field label { display:block;font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:5px; }
+    .rate-field select, .rate-field input:not([type=checkbox]) {
+        width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.85rem;font-family:inherit;
+    }
+    .rate-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px; }
+    @media (max-width:900px){ .rate-grid { grid-template-columns:1fr 1fr; } }
+    .tier-row { display:grid;grid-template-columns:repeat(6,1fr) auto;gap:8px;align-items:end;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:10px; }
+    .tier-row select, .tier-row input { width:100%;border:1px solid #e2e8f0;border-radius:6px;padding:6px 8px;font-size:0.8rem;font-family:inherit; }
+    .cargo-types-box { display:flex;flex-wrap:wrap;gap:10px;border:1px solid #e2e8f0;border-radius:8px;padding:10px; }
+    .cargo-types-box label { font-size:0.8rem;font-weight:500;display:flex;align-items:center;gap:5px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">{% if instance %}ویرایش نرخ{% else %}نرخ جدید{% endif %}</h1>
+        {% if instance %}
+        <a href="{% url 'staff_dashboard:rate_detail' instance.id %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+        {% else %}
+        <a href="{% url 'staff_dashboard:rate_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+        {% endif %}
+    </div>
+
+    {% if form.non_field_errors or tier_formset.non_form_errors %}
+    <div class="alert-box alert-error">
+        {{ form.non_field_errors }}
+        {{ tier_formset.non_form_errors }}
+    </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="detail-card">
+            <h3>مالکیت نرخ</h3>
+            <div class="rate-grid">
+                <div class="rate-field"><label>{{ form.forwarder.label }}</label>{{ form.forwarder }}{{ form.forwarder.errors }}</div>
+                <div class="rate-field"><label>{{ form.branch.label }}</label>{{ form.branch }}{{ form.branch.errors }}</div>
+                <div class="rate-field"><label>وضعیت</label>{{ form.is_active }}</div>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <h3>مسیر و روش حمل</h3>
+            <div class="rate-grid">
+                <div class="rate-field"><label>روش حمل</label>{{ form.transport_mode }}{{ form.transport_mode.errors }}</div>
+                <div class="rate-field"><label>رویه ارسال</label>{{ form.shipping_procedure }}</div>
+                <div class="rate-field"><label>تاریخ اعتبار</label>{{ form.valid_until }}{{ form.valid_until.errors }}</div>
+
+                <div class="rate-field"><label>کشور مبدا</label>{{ form.origin_country }}</div>
+                <div class="rate-field"><label>استان مبدا</label>{{ form.origin_province }}{{ form.origin_province.errors }}</div>
+                <div class="rate-field"><label>شهر مبدا</label>{{ form.origin_city }}{{ form.origin_city.errors }}</div>
+
+                <div class="rate-field"><label>کشور مقصد</label>{{ form.destination_country }}{{ form.destination_country.errors }}</div>
+                <div class="rate-field"><label>شهر مقصد</label>{{ form.destination_city }}{{ form.destination_city.errors }}</div>
+                <div class="rate-field"><label>پورت/فرودگاه/گمرک مقصد</label>{{ form.destination_port }}{{ form.destination_port.errors }}</div>
+            </div>
+            <div class="rate-field">
+                <label>انواع کالای قابل حمل</label>
+                <div class="cargo-types-box">{{ form.cargo_types }}</div>
+                {{ form.cargo_types.errors }}
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <h3>هزینه‌های جانبی</h3>
+            <div class="rate-grid">
+                <div class="rate-field"><label>نوع هزینه بسته‌بندی دفتر</label>{{ form.office_packaging_charge_type }}</div>
+                <div class="rate-field"><label>مبلغ بسته‌بندی دفتر</label>{{ form.office_packaging_price }}{{ form.office_packaging_price.errors }}</div>
+                <div class="rate-field"></div>
+
+                <div class="rate-field"><label>نوع هزینه بسته‌بندی محل</label>{{ form.onsite_packaging_charge_type }}</div>
+                <div class="rate-field"><label>مبلغ بسته‌بندی محل</label>{{ form.onsite_packaging_price }}{{ form.onsite_packaging_price.errors }}</div>
+                <div class="rate-field"></div>
+
+                <div class="rate-field"><label>نوع هزینه تحویل درب محل</label>{{ form.doorstep_packaging_charge_type }}</div>
+                <div class="rate-field"><label>مبلغ تحویل درب محل</label>{{ form.doorstep_packaging_price }}{{ form.doorstep_packaging_price.errors }}</div>
+                <div class="rate-field" style="display:flex;align-items:center;gap:8px;padding-top:22px;">{{ form.add_vat }} <label style="margin:0;">اعمال ارزش افزوده</label></div>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h3 style="margin:0;">پلکان‌های نرخ‌گذاری</h3>
+                <button type="button" id="addTierBtn" class="btn-soft btn-soft-blue">+ افزودن پلکان</button>
+            </div>
+            {{ tier_formset.management_form }}
+            <div id="tiersContainer">
+                {% for tier_form in tier_formset %}
+                <div class="tier-row">
+                    {{ tier_form.id }}
+                    <div>{{ tier_form.pricing_unit }}{{ tier_form.pricing_unit.errors }}</div>
+                    <div>{{ tier_form.weight_from }}</div>
+                    <div>{{ tier_form.weight_to }}</div>
+                    <div>{{ tier_form.container_size }}</div>
+                    <div>{{ tier_form.container_type }}</div>
+                    <div>{{ tier_form.price }}{{ tier_form.price.errors }}</div>
+                    <div>{% if tier_form.instance.pk %}<label style="font-size:0.75rem;">{{ tier_form.DELETE }} حذف</label>{% endif %}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره نرخ</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'admin_dashboard/js/rate_cascading.js' %}"></script>
+<script src="{% static 'admin_dashboard/js/rate_tier_add.js' %}"></script>
+{% endblock %}

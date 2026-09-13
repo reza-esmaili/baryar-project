@@ -44,6 +44,44 @@ def get_panel_type(request):
     return "customer"
 
 
+def user_can_access_ticket(user, ticket, panel_type):
+    """
+    آیا کاربر اجازه مشاهده/پاسخ به این تیکت را دارد؟ منطق مشترک بین ویوهای
+    وب و API تا هر دو از یک منبع تصمیم امنیتی استفاده کنند (جلوگیری از IDOR).
+    """
+    forwarder_roles = (
+        _User.Role.FORWARDER_ADMIN,
+        _User.Role.FORWARDER_EXPERT,
+        _User.Role.FORWARDER_FINANCE,
+    )
+    if panel_type == "forwarder" and user.role in forwarder_roles:
+        from panel.decorators import get_company_for_user
+        company = get_company_for_user(user)
+        if not company:
+            return False
+        company_user_ids = list(company.staff.values_list('user_id', flat=True))
+        company_user_ids.append(company.admin_user_id)
+        return ticket.user_id in company_user_ids
+
+    if ticket.user_id == user.id:
+        return True
+
+    try:
+        agent = user.supportagent
+    except SupportAgent.DoesNotExist:
+        return False
+    return agent.departments.filter(id=ticket.department_id, panel_type=panel_type).exists()
+
+
+def user_can_transfer_ticket(user, ticket, panel_type):
+    """آیا کاربر (به‌عنوان کارشناس پشتیبانی دپارتمان فعلی تیکت) اجازه انتقال آن را دارد؟"""
+    try:
+        agent = user.supportagent
+    except SupportAgent.DoesNotExist:
+        return False
+    return agent.departments.filter(id=ticket.department_id, panel_type=panel_type).exists()
+
+
 def get_template_path(request, template_name):
     panel_type = get_panel_type(request)
 
@@ -272,26 +310,8 @@ def ticket_detail(request, pk):
         department__panel_type=panel_type
     )
 
-    _fw_roles = (_User.Role.FORWARDER_ADMIN, _User.Role.FORWARDER_EXPERT, _User.Role.FORWARDER_FINANCE)
-    if panel_type == "forwarder" and request.user.role in _fw_roles:
-        from panel.decorators import get_company_for_user
-        company = get_company_for_user(request.user)
-        if not company:
-            return HttpResponseForbidden("شما اجازه دسترسی به این تیکت را ندارید.")
-        company_user_ids = list(company.staff.values_list('user_id', flat=True))
-        company_user_ids.append(company.admin_user_id)
-        if ticket.user_id not in company_user_ids:
-            return HttpResponseForbidden("شما اجازه دسترسی به این تیکت را ندارید.")
-    elif ticket.user != request.user:
-        try:
-            support_agent = request.user.supportagent
-            if not support_agent.departments.filter(
-                id=ticket.department_id,
-                panel_type=panel_type
-            ).exists():
-                return HttpResponseForbidden("شما اجازه دسترسی به این تیکت را ندارید.")
-        except SupportAgent.DoesNotExist:
-            return HttpResponseForbidden("شما اجازه دسترسی به این تیکت را ندارید.")
+    if not user_can_access_ticket(request.user, ticket, panel_type):
+        return HttpResponseForbidden("شما اجازه دسترسی به این تیکت را ندارید.")
 
     messages_qs = ticket.messages.all().order_by("created_at")
     activities = ticket.activities.all().order_by("-created_at")

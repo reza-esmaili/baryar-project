@@ -1,0 +1,71 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}نرخ‌ها{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">نرخ‌ها</h1>
+        <div style="display:flex;gap:8px;">
+            <a href="{% url 'staff_dashboard:cargo_type_hub' %}" class="btn-soft btn-soft-gray"><i class="fas fa-tags"></i> مدیریت انواع کالا</a>
+            <a href="{% url 'staff_dashboard:rate_add' %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> نرخ جدید</a>
+        </div>
+    </div>
+
+    <form method="get" class="data-toolbar">
+        <input type="text" name="q" value="{{ q }}" placeholder="نام شرکت یا شهر مبدا...">
+        <select name="active">
+            <option value="">همه</option>
+            <option value="1" {% if active == "1" %}selected{% endif %}>فعال</option>
+            <option value="0" {% if active == "0" %}selected{% endif %}>غیرفعال</option>
+        </select>
+        <button type="submit"><i class="fas fa-search"></i> جستجو</button>
+    </form>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>فورواردر/شعبه</th>
+                    <th>روش حمل</th>
+                    <th>مبدا</th>
+                    <th>مقصد</th>
+                    <th>اعتبار تا</th>
+                    <th>وضعیت</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rate in page_obj %}
+                <tr>
+                    <td><a class="row-link" href="{% url 'staff_dashboard:rate_detail' rate.id %}">{{ rate.forwarder.company_name|default:rate.branch }}</a></td>
+                    <td>{{ rate.get_transport_mode_display }}</td>
+                    <td>{{ rate.origin_city.name }}</td>
+                    <td>{{ rate.destination_port.city.country.name }} / {{ rate.destination_port.name }}</td>
+                    <td>{{ rate.valid_until|date:"Y/m/d" }}</td>
+                    <td>
+                        {% if rate.is_currently_active %}
+                            <span class="badge-pill badge-green">فعال</span>
+                        {% else %}
+                            <span class="badge-pill badge-red">غیرفعال</span>
+                        {% endif %}
+                    </td>
+                    <td style="white-space:nowrap;display:flex;gap:6px;">
+                        <a href="{% url 'staff_dashboard:rate_detail' rate.id %}" class="btn-soft btn-soft-gray" title="مشاهده جزئیات"><i class="fas fa-eye"></i></a>
+                        <a href="{% url 'staff_dashboard:rate_edit' rate.id %}" class="btn-soft btn-soft-blue" title="ویرایش"><i class="fas fa-edit"></i></a>
+                        <form method="post" action="{% url 'staff_dashboard:rate_delete' rate.id %}" style="margin:0;" onsubmit="return confirm('این نرخ برای همیشه حذف می‌شود. ادامه می‌دهید؟');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-soft btn-soft-red" title="حذف"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px;">نرخی یافت نشد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'admin_dashboard/partials/pagination.html' %}
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends 'admin_dashboard/base.html' %}
+{% load humanize %}
+
+{% block title %}سفارش #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+            <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">سفارش #{{ order.id }}</h1>
+            <p style="color:#64748b;font-size:0.9rem;">{{ order.get_status_display }}</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <a href="{% url 'staff_dashboard:order_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت به لیست</a>
+            <a href="{% url 'staff_dashboard:order_edit' order.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-edit"></i> ویرایش سفارش</a>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <h3>مشتری و مسیر</h3>
+        <div class="detail-row"><span class="label">مشتری</span><span class="value">
+            <a href="{% url 'staff_dashboard:user_detail' order.customer.id %}">{{ order.customer.first_name }} {{ order.customer.last_name }} ({{ order.customer.mobile }})</a>
+        </span></div>
+        <div class="detail-row"><span class="label">فورواردر</span><span class="value">
+            {% if order.selected_rate.forwarder %}
+                <a href="{% url 'staff_dashboard:forwarder_detail' order.selected_rate.forwarder.id %}">{{ order.selected_rate.forwarder.company_name }}</a>
+            {% else %}-{% endif %}
+        </span></div>
+        <div class="detail-row"><span class="label">مبدا</span><span class="value">{{ order.origin_city.province.name|default:"-" }} / {{ order.origin_city.name }}</span></div>
+        <div class="detail-row"><span class="label">مقصد</span><span class="value">{{ order.destination_port.city.country.name|default:"-" }} / {{ order.destination_port.city.name|default:"-" }} / {{ order.destination_port.name|default:"-" }}</span></div>
+        <div class="detail-row"><span class="label">روش حمل</span><span class="value">{{ order.get_transport_mode_display }}</span></div>
+        <div class="detail-row"><span class="label">نوع کالا</span><span class="value">{{ order.cargo_type.name|default:"-" }}</span></div>
+        <div class="detail-row"><span class="label">وزن</span><span class="value">{{ order.chargeable_weight|default:order.actual_weight }} kg</span></div>
+        <div class="detail-row"><span class="label">تاریخ ثبت</span><span class="value">{{ order.created_at|date:"Y/m/d H:i" }}</span></div>
+    </div>
+
+    {% if order.final_price %}
+    <div class="detail-card">
+        <h3>اطلاعات مالی</h3>
+        {% if order.base_shipping_price %}<div class="detail-row"><span class="label">هزینه حمل پایه</span><span class="value">{{ order.base_shipping_price|floatformat:0|intcomma }} ریال</span></div>{% endif %}
+        {% if order.vat_amount %}<div class="detail-row"><span class="label">ارزش افزوده</span><span class="value">{{ order.vat_amount|floatformat:0|intcomma }} ریال</span></div>{% endif %}
+        <div class="detail-row"><span class="label">قیمت نهایی</span><span class="value" style="color:#16a34a;">{{ order.final_price|floatformat:0|intcomma }} ریال</span></div>
+    </div>
+    {% endif %}
+
+    {% if order_documents %}
+    <div class="detail-card">
+        <h3>مدارک سفارش</h3>
+        <table class="data-table">
+            <thead><tr><th>نوع مدرک</th><th>فایل</th><th>وضعیت</th><th>آپلودکننده</th></tr></thead>
+            <tbody>
+                {% for doc in order_documents %}
+                <tr>
+                    <td>{{ doc.document_type.title }}</td>
+                    <td>{% if doc.file %}<a href="{{ doc.file.url }}" target="_blank">مشاهده فایل</a>{% else %}-{% endif %}</td>
+                    <td><span class="badge-pill badge-gray">{{ doc.get_status_display }}</span></td>
+                    <td>{{ doc.uploaded_by|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if order_messages %}
+    <div class="detail-card">
+        <h3>پیام‌های سفارش</h3>
+        {% for msg in order_messages %}
+        <div class="detail-row">
+            <span class="label">{{ msg.get_sender_role_display }} — {{ msg.created_at|date:"Y/m/d H:i" }}</span>
+            <span class="value">{{ msg.content }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if history %}
+    <div class="detail-card">
+        <h3>تاریخچه تغییرات</h3>
+        {% for h in history %}
+        <div class="detail-row">
+            <span class="label">{{ h.created_at|date:"Y/m/d H:i" }} — {{ h.changed_by|default:"سیستم" }}</span>
+            <span class="value">{% if h.field_name %}{{ h.field_name }}: {{ h.old_value }} → {{ h.new_value }}{% endif %} {{ h.note }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

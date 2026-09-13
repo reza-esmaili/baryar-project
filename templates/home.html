@@ -9,7 +9,21 @@
       href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css"
       rel="stylesheet"
     />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'website/css/home.css' %}" />
+    <style>
+        /* دکمه ورود/ثبت‌نام مشترک با بقیه‌ی سایت (partials/auth_nav.html) */
+        .nav-auth-item { display: flex; align-items: center; gap: 6px; }
+        .btn-auth-split {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff;
+            border-radius: 8px; padding: 8px 16px; font-size: 14px; font-weight: 600;
+            text-decoration: none; transition: opacity 0.2s;
+        }
+        .btn-auth-split:hover { opacity: 0.88; color: #fff; }
+        .auth-divider { opacity: 0.55; }
+        .nav-user-btn:hover { background: rgba(0,0,0,0.05) !important; }
+    </style>
   </head>
   <body>
     <!-- ═══ HEADER (hidden until scroll) ═══ -->
@@ -26,7 +40,9 @@
           <li><a href="#">درباره ما</a></li>
           <li><a href="#">تماس</a></li>
         </ul>
-        <a href="{% url 'customer:profile' %}" class="btn-primary">حساب کاربری</a>
+        <div class="nav-auth-item">
+          {% include 'partials/auth_nav.html' %}
+        </div>
       </div>
     </header>
 
@@ -242,6 +258,8 @@
         </div>
       </div>
     </footer>
+
+    {% include 'partials/auth_nav_script.html' %}
 
     <script>
       // Header show on scroll

@@ -1,0 +1,174 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}{% if instance %}ویرایش شرکت{% else %}شرکت فورواردر جدید{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fc-field { margin-bottom: 14px; }
+    .fc-field label { display:block;font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:5px; }
+    .fc-field select, .fc-field input:not([type=checkbox]), .fc-field textarea {
+        width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.85rem;font-family:inherit;
+    }
+    .fc-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px; }
+    @media (max-width:900px){ .fc-grid { grid-template-columns:1fr 1fr; } }
+    .fc-error { color:#dc2626;font-size:0.8rem;margin-top:4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">
+            {% if instance %}ویرایش «{{ instance.company_name }}»{% else %}شرکت فورواردر جدید{% endif %}
+        </h1>
+        {% if instance %}
+        <a href="{% url 'staff_dashboard:forwarder_detail' instance.id %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+        {% else %}
+        <a href="{% url 'staff_dashboard:forwarder_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+        {% endif %}
+    </div>
+
+    {% if company_form.non_field_errors or user_form.non_field_errors %}
+    <div class="alert-box alert-error">{{ company_form.non_field_errors }}{% if user_form %}{{ user_form.non_field_errors }}{% endif %}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {% if user_form %}
+        <div class="detail-card">
+            <h3>کاربر ادمین شرکت</h3>
+            <p style="color:#94a3b8;font-size:0.8rem;margin-bottom:12px;">
+                یک حساب کاربری «ادمین فورواردر» برای این شرکت ساخته می‌شود. رمز عبور موقت، همان شماره موبایل خواهد بود
+                و کاربر در اولین ورود مجبور به تغییر آن می‌شود.
+            </p>
+            <div class="fc-grid">
+                <div class="fc-field"><label>{{ user_form.mobile.label }}</label>{{ user_form.mobile }}{% if user_form.mobile.errors %}<div class="fc-error">{{ user_form.mobile.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ user_form.first_name.label }}</label>{{ user_form.first_name }}{{ user_form.first_name.errors }}</div>
+                <div class="fc-field"><label>{{ user_form.last_name.label }}</label>{{ user_form.last_name }}{{ user_form.last_name.errors }}</div>
+                <div class="fc-field"><label>{{ user_form.email.label }} (اختیاری)</label>{{ user_form.email }}{% if user_form.email.errors %}<div class="fc-error">{{ user_form.email.errors }}</div>{% endif %}</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="detail-card">
+            <h3>کاربر ادمین شرکت</h3>
+            <div class="detail-row"><span class="label">موبایل</span><span class="value">{{ instance.admin_user.mobile }}</span></div>
+            <div class="detail-row"><span class="label">نام</span><span class="value">{{ instance.admin_user.first_name }} {{ instance.admin_user.last_name }}</span></div>
+            <p style="color:#94a3b8;font-size:0.8rem;margin-top:8px;">برای تغییر کاربر ادمین، از بخش «کاربران» استفاده کنید.</p>
+        </div>
+        {% endif %}
+
+        <div class="detail-card">
+            <h3>اطلاعات شرکت</h3>
+            <div class="fc-grid">
+                <div class="fc-field"><label>{{ company_form.company_name.label }}</label>{{ company_form.company_name }}{{ company_form.company_name.errors }}</div>
+                <div class="fc-field"><label>{{ company_form.company_type.label }}</label>{{ company_form.company_type }}{{ company_form.company_type.errors }}</div>
+                <div class="fc-field"><label>{{ company_form.national_id.label }}</label>{{ company_form.national_id }}{% if company_form.national_id.errors %}<div class="fc-error">{{ company_form.national_id.errors }}</div>{% endif %}</div>
+                <div class="fc-field"><label>{{ company_form.registration_number.label }}</label>{{ company_form.registration_number }}{{ company_form.registration_number.errors }}</div>
+                <div class="fc-field"><label>{{ company_form.phone.label }}</label>{{ company_form.phone }}{{ company_form.phone.errors }}</div>
+                <div class="fc-field"><label>{{ company_form.email.label }}</label>{{ company_form.email }}{{ company_form.email.errors }}</div>
+                <div class="fc-field"><label>{{ company_form.postal_code.label }}</label>{{ company_form.postal_code }}{% if company_form.postal_code.errors %}<div class="fc-error">{{ company_form.postal_code.errors }}</div>{% endif %}</div>
+            </div>
+            <div class="fc-field"><label>{{ company_form.address.label }}</label>{{ company_form.address }}{{ company_form.address.errors }}</div>
+        </div>
+
+        <div class="detail-card">
+            <h3>اطلاعات مدیرعامل</h3>
+            <div class="fc-grid">
+                <div class="fc-field"><label>{{ company_form.ceo_first_name.label }}</label>{{ company_form.ceo_first_name }}{{ company_form.ceo_first_name.errors }}</div>
+                <div class="fc-field"><label>{{ company_form.ceo_last_name.label }}</label>{{ company_form.ceo_last_name }}{{ company_form.ceo_last_name.errors }}</div>
+                <div class="fc-field"><label>{{ company_form.ceo_national_code.label }}</label>{{ company_form.ceo_national_code }}{% if company_form.ceo_national_code.errors %}<div class="fc-error">{{ company_form.ceo_national_code.errors }}</div>{% endif %}</div>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <h3>سایر اطلاعات (اختیاری)</h3>
+            <div class="fc-grid">
+                <div class="fc-field"><label>{{ company_form.website.label }}</label>{{ company_form.website }}</div>
+                <div class="fc-field"><label>{{ company_form.instagram.label }}</label>{{ company_form.instagram }}</div>
+                <div class="fc-field"><label>{{ company_form.linkedin.label }}</label>{{ company_form.linkedin }}</div>
+                <div class="fc-field"><label>{{ company_form.logo.label }}</label>{{ company_form.logo }}</div>
+            </div>
+            <div class="fc-field"><label>{{ company_form.description.label }}</label>{{ company_form.description }}</div>
+        </div>
+
+        <div class="detail-card">
+            <h3>وضعیت</h3>
+            <div style="display:flex;gap:24px;">
+                <label style="display:flex;align-items:center;gap:8px;">{{ company_form.is_verified }} تایید شده</label>
+                <label style="display:flex;align-items:center;gap:8px;">{{ company_form.is_active }} فعال</label>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره</button>
+    </form>
+
+    {% if instance %}
+    <div class="detail-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 style="margin:0;">شعب ({{ branches.count }})</h3>
+            <a href="{% url 'staff_dashboard:forwarder_branch_add' instance.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> افزودن شعبه</a>
+        </div>
+        <table class="data-table">
+            <thead><tr><th>نام شعبه</th><th>استان/شهر</th><th>نماینده</th><th>وضعیت</th><th></th></tr></thead>
+            <tbody>
+                {% for branch in branches %}
+                <tr>
+                    <td>{{ branch.name }}</td>
+                    <td>{{ branch.province.name }} / {{ branch.city.name }}</td>
+                    <td>{{ branch.representative_first_name }} {{ branch.representative_last_name }}</td>
+                    <td>{% if branch.is_active %}<span class="badge-pill badge-green">فعال</span>{% else %}<span class="badge-pill badge-red">غیرفعال</span>{% endif %}</td>
+                    <td style="white-space:nowrap;display:flex;gap:6px;">
+                        <a href="{% url 'staff_dashboard:forwarder_branch_edit' instance.id branch.id %}" class="btn-soft btn-soft-blue" title="ویرایش"><i class="fas fa-edit"></i></a>
+                        <form method="post" action="{% url 'staff_dashboard:forwarder_branch_toggle_active' instance.id branch.id %}" style="margin:0;">
+                            {% csrf_token %}
+                            {% if branch.is_active %}
+                                <button type="submit" class="btn-soft btn-soft-red" title="غیرفعال کردن"><i class="fas fa-ban"></i></button>
+                            {% else %}
+                                <button type="submit" class="btn-soft btn-soft-green" title="فعال کردن"><i class="fas fa-check"></i></button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:16px;">شعبه‌ای ثبت نشده است.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="detail-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 style="margin:0;">کارمندان ({{ staff.count }})</h3>
+            <a href="{% url 'staff_dashboard:forwarder_staff_add' instance.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> افزودن کارمند</a>
+        </div>
+        <table class="data-table">
+            <thead><tr><th>نام</th><th>موبایل</th><th>نقش</th><th>وضعیت</th><th></th></tr></thead>
+            <tbody>
+                {% for member in staff %}
+                <tr>
+                    <td>{{ member.user.first_name }} {{ member.user.last_name }}</td>
+                    <td>{{ member.user.mobile }}</td>
+                    <td>{{ member.role.name|default:"-" }}</td>
+                    <td>{% if member.is_active %}<span class="badge-pill badge-green">فعال</span>{% else %}<span class="badge-pill badge-red">غیرفعال</span>{% endif %}</td>
+                    <td style="white-space:nowrap;display:flex;gap:6px;">
+                        <a href="{% url 'staff_dashboard:forwarder_staff_edit' instance.id member.id %}" class="btn-soft btn-soft-blue" title="ویرایش"><i class="fas fa-edit"></i></a>
+                        <form method="post" action="{% url 'staff_dashboard:forwarder_staff_toggle_active' instance.id member.id %}" style="margin:0;">
+                            {% csrf_token %}
+                            {% if member.is_active %}
+                                <button type="submit" class="btn-soft btn-soft-red" title="غیرفعال کردن"><i class="fas fa-ban"></i></button>
+                            {% else %}
+                                <button type="submit" class="btn-soft btn-soft-green" title="فعال کردن"><i class="fas fa-check"></i></button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:16px;">کارمندی ثبت نشده است.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

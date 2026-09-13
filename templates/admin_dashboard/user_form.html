@@ -1,0 +1,64 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}{% if instance %}ویرایش کاربر{% else %}کاربر جدید{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .uf-field { margin-bottom: 14px; }
+    .uf-field label { display:block;font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:5px; }
+    .uf-field select, .uf-field input:not([type=checkbox]) {
+        width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.85rem;font-family:inherit;
+    }
+    .uf-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:0 16px; }
+    @media (max-width:700px){ .uf-grid { grid-template-columns:1fr; } }
+    .uf-error { color:#dc2626;font-size:0.8rem;margin-top:4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">
+            {% if instance %}ویرایش «{{ instance.first_name }} {{ instance.last_name }}»{% else %}کاربر جدید{% endif %}
+        </h1>
+        {% if instance %}
+        <a href="{% url 'staff_dashboard:user_detail' instance.id %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+        {% else %}
+        <a href="{% url 'staff_dashboard:user_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+        {% endif %}
+    </div>
+
+    {% if form.non_field_errors %}<div class="alert-box alert-error">{{ form.non_field_errors }}</div>{% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% if not instance %}
+        <div class="alert-box alert-info">
+            رمز عبور موقت این کاربر همان شماره موبایلش خواهد بود و در اولین ورود مجبور به تغییر آن می‌شود.
+        </div>
+        {% endif %}
+
+        <div class="detail-card">
+            <h3>اطلاعات کاربر</h3>
+            <div class="uf-grid">
+                <div class="uf-field"><label>{{ form.mobile.label }}</label>{{ form.mobile }}{% if form.mobile.errors %}<div class="uf-error">{{ form.mobile.errors }}</div>{% endif %}</div>
+                <div class="uf-field"><label>{{ form.email.label }}</label>{{ form.email }}{% if form.email.errors %}<div class="uf-error">{{ form.email.errors }}</div>{% endif %}</div>
+                <div class="uf-field"><label>{{ form.first_name.label }}</label>{{ form.first_name }}{{ form.first_name.errors }}</div>
+                <div class="uf-field"><label>{{ form.last_name.label }}</label>{{ form.last_name }}{{ form.last_name.errors }}</div>
+                <div class="uf-field"><label>{{ form.role.label }}</label>{{ form.role }}{{ form.role.errors }}</div>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <h3>وضعیت و دسترسی</h3>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:8px;">{{ form.is_active }} {{ form.is_active.label }}</label>
+                <label style="display:flex;align-items:center;gap:8px;">{{ form.is_staff }} {{ form.is_staff.label }}</label>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره</button>
+    </form>
+</div>
+{% endblock %}

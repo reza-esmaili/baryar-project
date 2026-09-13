@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+panelReady(function () {
     const departmentSelect = document.getElementById("id_department");
     const topicSelect = document.getElementById("id_topic");
 

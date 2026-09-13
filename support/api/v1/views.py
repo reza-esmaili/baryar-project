@@ -23,6 +23,7 @@ from .serializers import (
 
 from support.search import filter_tickets
 from support.services import auto_assign_agent
+from support.views import get_panel_type, user_can_access_ticket, user_can_transfer_ticket
 
 
 class DepartmentListAPIView(generics.ListAPIView):
@@ -110,6 +111,19 @@ class TicketDetailAPIView(generics.RetrieveAPIView):
             "messages"
         )
 
+    def get_object(self):
+
+        ticket = get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
+        panel_type = get_panel_type(self.request)
+
+        if not user_can_access_ticket(self.request.user, ticket, panel_type):
+            self.permission_denied(
+                self.request,
+                message="شما اجازه دسترسی به این تیکت را ندارید."
+            )
+
+        return ticket
+
 
 class TicketReplyAPIView(APIView):
 
@@ -118,6 +132,13 @@ class TicketReplyAPIView(APIView):
     def post(self, request, pk):
 
         ticket = get_object_or_404(Ticket, pk=pk)
+        panel_type = get_panel_type(request)
+
+        if not user_can_access_ticket(request.user, ticket, panel_type):
+            return Response(
+                {"detail": "شما اجازه دسترسی به این تیکت را ندارید."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         serializer = TicketReplySerializer(
             data=request.data,
@@ -143,12 +164,19 @@ class TicketTransferAPIView(APIView):
     def post(self, request, pk):
 
         ticket = get_object_or_404(Ticket, pk=pk)
+        panel_type = get_panel_type(request)
 
         try:
             agent = request.user.supportagent
         except SupportAgent.DoesNotExist:
             return Response(
                 {"detail": "شما کارشناس نیستید"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if not user_can_transfer_ticket(request.user, ticket, panel_type):
+            return Response(
+                {"detail": "شما اجازه ارجاع این تیکت را ندارید."},
                 status=status.HTTP_403_FORBIDDEN
             )
 

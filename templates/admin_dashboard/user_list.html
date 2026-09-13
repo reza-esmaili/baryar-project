@@ -1,0 +1,62 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}کاربران{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">کاربران</h1>
+        <a href="{% url 'staff_dashboard:user_create' %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> کاربر جدید</a>
+    </div>
+
+    <form method="get" class="data-toolbar">
+        <input type="text" name="q" value="{{ q }}" placeholder="موبایل، نام یا ایمیل...">
+        <select name="role">
+            <option value="">همه نقش‌ها</option>
+            {% for value, label in roles %}
+                <option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit"><i class="fas fa-search"></i> جستجو</button>
+    </form>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>موبایل</th>
+                    <th>نام</th>
+                    <th>ایمیل</th>
+                    <th>نقش</th>
+                    <th>وضعیت</th>
+                    <th>تاریخ ثبت‌نام</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user_obj in page_obj %}
+                <tr>
+                    <td><a class="row-link" href="{% url 'staff_dashboard:user_detail' user_obj.id %}">{{ user_obj.mobile }}</a></td>
+                    <td>{{ user_obj.first_name }} {{ user_obj.last_name }}</td>
+                    <td>{{ user_obj.email|default:"-" }}</td>
+                    <td>{{ user_obj.get_role_display }}</td>
+                    <td>
+                        {% if user_obj.is_active %}
+                            <span class="badge-pill badge-green">فعال</span>
+                        {% else %}
+                            <span class="badge-pill badge-red">غیرفعال</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user_obj.created_at|date:"Y/m/d" }}</td>
+                    <td><a href="{% url 'staff_dashboard:user_edit' user_obj.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-edit"></i></a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px;">کاربری یافت نشد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'admin_dashboard/partials/pagination.html' %}
+</div>
+{% endblock %}

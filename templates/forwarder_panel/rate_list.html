@@ -1,13 +1,16 @@
 {% extends 'forwarder_panel/base.html' %}
 {% load static %}
 
-{% block content %}
-<script src="https://cdn.tailwindcss.com"></script>
+{% block extra_css %}
+<!-- بیلد استاتیک Tailwind به‌جای CDN زنده (توضیح در order_detail.html) -->
+<link rel="stylesheet" href="{% static 'forwarder_panel/css/tailwind_compiled.css' %}">
 <style>
-    @import url('https://v1.fontapi.ir/css/Vazir');
-    .font-vazir { font-family: 'Vazir', sans-serif; }
+    /* فونت یکسان با بقیه‌ی پنل (BYekan) به‌جای Vazir خارجی و کند */
+    .font-vazir { font-family: 'BYekan', Tahoma, Arial, sans-serif; }
 </style>
+{% endblock %}
 
+{% block content %}
 <div class="p-8 bg-[#f4f7fc] min-h-screen rtl font-vazir" dir="rtl">
     
     <!-- هدر صفحه -->

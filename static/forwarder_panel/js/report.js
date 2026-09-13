@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function() {
+panelReady(function () {
     // ۱. فعال‌سازی تقویم شمسی روی فیلدهای تاریخ
     if (typeof $('.p-date').persianDatepicker === 'function') {
         $('.p-date').persianDatepicker({

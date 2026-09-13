@@ -1,0 +1,75 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}تنظیمات پایه{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-group { margin-bottom: 24px; }
+    .settings-group h3 { font-size: 0.95rem; font-weight: 800; color: #64748b; margin-bottom: 10px; }
+    .settings-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .settings-card {
+        background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        text-decoration: none; color: #1e293b; display: flex; align-items: center; gap: 12px;
+        transition: transform .15s, box-shadow .15s;
+    }
+    .settings-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.07); color: #1e293b; }
+    .settings-card i { font-size: 1.3rem; color: #3498db; width: 28px; text-align: center; }
+    .settings-card .title { font-weight: 700; font-size: 0.88rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">تنظیمات پایه</h1>
+        <p style="color:#64748b;font-size:0.9rem;">مدیریت جدول‌های مرجع سامانه</p>
+    </div>
+
+    <div class="settings-group">
+        <h3>مکان‌ها</h3>
+        <div class="settings-cards">
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'countries' %}"><i class="fas fa-globe"></i><span class="title">کشورها</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'provinces' %}"><i class="fas fa-map"></i><span class="title">استان‌ها</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'cities' %}"><i class="fas fa-city"></i><span class="title">شهرها</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'destination-cities' %}"><i class="fas fa-map-marker-alt"></i><span class="title">شهرهای مقصد بین‌المللی</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'ports' %}"><i class="fas fa-anchor"></i><span class="title">بنادر / فرودگاه‌ها / گمرک‌ها</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:province_import' %}"><i class="fas fa-file-excel"></i><span class="title">ایمپورت اکسل استان/شهر</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:country_import' %}"><i class="fas fa-file-excel"></i><span class="title">ایمپورت اکسل کشور/پورت</span></a>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <h3>کالا و نرخ‌گذاری</h3>
+        <div class="settings-cards">
+            <a class="settings-card" href="{% url 'staff_dashboard:cargo_type_hub' %}"><i class="fas fa-boxes"></i><span class="title">انواع کالا و زیردسته‌ها</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'cargo-subcategory-children' %}"><i class="fas fa-sitemap"></i><span class="title">زیرمجموعه‌های زیردسته کالا</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:rate_list' %}"><i class="fas fa-tags"></i><span class="title">نرخ‌ها</span></a>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <h3>مدارک</h3>
+        <div class="settings-cards">
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'document-types' %}"><i class="fas fa-file-alt"></i><span class="title">انواع مدرک</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:document_rule_list' %}"><i class="fas fa-clipboard-list"></i><span class="title">قوانین مدارک</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:additional_document_request_list' %}"><i class="fas fa-file-import"></i><span class="title">درخواست‌های مدرک تکمیلی</span></a>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <h3>پشتیبانی</h3>
+        <div class="settings-cards">
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'support-departments' %}"><i class="fas fa-building"></i><span class="title">دپارتمان‌های پشتیبانی</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'ticket-topics' %}"><i class="fas fa-comment-dots"></i><span class="title">موضوعات تیکت</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'support-agents' %}"><i class="fas fa-user-headset"></i><span class="title">کارشناسان پشتیبانی</span></a>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <h3>فورواردرها</h3>
+        <div class="settings-cards">
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'forwarder-roles' %}"><i class="fas fa-user-shield"></i><span class="title">نقش‌های فورواردر</span></a>
+        </div>
+    </div>
+</div>
+{% endblock %}

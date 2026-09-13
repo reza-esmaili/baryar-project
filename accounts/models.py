@@ -208,6 +208,8 @@ class CustomerProfile(TimeStampedModel):
     national_code = models.CharField(
         max_length=10,
         unique=True,
+        null=True,
+        blank=True,
         validators=[validate_iranian_national_code],
         verbose_name="کد ملی",
     )

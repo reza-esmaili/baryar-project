@@ -1,0 +1,70 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}شرکت‌های فورواردر{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">شرکت‌های فورواردر</h1>
+        <a href="{% url 'staff_dashboard:forwarder_create' %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> شرکت جدید</a>
+    </div>
+
+    <form method="get" class="data-toolbar">
+        <input type="text" name="q" value="{{ q }}" placeholder="نام شرکت، شناسه ملی...">
+        <select name="verified">
+            <option value="">همه</option>
+            <option value="1" {% if verified == "1" %}selected{% endif %}>تایید شده</option>
+            <option value="0" {% if verified == "0" %}selected{% endif %}>تایید نشده</option>
+        </select>
+        <button type="submit"><i class="fas fa-search"></i> جستجو</button>
+    </form>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>نام شرکت</th>
+                    <th>شناسه ملی</th>
+                    <th>مدیرعامل</th>
+                    <th>وضعیت تایید</th>
+                    <th>وضعیت فعالیت</th>
+                    <th>تاریخ ثبت</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for company in page_obj %}
+                <tr>
+                    <td><a class="row-link" href="{% url 'staff_dashboard:forwarder_detail' company.id %}">{{ company.company_name }}</a></td>
+                    <td>{{ company.national_id }}</td>
+                    <td>{{ company.admin_user.first_name }} {{ company.admin_user.last_name }}</td>
+                    <td>
+                        {% if company.is_verified %}
+                            <span class="badge-pill badge-green">تایید شده</span>
+                        {% else %}
+                            <span class="badge-pill badge-amber">در انتظار</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if company.is_active %}
+                            <span class="badge-pill badge-green">فعال</span>
+                        {% else %}
+                            <span class="badge-pill badge-red">غیرفعال</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ company.created_at|date:"Y/m/d" }}</td>
+                    <td style="white-space:nowrap;display:flex;gap:6px;">
+                        <a href="{% url 'staff_dashboard:forwarder_detail' company.id %}" class="btn-soft btn-soft-gray" title="مشاهده جزئیات"><i class="fas fa-eye"></i></a>
+                        <a href="{% url 'staff_dashboard:forwarder_edit' company.id %}" class="btn-soft btn-soft-blue" title="ویرایش"><i class="fas fa-edit"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px;">شرکتی یافت نشد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'admin_dashboard/partials/pagination.html' %}
+</div>
+{% endblock %}

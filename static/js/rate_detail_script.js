@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+panelReady(function () {
     
     // ==========================================
     // ۱. گرفتن المان‌های اصلی فرم
