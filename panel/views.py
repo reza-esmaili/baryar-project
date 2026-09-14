@@ -1,3 +1,5 @@
+import logging
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .forms import RateForm, RateTierFormSet, StaffForm, BranchForm, ForwarderDocumentsForm
@@ -29,6 +31,11 @@ from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, TruncQua
 import jdatetime
 # ایمپورت‌های اضافه شده برای سطح دسترسی
 from .decorators import forwarder_required, get_company_for_user, staff_perm, staff_permission_required
+from core.utils import get_client_ip
+
+logger = logging.getLogger(__name__)
+
+
 def get_forwarder_verification_status(user):
     """
     خروجی:
@@ -259,8 +266,9 @@ def toggle_rate_status(request, rate_id):
         rate.save()
         
         return JsonResponse({'success': True, 'is_active': rate.is_active})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    except Exception:
+        logger.exception("خطا در تغییر وضعیت نرخ %s", rate_id)
+        return JsonResponse({'success': False, 'error': 'خطایی رخ داد. لطفاً دوباره تلاش کنید.'}, status=400)
 
 
 @login_required
@@ -269,12 +277,13 @@ def toggle_rate_status(request, rate_id):
 @require_POST
 def delete_rate(request, rate_id):
     rate = get_object_or_404(Rate, id=rate_id, forwarder=get_company_for_user(request.user))
-    
+
     try:
         rate.delete()
         return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    except Exception:
+        logger.exception("خطا در حذف نرخ %s", rate_id)
+        return JsonResponse({'success': False, 'error': 'خطایی رخ داد. لطفاً دوباره تلاش کنید.'}, status=400)
 
 
 class RateDetailUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -373,9 +382,10 @@ def rate_bulk_delete(request):
             return JsonResponse({'success': True})
         else:
             return JsonResponse({'success': False, 'error': 'دسترسی غیرمجاز'}, status=403)
-            
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+    except Exception:
+        logger.exception("خطا در حذف گروهی نرخ‌ها")
+        return JsonResponse({'success': False, 'error': 'خطایی رخ داد. لطفاً دوباره تلاش کنید.'}, status=400)
 
 
 @login_required
@@ -636,7 +646,7 @@ def first_login_password_change(request):
                 messages.error(request, "کد ملی وارد شده صحیح نیست.")
                 return render(request, 'forwarder_panel/first_login_change_password.html', {'step': 1})
             try:
-                request_otp(user.mobile, OTPCode.Purpose.PASSWORD_RESET)
+                request_otp(user.mobile, OTPCode.Purpose.PASSWORD_RESET, ip_address=get_client_ip(request))
                 request.session['flcp_nc_ok'] = True
                 messages.success(request, "کد تایید به شماره موبایل شما ارسال شد.")
             except ValueError as e:
@@ -1529,9 +1539,19 @@ def upload_company_logo(request):
     if not logo_file:
         return JsonResponse({'success': False, 'error': 'فایل لوگو ارسال نشده.'}, status=400)
 
-    allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
-    if logo_file.content_type not in allowed_types:
-        return JsonResponse({'success': False, 'error': 'فرمت فایل مجاز نیست. فقط JPG، PNG، WEBP یا SVG مجاز است.'}, status=400)
+    # SVG عمداً مجاز نیست: می‌تواند حاوی اسکریپت باشد (ریسک XSS ذخیره‌شده).
+    # content_type را کلاینت می‌فرستد و قابل جعل است، پس پسوند واقعی فایل هم
+    # جداگانه بررسی می‌شود.
+    allowed_types = ['image/jpeg', 'image/png', 'image/webp']
+    allowed_extensions = ['jpg', 'jpeg', 'png', 'webp']
+    ext = logo_file.name.rsplit('.', 1)[-1].lower() if '.' in logo_file.name else ''
+
+    if logo_file.content_type not in allowed_types or ext not in allowed_extensions:
+        return JsonResponse({'success': False, 'error': 'فرمت فایل مجاز نیست. فقط JPG، PNG یا WEBP مجاز است.'}, status=400)
+
+    max_size = 2 * 1024 * 1024
+    if logo_file.size > max_size:
+        return JsonResponse({'success': False, 'error': 'حجم فایل نباید بیشتر از ۲ مگابایت باشد.'}, status=400)
 
     if forwarder_company.logo:
         forwarder_company.logo.delete(save=False)
@@ -1572,7 +1592,7 @@ def change_password_view(request):
         elif method == 'send_otp':
             mobile = request.user.mobile
             try:
-                request_otp(mobile=mobile, purpose=OTPCode.Purpose.PASSWORD_RESET)
+                request_otp(mobile=mobile, purpose=OTPCode.Purpose.PASSWORD_RESET, ip_address=get_client_ip(request))
                 messages.info(request, f'کد تأیید به شماره {mobile} ارسال شد.')
                 return redirect('forwarder_panel:settings' + '?tab=password&otp_sent=1')
             except ValueError as e:

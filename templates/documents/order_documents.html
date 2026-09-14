@@ -62,7 +62,7 @@
 
             {% if document.file %}
               <div class="uploaded-file">
-                <a href="{{ document.file.url }}" target="_blank">مشاهده فایل آپلود شده</a>
+                <a href="{% url 'documents:serve_order_document' document.id %}" target="_blank">مشاهده فایل آپلود شده</a>
               </div>
             {% endif %}
 

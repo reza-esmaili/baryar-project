@@ -1,7 +1,7 @@
 import hashlib
 import os
-import random
 import re
+import secrets
 from core.validators import validate_iranian_national_code
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -9,6 +9,7 @@ from django.db import models, transaction
 from django.utils import timezone
 
 from core.models import TimeStampedModel
+from core.storage import protected_storage
 
 
 class UserManager(BaseUserManager):
@@ -141,7 +142,7 @@ class OTPCode(TimeStampedModel):
         length = int(getattr(settings, "OTP_CODE_LENGTH", 6))
         start = 10 ** (length - 1)
         end = (10 ** length) - 1
-        return str(random.randint(start, end))
+        return str(secrets.randbelow(end - start + 1) + start)
 
     @staticmethod
     def hash_code(code):
@@ -311,7 +312,7 @@ class IdentityDocument(TimeStampedModel):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="documents")
     doc_type = models.CharField(max_length=30, choices=DocType.choices)
-    file = models.FileField(upload_to=identity_document_upload_to)
+    file = models.FileField(upload_to=identity_document_upload_to, storage=protected_storage)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     admin_note = models.TextField(blank=True)
 

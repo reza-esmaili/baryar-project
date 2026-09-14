@@ -52,7 +52,7 @@
                 {% for doc in order_documents %}
                 <tr>
                     <td>{{ doc.document_type.title }}</td>
-                    <td>{% if doc.file %}<a href="{{ doc.file.url }}" target="_blank">مشاهده فایل</a>{% else %}-{% endif %}</td>
+                    <td>{% if doc.file %}<a href="{% url 'documents:serve_order_document' doc.id %}" target="_blank">مشاهده فایل</a>{% else %}-{% endif %}</td>
                     <td><span class="badge-pill badge-gray">{{ doc.get_status_display }}</span></td>
                     <td>{{ doc.uploaded_by|default:"-" }}</td>
                 </tr>

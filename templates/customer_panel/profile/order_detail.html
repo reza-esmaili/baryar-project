@@ -620,7 +620,7 @@
               </div>
               <div class="od-doc-actions">
                 {% if doc.file %}
-                  <a href="{{ doc.file.url }}" target="_blank" class="od-doc-link">
+                  <a href="{% url 'documents:serve_order_document' doc.id %}" target="_blank" class="od-doc-link">
                     <i class="fas fa-download"></i> دانلود
                   </a>
                 {% endif %}
@@ -673,7 +673,7 @@
               <div style="font-size:11px;color:#94a3b8;font-weight:700;margin-bottom:7px;">فایل‌های ارسال‌شده</div>
               <div class="od-upload-list">
                 {% for upload in req.uploads.all %}
-                <a href="{{ upload.file.url }}" target="_blank" class="od-upload-chip">
+                <a href="{% url 'documents:serve_additional_document_upload' upload.id %}" target="_blank" class="od-upload-chip">
                   <i class="fas fa-paperclip"></i> فایل {{ forloop.counter }}
                 </a>
                 {% endfor %}

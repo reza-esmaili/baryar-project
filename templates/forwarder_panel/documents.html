@@ -382,7 +382,7 @@
                             <td>{{ doc.created_at|date:"Y/m/d H:i" }}</td>
                             <td>
                                 {% if doc.file %}
-                                    <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <a href="{% url 'documents:serve_identity_document' doc.id %}" target="_blank" class="btn btn-sm btn-outline-primary">
                                         مشاهده فایل
                                     </a>
                                 {% endif %}

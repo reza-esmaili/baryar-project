@@ -4,6 +4,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from accounts.models import User, OTPCode
 from accounts.services import request_otp, verify_otp
+from core.utils import get_client_ip
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -102,9 +103,11 @@ class RequestRegisterOTPSerializer(serializers.Serializer):
         return mobile
 
     def save(self):
+        request = self.context.get("request")
         return request_otp(
             mobile=self.validated_data["mobile"],
             purpose=OTPCode.Purpose.REGISTER,
+            ip_address=get_client_ip(request) if request else None,
         )
 
 
@@ -177,9 +180,11 @@ class RequestLoginOTPSerializer(serializers.Serializer):
         return mobile
 
     def save(self):
+        request = self.context.get("request")
         return request_otp(
             mobile=self.validated_data["mobile"],
             purpose=OTPCode.Purpose.LOGIN,
+            ip_address=get_client_ip(request) if request else None,
         )
 
 
@@ -234,9 +239,11 @@ class RequestPasswordResetOTPSerializer(serializers.Serializer):
         return mobile
 
     def save(self):
+        request = self.context.get("request")
         return request_otp(
             mobile=self.validated_data["mobile"],
             purpose=OTPCode.Purpose.PASSWORD_RESET,
+            ip_address=get_client_ip(request) if request else None,
         )
 
 

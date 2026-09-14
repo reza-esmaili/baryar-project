@@ -95,6 +95,9 @@ class CompanyProfileForm(forms.ModelForm):
 
 class IdentityDocumentForm(forms.ModelForm):
 
+    ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "pdf"]
+    MAX_FILE_SIZE_MB = 5
+
     class Meta:
         model = IdentityDocument
 
@@ -112,3 +115,22 @@ class IdentityDocumentForm(forms.ModelForm):
                 "class": "form-control"
             })
         }
+
+    def clean_file(self):
+        file = self.cleaned_data.get("file")
+        if not file:
+            return file
+
+        ext = file.name.rsplit(".", 1)[-1].lower() if "." in file.name else ""
+        if ext not in self.ALLOWED_EXTENSIONS:
+            raise forms.ValidationError(
+                f"پسوند فایل مجاز نیست. پسوندهای مجاز: {', '.join(self.ALLOWED_EXTENSIONS)}"
+            )
+
+        max_size = self.MAX_FILE_SIZE_MB * 1024 * 1024
+        if file.size > max_size:
+            raise forms.ValidationError(
+                f"حجم فایل نباید بیشتر از {self.MAX_FILE_SIZE_MB} مگابایت باشد."
+            )
+
+        return file

@@ -1,7 +1,9 @@
+import os
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.http import Http404, HttpResponseForbidden
+from django.http import FileResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -347,3 +349,95 @@ def ajax_destination_ports(request):
     ]
 
     return JsonResponse(data, safe=False)
+
+
+# ════════════════════════════════════════════════════════════════
+# سرو محافظت‌شده فایل‌های حساس (مدارک هویتی/سفارش)
+#
+# پیش‌تر این فایل‌ها مستقیم از /media/ در دسترس هر کسی بودند که آدرس را
+# می‌دانست. این ویوها احراز هویت و مالکیت را قبل از پاسخ‌دادن به فایل
+# بررسی می‌کنند.
+# ════════════════════════════════════════════════════════════════
+
+def _user_can_access_order(user, order):
+    from accounts.models import User
+
+    if order.customer_id == user.id:
+        return True
+
+    if user.is_staff or user.role == User.Role.PLATFORM_ADMIN:
+        return True
+
+    forwarder = order.selected_rate.forwarder if order.selected_rate_id else None
+    if forwarder:
+        if forwarder.admin_user_id == user.id:
+            return True
+        if forwarder.staff.filter(user_id=user.id).exists():
+            return True
+
+    return False
+
+
+def _user_can_access_identity_document(user, doc):
+    from accounts.models import User
+
+    if doc.user_id == user.id:
+        return True
+
+    if user.is_staff or user.role == User.Role.PLATFORM_ADMIN:
+        return True
+
+    if doc.company_id:
+        company = doc.company
+        if company.admin_user_id == user.id:
+            return True
+        if company.staff.filter(user_id=user.id).exists():
+            return True
+
+    return False
+
+
+def _serve_protected_file(file_field):
+    if not file_field:
+        raise Http404()
+    return FileResponse(file_field.open("rb"), filename=os.path.basename(file_field.name))
+
+
+@login_required
+def serve_identity_document(request, pk):
+    from accounts.models import IdentityDocument
+
+    doc = get_object_or_404(IdentityDocument, pk=pk)
+
+    if not _user_can_access_identity_document(request.user, doc):
+        return HttpResponseForbidden("شما اجازه مشاهده این مدرک را ندارید.")
+
+    return _serve_protected_file(doc.file)
+
+
+@login_required
+def serve_order_document(request, pk):
+    doc = get_object_or_404(
+        OrderDocument.objects.select_related("order", "order__selected_rate__forwarder"),
+        pk=pk,
+    )
+
+    if not _user_can_access_order(request.user, doc.order):
+        return HttpResponseForbidden("شما اجازه مشاهده این مدرک را ندارید.")
+
+    return _serve_protected_file(doc.file)
+
+
+@login_required
+def serve_additional_document_upload(request, pk):
+    upload = get_object_or_404(
+        AdditionalDocumentUpload.objects.select_related(
+            "request__order", "request__order__selected_rate__forwarder"
+        ),
+        pk=pk,
+    )
+
+    if not _user_can_access_order(request.user, upload.request.order):
+        return HttpResponseForbidden("شما اجازه مشاهده این فایل را ندارید.")
+
+    return _serve_protected_file(upload.file)

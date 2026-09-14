@@ -45,4 +45,21 @@ urlpatterns = [
         views.ajax_destination_ports,
         name="ajax_destination_ports",
     ),
+
+    # ─── سرو محافظت‌شده فایل‌های حساس ─────────────────────────────────────
+    path(
+        "identity-documents/<int:pk>/",
+        views.serve_identity_document,
+        name="serve_identity_document",
+    ),
+    path(
+        "order-documents/<int:pk>/",
+        views.serve_order_document,
+        name="serve_order_document",
+    ),
+    path(
+        "additional-uploads/<int:pk>/",
+        views.serve_additional_document_upload,
+        name="serve_additional_document_upload",
+    ),
 ]

@@ -84,7 +84,7 @@
                         {% elif doc.status == 'rejected' %}<span class="badge-pill badge-red">{{ doc.get_status_display }}</span>
                         {% else %}<span class="badge-pill badge-amber">{{ doc.get_status_display }}</span>{% endif %}
                     </td>
-                    <td>{% if doc.file %}<a href="{{ doc.file.url }}" target="_blank">مشاهده فایل</a>{% else %}-{% endif %}</td>
+                    <td>{% if doc.file %}<a href="{% url 'documents:serve_identity_document' doc.id %}" target="_blank">مشاهده فایل</a>{% else %}-{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>

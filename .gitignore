@@ -17,6 +17,7 @@ db.sqlite3
 
 # Media / uploads
 media/
+protected_media/
 identity_docs/
 order_documents/
 additional_documents/

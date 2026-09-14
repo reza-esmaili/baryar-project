@@ -11,6 +11,7 @@ from locations.models import City, DestinationCity
 
 from accounts.models import User, CustomerProfile, OTPCode
 from accounts.services import request_otp, verify_otp, SMSIRException
+from core.utils import get_client_ip
 
 from orders.models import CargoRequest, OrderMessage, CustomerNotification, ForwarderNotification
 
@@ -220,7 +221,7 @@ def web_login_request_otp(request):
         )
 
     try:
-        result = request_otp(mobile=mobile, purpose=OTPCode.Purpose.LOGIN)
+        result = request_otp(mobile=mobile, purpose=OTPCode.Purpose.LOGIN, ip_address=get_client_ip(request))
         return JsonResponse({"ok": True, **result})
 
     except ValueError as e:
@@ -325,7 +326,7 @@ def web_register_request_otp(request):
     }
 
     try:
-        result = request_otp(mobile=mobile, purpose=OTPCode.Purpose.REGISTER)
+        result = request_otp(mobile=mobile, purpose=OTPCode.Purpose.REGISTER, ip_address=get_client_ip(request))
         return JsonResponse({"ok": True, **result})
 
     except ValueError as e:

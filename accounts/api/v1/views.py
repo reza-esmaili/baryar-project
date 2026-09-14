@@ -101,7 +101,7 @@ class BaseRequestOTPAPIView(APIView):
     serializer_class = None
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
 
         try:

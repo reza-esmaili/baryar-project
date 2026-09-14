@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from core.models import TimeStampedModel
 from rates.models import TransportMode, CargoType, CargoSubCategory
 from core.choices import ShippingProcedure
+from core.storage import protected_storage
 
 class DocumentRequirementLevel(models.TextChoices):
     GENERAL = "general", "عمومی"
@@ -398,6 +399,7 @@ class OrderDocument(TimeStampedModel):
 
     file = models.FileField(
         upload_to=order_document_upload_to,
+        storage=protected_storage,
         null=True,
         blank=True,
         verbose_name="فایل"
@@ -664,6 +666,7 @@ class AdditionalDocumentUpload(TimeStampedModel):
 
     file = models.FileField(
         upload_to=additional_document_upload_to,
+        storage=protected_storage,
         verbose_name="فایل"
     )
 

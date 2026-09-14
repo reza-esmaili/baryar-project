@@ -122,6 +122,21 @@ STATICFILES_DIRS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# فضای ذخیره‌سازی مدارک حساس (هویتی/سفارش) — عمداً خارج از MEDIA_ROOT است تا
+# هرگز زیر آدرس عمومی /media/ سرو نشود؛ دسترسی فقط از طریق ویوهای محافظت‌شده
+# در documents/views.py ممکن است (نگاه کنید به core/storage.py).
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    "protected": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "OPTIONS": {
+            "location": BASE_DIR / "protected_media",
+            "base_url": None,
+        },
+    },
+}
+
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = 'customer:login'
 
