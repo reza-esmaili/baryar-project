@@ -1,0 +1,51 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}رویدادهای پیامکی{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">رویدادهای پیامکی</h1>
+        <a href="{% url 'staff_dashboard:sms_provider_settings' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت به تنظیمات سامانه پیامکی</a>
+    </div>
+
+    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">
+        برای هر رویداد پلتفرم می‌توانید پیامک را غیرفعال کنید، یک متن دلخواه با پارامترهای داینامیک تنظیم کنید، یا از یک قالب تاییدشده sms.ir استفاده کنید.
+    </p>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>رویداد</th>
+                    <th>توضیح</th>
+                    <th>وضعیت</th>
+                    <th>روش ارسال</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td>{{ event.label }}</td>
+                    <td style="color:#64748b;font-size:0.8rem;">{{ event.description }}</td>
+                    <td>
+                        {% if event.is_enabled %}
+                            <span class="badge-pill badge-green">فعال</span>
+                        {% else %}
+                            <span class="badge-pill badge-red">غیرفعال</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ event.get_send_mode_display }}</td>
+                    <td>
+                        <a href="{% url 'staff_dashboard:sms_event_edit' event.code %}" class="btn-soft btn-soft-blue" title="ویرایش"><i class="fas fa-edit"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:24px;">رویدادی یافت نشد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

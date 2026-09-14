@@ -1,0 +1,49 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}لاگ پیامک‌ها{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">لاگ پیامک‌های ارسالی</h1>
+        <a href="{% url 'staff_dashboard:sms_provider_settings' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت به تنظیمات سامانه پیامکی</a>
+    </div>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>موبایل</th>
+                    <th>رویداد</th>
+                    <th>وضعیت</th>
+                    <th>خطا</th>
+                    <th>تاریخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in page_obj %}
+                <tr>
+                    <td>{{ log.mobile }}</td>
+                    <td>{{ log.template_key }}</td>
+                    <td>
+                        {% if log.status == 'sent' %}
+                            <span class="badge-pill badge-green">ارسال شد</span>
+                        {% elif log.status == 'failed' %}
+                            <span class="badge-pill badge-red">ناموفق</span>
+                        {% else %}
+                            <span class="badge-pill badge-amber">{{ log.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="color:#dc2626;font-size:0.78rem;">{{ log.error_message|default:"-" }}</td>
+                    <td>{{ log.created_at|date:"Y/m/d H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:24px;">پیامکی ثبت نشده است.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'admin_dashboard/partials/pagination.html' %}
+</div>
+{% endblock %}

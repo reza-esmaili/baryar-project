@@ -1159,13 +1159,8 @@ def request_additional_document(request, order_id):
 
 def _send_doc_request_sms(request, order, doc_request):
     """ارسال پیامک اطلاع‌رسانی درخواست مدرک به مشتری."""
-    from django.conf import settings as django_settings
     from core.services.notifications.sms import SmsNotificationService
-
-    template_cfg = django_settings.SMS_TEMPLATES.get("doc_request_link", {})
-    template_id = template_cfg.get("template_id", 0)
-    if not template_id:
-        return  # قالب در sms.ir هنوز تنظیم نشده
+    from core.services.notifications.events import ADDITIONAL_DOCUMENT_REQUESTED
 
     customer_mobile = order.customer.mobile
     if not customer_mobile:
@@ -1174,21 +1169,15 @@ def _send_doc_request_sms(request, order, doc_request):
     upload_path = doc_request.get_upload_url()
     full_link = request.build_absolute_uri(upload_path)
 
-    try:
-        svc = SmsNotificationService()
-        svc.send_template(
-            mobile=customer_mobile,
-            template_key="doc_request_link",
-            context={
-                "order_id": str(order.id),
-                "doc_title": doc_request.document_title,
-                "link": full_link,
-            },
-        )
+    result = SmsNotificationService().notify(ADDITIONAL_DOCUMENT_REQUESTED, customer_mobile, {
+        "order_id": order.id,
+        "doc_title": doc_request.document_title,
+        "link": full_link,
+    })
+
+    if result is not None:
         doc_request.sms_sent_at = timezone.now()
         doc_request.save(update_fields=["sms_sent_at"])
-    except Exception:
-        pass  # عدم ارسال SMS نباید جریان اصلی را مختل کند
 
 
 @login_required

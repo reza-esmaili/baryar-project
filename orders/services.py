@@ -265,3 +265,27 @@ def calculate_and_match_rates(data, dimensions_data):
         'chargeable_weight': str(money(cw)),
         'results': results
     }
+
+
+def get_forwarder_notification_target(rate):
+    """
+    از یک Rate، شماره موبایل و نام قابل‌نمایش «صاحب نرخ» را برمی‌گرداند تا
+    بتوان به او اطلاع‌رسانی (پیامک/اعلان) کرد. rate.forwarder و rate.branch
+    متقابلاً انحصاری‌اند (Rate.clean())؛ اگر نرخ متعلق به یک شعبه باشد،
+    گیرنده کاربر همان شعبه (branch_user) است، نه ادمین کل شرکت.
+
+    خروجی: (mobile, company_name) یا (None, None) اگر چیزی پیدا نشود.
+    """
+    if rate.forwarder_id:
+        forwarder = rate.forwarder
+        admin_user = forwarder.admin_user
+        mobile = admin_user.mobile if admin_user else None
+        return mobile, forwarder.company_name
+
+    if rate.branch_id:
+        branch = rate.branch
+        branch_user = branch.branch_user
+        mobile = branch_user.mobile if branch_user else None
+        return mobile, branch.company.company_name
+
+    return None, None

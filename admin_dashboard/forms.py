@@ -3,6 +3,9 @@
 from django import forms
 
 from accounts.models import User, OTPCode
+from core.models import SmsProviderConfig, SmsEvent
+from core.services.notifications.events import get_event_params
+from core.services.notifications.sms import validate_custom_text_params
 from documents.models import DocumentType, AdditionalDocumentRequest
 from forwarders.models import ForwarderRole, ForwarderCompany
 from locations.models import Country, Province, City, DestinationCity, Port
@@ -418,3 +421,77 @@ class AdditionalDocumentRequestForm(forms.ModelForm):
             "custom_document_title": forms.TextInput(attrs=FORM_CONTROL_ATTRS),
             "expires_at": forms.DateInput(attrs={**FORM_CONTROL_ATTRS, "type": "date"}),
         }
+
+
+class SmsProviderConfigForm(forms.ModelForm):
+    class Meta:
+        model = SmsProviderConfig
+        fields = ["provider_type", "api_key", "default_line_number", "is_active"]
+        widgets = {
+            "provider_type": forms.Select(attrs=FORM_SELECT_ATTRS),
+            "api_key": forms.TextInput(attrs={**FORM_CONTROL_ATTRS, "autocomplete": "off"}),
+            "default_line_number": forms.TextInput(attrs=FORM_CONTROL_ATTRS),
+            "is_active": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
+        }
+
+
+class SmsEventForm(forms.ModelForm):
+    """
+    فرم ویرایش یک رویداد پیامکی. فیلدهای نگاشت پارامتر (parameter_mapping)
+    پویا و بر اساس پارامترهای ثبت‌شده همان رویداد در
+    core/services/notifications/events.py ساخته می‌شوند — نه یک فرم‌ست، چون
+    نام پارامترهای هر رویداد در کد ثابت است و فقط نگاشت به نام قالب sms.ir
+    باید توسط ادمین وارد شود.
+    """
+
+    class Meta:
+        model = SmsEvent
+        fields = ["is_enabled", "send_mode", "custom_text", "template_id"]
+        widgets = {
+            "is_enabled": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
+            "send_mode": forms.Select(attrs=FORM_SELECT_ATTRS),
+            "custom_text": forms.Textarea(attrs={**FORM_CONTROL_ATTRS, "rows": 3}),
+            "template_id": forms.NumberInput(attrs=FORM_CONTROL_ATTRS),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.param_keys = list(get_event_params(self.instance.code).keys())
+        existing_mapping = self.instance.parameter_mapping or {}
+
+        for key in self.param_keys:
+            self.fields[f"param_map__{key}"] = forms.CharField(
+                required=False,
+                label=key,
+                initial=existing_mapping.get(key, ""),
+                widget=forms.TextInput(attrs={**FORM_CONTROL_ATTRS, "placeholder": "نام این پارامتر در قالب sms.ir"}),
+            )
+
+    def clean_custom_text(self):
+        text = self.cleaned_data.get("custom_text", "")
+        send_mode = self.data.get("send_mode")
+        if send_mode == SmsEvent.SendMode.CUSTOM and text:
+            unknown = validate_custom_text_params(text, self.param_keys)
+            if unknown:
+                raise forms.ValidationError(
+                    f"پارامتر(های) نامعتبر در متن: {', '.join(unknown)}. "
+                    f"پارامترهای مجاز: {', '.join(self.param_keys)}"
+                )
+        return text
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("send_mode") == SmsEvent.SendMode.TEMPLATE and not cleaned.get("template_id"):
+            self.add_error("template_id", "برای ارسال با قالب sms.ir، شناسه قالب الزامی است.")
+        return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.parameter_mapping = {
+            key: self.cleaned_data.get(f"param_map__{key}", "").strip()
+            for key in self.param_keys
+            if self.cleaned_data.get(f"param_map__{key}", "").strip()
+        }
+        if commit:
+            instance.save()
+        return instance

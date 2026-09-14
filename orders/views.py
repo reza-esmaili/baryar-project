@@ -9,11 +9,18 @@ from decimal import Decimal
 from weasyprint import HTML
 
 from .forms import CargoRequestForm, CargoDimensionFormSet, OrderCompletionForm
-from .services import calculate_and_match_rates, calculate_extra_charge, money
+from .services import calculate_and_match_rates, calculate_extra_charge, money, get_forwarder_notification_target
 from .models import CargoRequest, OrderStatus, OrderHistory, OrderCargoItem
 from rates.models import CargoType, Rate, CargoSubCategory, CargoSubCategoryChild, ExtraChargeType
 from documents.services import sync_order_required_documents, OrderDocument
 from orders.crosssite import consume_order_token
+from core.services.notifications.sms import SmsNotificationService
+from core.services.notifications.events import (
+    ORDER_DRAFT_CREATED,
+    RATE_MATCH_FOUND_CUSTOMER,
+    RATE_MATCH_FOUND_FORWARDER,
+    ORDER_FINALIZED,
+)
 
 
 # ════════════════════════════════════════════════════════════════
@@ -247,6 +254,33 @@ def submit_order(request):
                     note="نرخ انتخاب شد و سفارش به عنوان پیش‌نویس ثبت گردید."
                 )
 
+                sms = SmsNotificationService()
+                customer_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.mobile
+                origin_name = cargo_request.origin_city.name if cargo_request.origin_city_id else ""
+                destination_name = cargo_request.destination_port.name if cargo_request.destination_port_id else ""
+
+                sms.notify(ORDER_DRAFT_CREATED, request.user.mobile, {
+                    "order_id": cargo_request.id,
+                    "customer_name": customer_name,
+                    "origin": origin_name,
+                    "destination": destination_name,
+                })
+
+                forwarder_name = (rate.forwarder.company_name if rate.forwarder_id
+                                  else rate.branch.company.company_name if rate.branch_id else "")
+                sms.notify(RATE_MATCH_FOUND_CUSTOMER, request.user.mobile, {
+                    "order_id": cargo_request.id,
+                    "forwarder_name": forwarder_name,
+                })
+
+                forwarder_mobile, _ = get_forwarder_notification_target(rate)
+                sms.notify(RATE_MATCH_FOUND_FORWARDER, forwarder_mobile, {
+                    "order_id": cargo_request.id,
+                    "origin": origin_name,
+                    "destination": destination_name,
+                    "customer_name": customer_name,
+                })
+
                 return redirect('orders:complete_order_details', order_id=cargo_request.id)
 
     return redirect('orders:create_request')
@@ -369,6 +403,11 @@ def complete_order_details(request, order_id):
                 changed_by=request.user,
                 note="اطلاعات سفارش تکمیل و مدارک بارگذاری شد و سفارش ثبت نهایی گردید."
             )
+
+            SmsNotificationService().notify(ORDER_FINALIZED, request.user.mobile, {
+                "order_id": order.id,
+                "final_price": order.final_price,
+            })
 
             return redirect("customer:order_detail", pk=order.id)
 

@@ -180,29 +180,10 @@ SIMPLE_JWT = {
 }
 
 # --- SMS Configuration ---
-SMS_PROVIDER = "smsir"
-SMSIR_API_KEY = os.environ.get('SMSIR_API_KEY', '')
-SMSIR_VERIFY_BASE_URL = "https://api.sms.ir/v1/send/verify"
-
-SMS_TEMPLATES = {
-    "otp": {
-        "template_id": 438020,
-        "parameters": {
-            "code": "OTP",
-        },
-    },
-    # قالب پیامک درخواست مدرک تکمیلی از مشتری
-    # template_id را پس از ساخت قالب در پنل sms.ir وارد کنید
-    # متغیرهای قالب: OrderId (شماره سفارش)، DocTitle (عنوان مدرک)، Link (لینک آپلود)
-    "doc_request_link": {
-        "template_id": 0,   # ← شناسه قالب sms.ir را اینجا وارد کنید
-        "parameters": {
-            "order_id":  "OrderId",
-            "doc_title": "DocTitle",
-            "link":      "Link",
-        },
-    },
-}
+# تنظیمات اتصال به سامانه پیامکی (کلید API، شماره خط) و متن/قالب هر رویداد
+# دیگر اینجا نیست — از پایگاه‌داده خوانده می‌شود و از داشبورد ادمین
+# (/staff/settings/sms/) قابل تغییر است. به core.models.SmsProviderConfig
+# و core.models.SmsEvent مراجعه کنید.
 
 OTP_RESEND_COOLDOWN_SECONDS = 60
 OTP_EXPIRE_SECONDS = 120  # ۲ دقیقه فرصت برای وارد کردن کد

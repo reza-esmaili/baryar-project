@@ -5,6 +5,7 @@ from . import views_rates
 from . import views_documents
 from . import views_import
 from . import views_ajax
+from . import views_sms
 
 app_name = "admin_dashboard"
 
@@ -95,6 +96,12 @@ urlpatterns = [
     path("cargo-types/import/", views_import.import_cargo_types, name="cargo_type_import"),
     path("lookups/provinces/import/", views_import.import_provinces, name="province_import"),
     path("lookups/countries/import/", views_import.import_countries, name="country_import"),
+
+    # ─── Phase 3: تنظیمات سامانه پیامکی و رویدادها ──────────────────────────
+    path("settings/sms/", views_sms.sms_provider_settings, name="sms_provider_settings"),
+    path("settings/sms/events/", views_sms.sms_event_list, name="sms_event_list"),
+    path("settings/sms/events/<str:code>/edit/", views_sms.sms_event_form, name="sms_event_edit"),
+    path("settings/sms/logs/", views_sms.sms_log_list, name="sms_log_list"),
 
     # ─── ajax cascading dropdowns ────────────────────────────────────────────
     path("ajax/cities/", views_ajax.ajax_cities, name="ajax_cities"),

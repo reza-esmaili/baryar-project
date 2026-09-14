@@ -1,0 +1,80 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}ویرایش رویداد پیامکی{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fc-field { margin-bottom: 14px; }
+    .fc-field label { display:block;font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:5px; }
+    .fc-field select, .fc-field input:not([type=checkbox]), .fc-field textarea {
+        width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.85rem;font-family:inherit;
+    }
+    .fc-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:0 16px; }
+    @media (max-width:900px){ .fc-grid { grid-template-columns:1fr; } }
+    .fc-error { color:#dc2626;font-size:0.8rem;margin-top:4px; }
+    .param-chip {
+        display:inline-block;background:#eff6ff;color:#1e40af;border-radius:6px;
+        padding:2px 8px;font-family:monospace;font-size:0.78rem;margin:2px 3px 2px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">ویرایش رویداد: {{ event.label }}</h1>
+        <a href="{% url 'staff_dashboard:sms_event_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+    </div>
+
+    {% if event.description %}
+    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">{{ event.description }}</p>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+    <div class="alert-box alert-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="detail-card">
+            <h3>وضعیت و روش ارسال</h3>
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">{{ form.is_enabled }} {{ form.is_enabled.label }}</label>
+            <div class="fc-field"><label>{{ form.send_mode.label }}</label>{{ form.send_mode }}{{ form.send_mode.errors }}</div>
+        </div>
+
+        <div class="detail-card">
+            <h3>پارامترهای در دسترس این رویداد</h3>
+            <div>
+                {% for key, label, placeholder in param_list %}
+                    <span class="param-chip">{{ placeholder }}</span> {{ label }}<br>
+                {% empty %}
+                    <span style="color:#94a3b8;font-size:0.8rem;">این رویداد پارامتری ندارد.</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <h3>متن دلخواه</h3>
+            <p style="color:#94a3b8;font-size:0.8rem;margin-bottom:10px;">فقط زمانی استفاده می‌شود که «روش ارسال» روی «متن دلخواه» باشد. از پارامترهای بالا به شکل {نام_پارامتر} استفاده کنید.</p>
+            <div class="fc-field">{{ form.custom_text }}{% if form.custom_text.errors %}<div class="fc-error">{{ form.custom_text.errors }}</div>{% endif %}</div>
+        </div>
+
+        <div class="detail-card">
+            <h3>ارسال با قالب sms.ir</h3>
+            <div class="fc-field" style="max-width:260px;"><label>{{ form.template_id.label }}</label>{{ form.template_id }}{% if form.template_id.errors %}<div class="fc-error">{{ form.template_id.errors }}</div>{% endif %}</div>
+
+            {% if param_fields %}
+            <p style="color:#94a3b8;font-size:0.8rem;margin:10px 0;">برای هر پارامتر، نام همان پارامتر را در قالب sms.ir وارد کنید:</p>
+            <div class="fc-grid">
+                {% for key, label, field, placeholder in param_fields %}
+                <div class="fc-field"><label>{{ label }} <span style="color:#94a3b8;">({{ placeholder }})</span></label>{{ field }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره</button>
+    </form>
+</div>
+{% endblock %}

@@ -71,5 +71,14 @@
             <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'forwarder-roles' %}"><i class="fas fa-user-shield"></i><span class="title">نقش‌های فورواردر</span></a>
         </div>
     </div>
+
+    <div class="settings-group">
+        <h3>پیامک و اعلان‌ها</h3>
+        <div class="settings-cards">
+            <a class="settings-card" href="{% url 'staff_dashboard:sms_provider_settings' %}"><i class="fas fa-sms"></i><span class="title">سامانه پیامکی</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:sms_event_list' %}"><i class="fas fa-bell"></i><span class="title">رویدادهای پیامکی</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:sms_log_list' %}"><i class="fas fa-list"></i><span class="title">لاگ پیامک‌ها</span></a>
+        </div>
+    </div>
 </div>
 {% endblock %}

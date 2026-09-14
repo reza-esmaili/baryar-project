@@ -1,8 +1,6 @@
 import logging
-import requests
 
-from django.conf import settings
-
+from sms_ir import SmsIr
 
 logger = logging.getLogger(__name__)
 
@@ -12,59 +10,63 @@ class SMSIRException(Exception):
 
 
 class SMSIRProvider:
-    VERIFY_ENDPOINT = "https://api.sms.ir/v1/send/verify"
+    """
+    لایه نازک روی SDK رسمی sms.ir (پکیج smsir-python —
+    https://github.com/IPeCompany/SmsPanelV2.Python) — کلید API و شماره خط
+    از پایگاه‌داده (SmsProviderConfig) خوانده می‌شوند، نه از settings.py.
+    """
 
-    def __init__(self):
-        self.api_key = getattr(settings, "SMSIR_API_KEY", "")
-        self.verify_endpoint = getattr(
-            settings,
-            "SMSIR_VERIFY_BASE_URL",
-            self.VERIFY_ENDPOINT,
+    def __init__(self, api_key, line_number=None):
+        if not api_key:
+            raise SMSIRException("کلید API سرویس پیامک تنظیم نشده است.")
+
+        self._client = SmsIr(api_key=api_key, linenumber=line_number or None)
+
+    def send_text(self, mobile, message, line_number=None):
+        """ارسال پیامک متن آزاد (بدون قالب تاییدشده)."""
+        response = self._client.send_sms(
+            number=mobile,
+            message=message,
+            linenumber=line_number or None,
         )
+        return self._handle_response(response)
 
     def send_verify(self, mobile, template_id, parameters):
-        if not self.api_key:
-            raise SMSIRException("SMSIR_API_KEY در settings.py تنظیم نشده است.")
+        """
+        ارسال با قالب تاییدشده sms.ir (سرویس Verify).
 
+        parameters: دیکشنری {نام‌پارامتر_در_قالب_sms.ir: مقدار}
+        """
         if not template_id:
             raise SMSIRException("شناسه قالب پیامک تنظیم نشده است.")
 
-        payload = {
-            "mobile": mobile,
-            "templateId": int(template_id),
-            "parameters": parameters,
-        }
+        payload = [
+            {"name": name, "value": str(value)}
+            for name, value in parameters.items()
+        ]
 
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "x-api-key": self.api_key,
-        }
+        response = self._client.send_verify_code(
+            number=mobile,
+            template_id=int(template_id),
+            parameters=payload,
+        )
+        return self._handle_response(response)
 
-        try:
-            response = requests.post(
-                self.verify_endpoint,
-                json=payload,
-                headers=headers,
-                timeout=15,
-            )
-        except requests.RequestException as exc:
-            logger.exception("SMS.ir connection error")
-            raise SMSIRException("خطا در اتصال به سرویس پیامک.") from exc
+    def get_credit(self):
+        return self._handle_response(self._client.get_credit())
 
-        response_text = response.text
-
+    def _handle_response(self, response):
         if response.status_code < 200 or response.status_code >= 300:
             logger.error(
-                "SMS.ir failed. status=%s response=%s",
+                "SMS.ir request failed. status=%s response=%s",
                 response.status_code,
-                response_text,
+                response.text,
             )
             raise SMSIRException(
-                f"خطا در ارسال پیامک. status={response.status_code}, response={response_text}"
+                f"خطا در ارسال پیامک. status={response.status_code}, response={response.text}"
             )
 
         try:
             return response.json()
         except ValueError:
-            return {"raw": response_text}
+            return {"raw": response.text}
