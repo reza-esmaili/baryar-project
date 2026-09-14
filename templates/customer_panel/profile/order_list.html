@@ -132,7 +132,7 @@
   <script>
     const filterUrl = "{% url 'customer:filter_orders' %}"
 
-    function loadOrders() {
+    function loadOrders(page) {
       const origin = document.getElementById('filter-origin').value
       const destination = document.getElementById('filter-destination').value
       const transport = document.getElementById('filter-transport').value
@@ -161,6 +161,9 @@
       }
       if (date) {
         params.append('date', date)
+      }
+      if (page) {
+        params.append('page', page)
       }
 
       fetch(`${filterUrl}?${params.toString()}`, {
@@ -191,7 +194,7 @@
     }
 
     document.querySelectorAll('#filter-origin, #filter-destination, #filter-transport, #filter-date, #filter-shipping-procedure, #filter-status').forEach((el) => {
-      el.addEventListener('change', loadOrders)
+      el.addEventListener('change', () => loadOrders())
     })
 
     document.getElementById('clear-filters').addEventListener('click', function () {
@@ -203,6 +206,17 @@
       document.getElementById('filter-status').value = ''
 
       loadOrders()
+    })
+
+    // صفحه‌بندی هم از همین جدول AJAX‌محور استفاده می‌کند؛ چون لینک‌های صفحه با
+    // هر بار جایگزینی innerHTML دوباره ساخته می‌شوند، رویداد را روی خودِ
+    // #orders-table (که ثابت می‌ماند) delegate می‌کنیم.
+    document.getElementById('orders-table').addEventListener('click', function (e) {
+      const link = e.target.closest('.page-link[data-page]')
+      if (link) {
+        e.preventDefault()
+        loadOrders(link.dataset.page)
+      }
     })
   </script>
 {% endblock %}

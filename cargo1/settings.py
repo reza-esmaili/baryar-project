@@ -137,6 +137,42 @@ STORAGES = {
     },
 }
 
+# --- کش ---
+# اگر REDIS_URL در .env تنظیم شده باشد (برای production)، از Redis استفاده
+# می‌شود؛ در غیر این صورت (مثل این محیط توسعه که Redis روی آن نصب نیست) به
+# LocMemCache برمی‌گردد — کش واقعی و کاربردی برای یک فرآیند، فقط بین چند
+# worker/سرور مشترک نیست. سوییچ به Redis در آینده فقط با تنظیم REDIS_URL
+# ممکن است، بدون نیاز به تغییر کد.
+REDIS_URL = os.environ.get('REDIS_URL', '')
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
+
+# --- صف پردازش ناهمزمان (Celery) ---
+# اگر CELERY_BROKER_URL تنظیم نشده باشد (مثل این محیط توسعه که broker واقعی
+# روی آن اجرا نیست)، Celery در حالت eager اجرا می‌شود: هر task بلافاصله و
+# همزمان در همان پردازش فراخوانی‌کننده اجرا می‌شود، دقیقاً مثل یک فراخوانی
+# تابع معمولی، بدون نیاز به worker یا broker جداگانه. سوییچ به اجرای واقعی
+# ناهمزمان در آینده فقط با تنظیم CELERY_BROKER_URL ممکن است، بدون تغییر کد.
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', '')
+CELERY_TASK_ALWAYS_EAGER = not CELERY_BROKER_URL
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL or None
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = 'customer:login'
 

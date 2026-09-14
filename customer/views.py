@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -700,8 +701,12 @@ def order_list(request):
         "name",
     )
 
+    paginator = Paginator(orders, 20)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
     context = {
-        "orders": orders,
+        "orders": page_obj,
+        "page_obj": page_obj,
         "origin_cities": origin_cities,
         "destination_cities": destination_cities,
     }
@@ -820,12 +825,16 @@ def filter_orders(request):
  
     if date_str:
         orders = orders.filter(created_at__date=date_str)
- 
+
+    paginator = Paginator(orders, 20)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
     return render(
         request,
         "customer_panel/profile/partials/orders_table_rows.html",
         {
-            "orders": orders,
+            "orders": page_obj,
+            "page_obj": page_obj,
         },
     )
 

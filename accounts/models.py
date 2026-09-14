@@ -51,7 +51,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     email = models.EmailField(unique=True, null=True, blank=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    role = models.CharField(max_length=30, choices=Role.choices, default=Role.CUSTOMER)
+    role = models.CharField(max_length=30, choices=Role.choices, default=Role.CUSTOMER, db_index=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     must_change_password = models.BooleanField(default=False)

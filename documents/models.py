@@ -409,6 +409,7 @@ class OrderDocument(TimeStampedModel):
         max_length=30,
         choices=OrderDocumentStatus.choices,
         default=OrderDocumentStatus.PENDING_UPLOAD,
+        db_index=True,
         verbose_name="وضعیت"
     )
 

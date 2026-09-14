@@ -171,6 +171,7 @@ class Rate(models.Model):
 
     is_active = models.BooleanField(
         default=True,
+        db_index=True,
         verbose_name="وضعیت فعال بودن"
     )
 

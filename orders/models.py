@@ -62,7 +62,7 @@ class CargoRequest(TimeStampedModel):
     )
 
 
-    status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.DRAFT, verbose_name='وضعیت درخواست')
+    status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.DRAFT, db_index=True, verbose_name='وضعیت درخواست')
 
     # +++ فیلدهای جدید اضافه شده برای مرحله دوم (تکمیل اطلاعات) +++
     

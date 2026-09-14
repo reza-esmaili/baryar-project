@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
@@ -37,18 +38,24 @@ def settings_hub(request):
 @login_required
 @platform_staff_required
 def home(request):
-    seven_days_ago = timezone.now() - timedelta(days=7)
+    context = cache.get("staff_dashboard_home")
 
-    context = {
-        "total_users": User.objects.count(),
-        "orders_this_week": CargoRequest.objects.filter(
-            created_at__gte=seven_days_ago
-        ).exclude(status=OrderStatus.DRAFT).count(),
-        "pending_verifications": ForwarderCompany.objects.filter(is_verified=False).count(),
-        "open_tickets": Ticket.objects.exclude(
-            status__in=[Ticket.Status.CLOSED]
-        ).count(),
-    }
+    if context is None:
+        seven_days_ago = timezone.now() - timedelta(days=7)
+
+        context = {
+            "total_users": User.objects.count(),
+            "orders_this_week": CargoRequest.objects.filter(
+                created_at__gte=seven_days_ago
+            ).exclude(status=OrderStatus.DRAFT).count(),
+            "pending_verifications": ForwarderCompany.objects.filter(is_verified=False).count(),
+            "open_tickets": Ticket.objects.exclude(
+                status__in=[Ticket.Status.CLOSED]
+            ).count(),
+        }
+        # کش کوتاه‌مدت (۵ دقیقه) — همان منطق panel/views_dashboard.py::dashboard_view.
+        cache.set("staff_dashboard_home", context, 300)
+
     return render(request, "admin_dashboard/home.html", context)
 
 

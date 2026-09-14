@@ -91,7 +91,8 @@ class Ticket(models.Model):
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
-        default=Status.OPEN
+        default=Status.OPEN,
+        db_index=True,
     )
     assigned_agent = models.ForeignKey(
         SupportAgent,

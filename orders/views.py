@@ -14,7 +14,7 @@ from .models import CargoRequest, OrderStatus, OrderHistory, OrderCargoItem
 from rates.models import CargoType, Rate, CargoSubCategory, CargoSubCategoryChild, ExtraChargeType
 from documents.services import sync_order_required_documents, OrderDocument
 from orders.crosssite import consume_order_token
-from core.services.notifications.sms import SmsNotificationService
+from core.services.notifications.tasks import notify_task
 from core.services.notifications.events import (
     ORDER_DRAFT_CREATED,
     RATE_MATCH_FOUND_CUSTOMER,
@@ -254,12 +254,11 @@ def submit_order(request):
                     note="نرخ انتخاب شد و سفارش به عنوان پیش‌نویس ثبت گردید."
                 )
 
-                sms = SmsNotificationService()
                 customer_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.mobile
                 origin_name = cargo_request.origin_city.name if cargo_request.origin_city_id else ""
                 destination_name = cargo_request.destination_port.name if cargo_request.destination_port_id else ""
 
-                sms.notify(ORDER_DRAFT_CREATED, request.user.mobile, {
+                notify_task.delay(ORDER_DRAFT_CREATED, request.user.mobile, {
                     "order_id": cargo_request.id,
                     "customer_name": customer_name,
                     "origin": origin_name,
@@ -268,13 +267,13 @@ def submit_order(request):
 
                 forwarder_name = (rate.forwarder.company_name if rate.forwarder_id
                                   else rate.branch.company.company_name if rate.branch_id else "")
-                sms.notify(RATE_MATCH_FOUND_CUSTOMER, request.user.mobile, {
+                notify_task.delay(RATE_MATCH_FOUND_CUSTOMER, request.user.mobile, {
                     "order_id": cargo_request.id,
                     "forwarder_name": forwarder_name,
                 })
 
                 forwarder_mobile, _ = get_forwarder_notification_target(rate)
-                sms.notify(RATE_MATCH_FOUND_FORWARDER, forwarder_mobile, {
+                notify_task.delay(RATE_MATCH_FOUND_FORWARDER, forwarder_mobile, {
                     "order_id": cargo_request.id,
                     "origin": origin_name,
                     "destination": destination_name,
@@ -404,7 +403,7 @@ def complete_order_details(request, order_id):
                 note="اطلاعات سفارش تکمیل و مدارک بارگذاری شد و سفارش ثبت نهایی گردید."
             )
 
-            SmsNotificationService().notify(ORDER_FINALIZED, request.user.mobile, {
+            notify_task.delay(ORDER_FINALIZED, request.user.mobile, {
                 "order_id": order.id,
                 "final_price": order.final_price,
             })
