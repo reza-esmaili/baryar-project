@@ -1,10 +1,22 @@
 from rest_framework import viewsets, generics
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import BasePermission, IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from rates.models import Rate, CargoType
 from locations.models import City, DestinationCity, Port
+from panel.decorators import get_company_for_user
+
+
+class IsVerifiedForwarder(BasePermission):
+    """فقط کاربران فورواردرِ شرکتِ تایید‌شده و فعال."""
+
+    message = "این بخش فقط برای شرکت‌های فورواردر تایید‌شده در دسترس است."
+
+    def has_permission(self, request, view):
+        company = get_company_for_user(request.user) if request.user.is_authenticated else None
+        return bool(company and company.is_verified and company.is_active)
 
 from .serializers import (
     RateSerializer,
@@ -41,7 +53,24 @@ class RateViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = RateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVerifiedForwarder]
+
+    def _company(self):
+        return get_company_for_user(self.request.user)
+
+    def _save_for_own_company(self, serializer):
+        # مالکیت نرخ همیشه شرکت کاربر است، هر مقداری که کلاینت فرستاده باشد.
+        company = self._company()
+        mode = serializer.validated_data.get("transport_mode") or getattr(serializer.instance, "transport_mode", None)
+        if mode not in company.allowed_rate_transport_modes():
+            raise PermissionDenied("شرکت شما در دسته‌ی این روش حمل فعال نیست.")
+        serializer.save(forwarder=company, branch=None)
+
+    def perform_create(self, serializer):
+        self._save_for_own_company(serializer)
+
+    def perform_update(self, serializer):
+        self._save_for_own_company(serializer)
 
     def get_queryset(self):
 
@@ -63,15 +92,8 @@ class RateViewSet(viewsets.ModelViewSet):
             )
         )
 
-        user = self.request.user
-
-        # اگر بخواهی هر فورواردر فقط نرخ خودش را ببیند
-        # میتوانی این قسمت را فعال کنی
-
-        # if hasattr(user, "forwardercompany"):
-        #     queryset = queryset.filter(forwarder=user.forwardercompany)
-
-        return queryset.order_by("-created_at")
+        # هر فورواردر فقط نرخ‌های شرکت خودش را می‌بیند، ویرایش یا حذف می‌کند.
+        return queryset.filter(forwarder=self._company()).order_by("-created_at")
 
 
 # -----------------------------
