@@ -8,6 +8,7 @@ from core.services.notifications.events import get_event_params
 from core.services.notifications.sms import validate_custom_text_params
 from documents.models import DocumentType, AdditionalDocumentRequest
 from forwarders.models import ForwarderRole, ForwarderCompany
+from land_freight.models import LoaderType, VehicleType
 from locations.models import Country, Province, City, DestinationCity, Port
 from orders.models import CargoRequest
 from rates.models import CargoType, CargoSubCategory, CargoSubCategoryChild, Rate
@@ -170,6 +171,27 @@ class SupportAgentForm(forms.ModelForm):
         self.fields["user"].queryset = User.objects.exclude(id__in=used_ids).order_by("first_name")
 
 
+class VehicleTypeForm(forms.ModelForm):
+    class Meta:
+        model = VehicleType
+        fields = ["name", "capacity_kg", "is_active"]
+        widgets = {
+            "name": forms.TextInput(attrs=FORM_CONTROL_ATTRS),
+            "capacity_kg": forms.NumberInput(attrs=FORM_CONTROL_ATTRS),
+            "is_active": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
+        }
+
+
+class LoaderTypeForm(forms.ModelForm):
+    class Meta:
+        model = LoaderType
+        fields = ["name", "is_active"]
+        widgets = {
+            "name": forms.TextInput(attrs=FORM_CONTROL_ATTRS),
+            "is_active": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
+        }
+
+
 class ForwarderRoleForm(forms.ModelForm):
     class Meta:
         model = ForwarderRole
@@ -249,6 +271,8 @@ class ForwarderCompanyForm(forms.ModelForm):
             "phone", "email", "postal_code", "address",
             "logo", "description", "website", "instagram", "linkedin",
             "is_verified", "is_active",
+            "service_air", "service_sea", "service_land_intracity",
+            "service_land_domestic", "service_land_international",
         ]
         widgets = {
             "company_name": forms.TextInput(attrs=FORM_CONTROL_ATTRS),
@@ -268,6 +292,11 @@ class ForwarderCompanyForm(forms.ModelForm):
             "linkedin": forms.TextInput(attrs=FORM_CONTROL_ATTRS),
             "is_verified": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
             "is_active": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
+            "service_air": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
+            "service_sea": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
+            "service_land_intracity": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
+            "service_land_domestic": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
+            "service_land_international": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
         }
         labels = {
             "company_type": "نوع شرکت",

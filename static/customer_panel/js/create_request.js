@@ -378,8 +378,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         new Intl.NumberFormat('fa-IR').format(data.actual_weight || 0) + ' کیلوگرم';
                     document.getElementById('display_volumetric_weight').innerText =
                         new Intl.NumberFormat('fa-IR').format(data.volumetric_weight || 0) + ' کیلوگرم';
+                    // در LCL مبنای کرایه W/M است (بیشترِ حجم به متر مکعب و وزن به تن)
                     document.getElementById('display_chargeable_weight').innerText =
-                        new Intl.NumberFormat('fa-IR').format(data.chargeable_weight || 0) + ' کیلوگرم';
+                        data.chargeable_unit === 'W/M'
+                            ? new Intl.NumberFormat('fa-IR').format(data.chargeable_quantity || 0) + ' W/M'
+                            : new Intl.NumberFormat('fa-IR').format(data.chargeable_weight || 0) + ' کیلوگرم';
 
                     ratesTbody.innerHTML = '';
                     if (data.rates.length === 0) {

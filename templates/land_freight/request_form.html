@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ثبت درخواست حمل زمینی{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'customer_panel/css/create_request.css' %}" />
+  <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
+  <link rel="stylesheet" href="{% static 'land_freight/css/land_request.css' %}" />
+{% endblock %}
+
+{% block content %}
+<div class="cargo-request-page land-request-page">
+  <section class="hero-card">
+    <div class="hero-content">
+      <div class="hero-badge">اعلام بار زمینی</div>
+      <h1>ثبت درخواست حمل زمینی</h1>
+      <p>مسیر، مشخصات بار و کرایه‌ی پیشنهادی خود را ثبت کنید. درخواست برای همه‌ی شرکت‌های حمل واجد شرایط ارسال می‌شود و <b>اولین شرکتی که بپذیرد</b>، حمل بار شما را برعهده می‌گیرد.</p>
+    </div>
+  </section>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="land-alert land-alert--{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+  {% if form.non_field_errors %}
+    <div class="land-alert land-alert--error">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <form method="post" id="land-request-form" novalidate>
+    {% csrf_token %}
+
+    <!-- ۱. نوع حمل -->
+    <section class="panel-card">
+      <div class="panel-card__header"><h2>۱. نوع حمل زمینی</h2></div>
+      <div class="scope-cards">
+        {% for radio in form.scope %}
+          <label class="scope-card" for="{{ radio.id_for_label }}">
+            {{ radio.tag }}
+            <span class="scope-card__icon">
+              {% if radio.data.value == 'intracity' %}<i class="fas fa-city"></i>{% elif radio.data.value == 'domestic' %}<i class="fas fa-road"></i>{% else %}<i class="fas fa-globe-asia"></i>{% endif %}
+            </span>
+            <span class="scope-card__title">{{ radio.choice_label }}</span>
+            <span class="scope-card__desc">
+              {% if radio.data.value == 'intracity' %}جابجایی بار داخل یک شهر
+              {% elif radio.data.value == 'domestic' %}حمل بین شهرهای ایران
+              {% else %}از ایران به کشور دیگر یا برعکس{% endif %}
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+      {% if form.scope.errors %}<div class="field-error">{{ form.scope.errors.0 }}</div>{% endif %}
+
+      <div class="direction-row" data-show-scope="international">
+        <label class="section-label">جهت حمل</label>
+        <div class="direction-options">
+          {% for radio in form.direction %}
+            <label class="direction-option" for="{{ radio.id_for_label }}">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+          {% endfor %}
+        </div>
+        {% if form.direction.errors %}<div class="field-error">{{ form.direction.errors.0 }}</div>{% endif %}
+      </div>
+    </section>
+
+    <!-- ۲. مسیر -->
+    <section class="panel-card">
+      <div class="panel-card__header"><h2>۲. مسیر و آدرس‌ها</h2></div>
+
+      <div class="route-block" data-block="origin">
+        <h3 class="route-title" data-label-intracity="شهر محل جابجایی" data-label-default="مبدا (ایران)">مبدا (ایران)</h3>
+        <div class="form-grid grid-2">
+          <div class="form-group">
+            <label for="id_origin_province">{{ form.origin_province.label }}</label>
+            {{ form.origin_province }}
+          </div>
+          <div class="form-group">
+            <label for="id_origin_city">{{ form.origin_city.label }}</label>
+            {{ form.origin_city }}
+            {% if form.origin_city.errors %}<div class="field-error">{{ form.origin_city.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="route-block" data-block="destination">
+        <h3 class="route-title">مقصد (ایران)</h3>
+        <div class="form-grid grid-2">
+          <div class="form-group">
+            <label for="id_destination_province">{{ form.destination_province.label }}</label>
+            {{ form.destination_province }}
+          </div>
+          <div class="form-group">
+            <label for="id_destination_city">{{ form.destination_city.label }}</label>
+            {{ form.destination_city }}
+            {% if form.destination_city.errors %}<div class="field-error">{{ form.destination_city.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="route-block" data-block="foreign">
+        <h3 class="route-title" data-label-export="مقصد خارجی" data-label-import="مبدا خارجی">طرف خارجی مسیر</h3>
+        <div class="form-grid grid-3">
+          <div class="form-group">
+            <label for="id_foreign_country">{{ form.foreign_country.label }}</label>
+            {{ form.foreign_country }}
+            {% if form.foreign_country.errors %}<div class="field-error">{{ form.foreign_country.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label for="id_foreign_city">{{ form.foreign_city.label }}</label>
+            {{ form.foreign_city }}
+            {% if form.foreign_city.errors %}<div class="field-error">{{ form.foreign_city.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label for="id_foreign_city_name">{{ form.foreign_city_name.label }}</label>
+            {{ form.foreign_city_name }}
+          </div>
+        </div>
+        <div class="form-grid grid-2">
+          <div class="form-group">
+            <label for="id_border_crossing">{{ form.border_crossing.label }} (اختیاری)</label>
+            {{ form.border_crossing }}
+            {% if form.border_crossing.errors %}<div class="field-error">{{ form.border_crossing.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="form-group check-group">
+            <label class="check-inline">{{ form.needs_customs_clearance }} {{ form.needs_customs_clearance.label }}</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid grid-2">
+        <div class="form-group">
+          <label for="id_pickup_address">{{ form.pickup_address.label }}</label>
+          {{ form.pickup_address }}
+          {% if form.pickup_address.errors %}<div class="field-error">{{ form.pickup_address.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="id_delivery_address">{{ form.delivery_address.label }}</label>
+          {{ form.delivery_address }}
+          {% if form.delivery_address.errors %}<div class="field-error">{{ form.delivery_address.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-grid grid-2">
+        <div class="form-group">
+          <label for="id_pickup_date">{{ form.pickup_date.label }}</label>
+          {{ form.pickup_date }}
+          {% if form.pickup_date.errors %}<div class="field-error">{{ form.pickup_date.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="id_pickup_window">{{ form.pickup_window.label }}</label>
+          {{ form.pickup_window }}
+        </div>
+      </div>
+    </section>
+
+    <!-- ۳. مشخصات بار -->
+    <section class="panel-card">
+      <div class="panel-card__header"><h2>۳. مشخصات بار</h2></div>
+      <div class="form-grid grid-3">
+        <div class="form-group">
+          <label for="id_cargo_type">{{ form.cargo_type.label }}</label>
+          {{ form.cargo_type }}
+          {% if form.cargo_type.errors %}<div class="field-error">{{ form.cargo_type.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group span-2">
+          <label for="id_cargo_description">{{ form.cargo_description.label }}</label>
+          {{ form.cargo_description }}
+          {% if form.cargo_description.errors %}<div class="field-error">{{ form.cargo_description.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="form-grid grid-4">
+        <div class="form-group">
+          <label for="id_weight_kg">{{ form.weight_kg.label }}</label>
+          {{ form.weight_kg }}
+          {% if form.weight_kg.errors %}<div class="field-error">{{ form.weight_kg.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="id_volume_cbm">{{ form.volume_cbm.label }}</label>
+          {{ form.volume_cbm }}
+        </div>
+        <div class="form-group">
+          <label for="id_package_count">{{ form.package_count.label }}</label>
+          {{ form.package_count }}
+        </div>
+        <div class="form-group">
+          <label for="id_packaging_type">{{ form.packaging_type.label }}</label>
+          {{ form.packaging_type }}
+        </div>
+      </div>
+      <div class="form-grid grid-2">
+        <div class="form-group">
+          <label for="id_cargo_value">{{ form.cargo_value.label }}</label>
+          {{ form.cargo_value }}
+        </div>
+      </div>
+      <div class="flag-row">
+        <label class="flag-chip">{{ form.is_fragile }} <span>{{ form.is_fragile.label }}</span></label>
+        <label class="flag-chip">{{ form.is_hazardous }} <span>{{ form.is_hazardous.label }}</span></label>
+        <label class="flag-chip">{{ form.needs_refrigeration }} <span>{{ form.needs_refrigeration.label }}</span></label>
+      </div>
+    </section>
+
+    <!-- ۴. ناوگان و خدمات -->
+    <section class="panel-card">
+      <div class="panel-card__header"><h2>۴. ناوگان و خدمات</h2></div>
+      <div class="form-grid grid-2">
+        <div class="form-group">
+          <label for="id_vehicle_type">{{ form.vehicle_type.label }}</label>
+          {{ form.vehicle_type }}
+          {% if form.vehicle_type.errors %}<div class="field-error">{{ form.vehicle_type.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="id_loader_type">{{ form.loader_type.label }}</label>
+          {{ form.loader_type }}
+        </div>
+      </div>
+      <div class="flag-row">
+        <label class="flag-chip">{{ form.needs_loading_help }} <span>{{ form.needs_loading_help.label }}</span></label>
+        <label class="flag-chip">{{ form.needs_insurance }} <span>{{ form.needs_insurance.label }}</span></label>
+      </div>
+    </section>
+
+    <!-- ۵. اطلاعات تماس -->
+    <section class="panel-card">
+      <div class="panel-card__header">
+        <h2>۵. اطلاعات تماس</h2>
+        <small class="muted-note">این اطلاعات فقط پس از پذیرش، به شرکت حمل برنده نمایش داده می‌شود.</small>
+      </div>
+      <div class="form-grid grid-4">
+        <div class="form-group">
+          <label for="id_sender_name">{{ form.sender_name.label }}</label>
+          {{ form.sender_name }}
+          {% if form.sender_name.errors %}<div class="field-error">{{ form.sender_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="id_sender_phone">{{ form.sender_phone.label }}</label>
+          {{ form.sender_phone }}
+          {% if form.sender_phone.errors %}<div class="field-error">{{ form.sender_phone.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="id_receiver_name">{{ form.receiver_name.label }}</label>
+          {{ form.receiver_name }}
+          {% if form.receiver_name.errors %}<div class="field-error">{{ form.receiver_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="id_receiver_phone">{{ form.receiver_phone.label }}</label>
+          {{ form.receiver_phone }}
+          {% if form.receiver_phone.errors %}<div class="field-error">{{ form.receiver_phone.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <!-- ۶. کرایه -->
+    <section class="panel-card price-card">
+      <div class="panel-card__header"><h2>۶. کرایه‌ی پیشنهادی شما</h2></div>
+      <div class="form-grid grid-2">
+        <div class="form-group">
+          <label for="id_proposed_price">{{ form.proposed_price.label }}</label>
+          {{ form.proposed_price }}
+          <div class="price-hint" id="price-hint"></div>
+          {% if form.proposed_price.errors %}<div class="field-error">{{ form.proposed_price.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="id_notes">{{ form.notes.label }}</label>
+          {{ form.notes }}
+        </div>
+      </div>
+      <p class="muted-note">شرکت حمل درخواست را با همین کرایه می‌پذیرد. اگر در مهلت تعیین‌شده کسی نپذیرفت، می‌توانید کرایه را تغییر دهید و دوباره منتشر کنید.</p>
+      <div class="submit-row">
+        <button type="submit" class="quote-btn"><i class="fas fa-paper-plane"></i> ثبت و ارسال برای شرکت‌های حمل</button>
+      </div>
+    </section>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://unpkg.com/persian-date/dist/persian-date.min.js"></script>
+  <script src="https://unpkg.com/persian-datepicker/dist/js/persian-datepicker.min.js"></script>
+  <script>
+    window.LAND_URLS = {
+      cities: "{% url 'land_freight:ajax_cities' %}",
+      foreignCities: "{% url 'land_freight:ajax_foreign_cities' %}",
+      borders: "{% url 'land_freight:ajax_border_crossings' %}"
+    };
+  </script>
+  <script src="{% static 'land_freight/js/request_form.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends 'forwarder_panel/base.html' %}
+{% load humanize jformat %}
+
+{% block extra_css %}
+<style>
+    .land-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+    .land-tabs a {
+        padding: 8px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff;
+        color: #334155; font-weight: 600; text-decoration: none; font-size: 14px;
+    }
+    .land-tabs a.active { background: #1e3a8a; border-color: #1e3a8a; color: #fff; }
+    .land-tabs .count { display: inline-block; min-width: 22px; padding: 0 6px; margin-inline-start: 6px;
+        border-radius: 999px; background: #f59e0b; color: #fff; font-size: 12px; text-align: center; }
+    .route-cell b { color: #0f172a; }
+    .route-cell .arrow { color: #94a3b8; margin: 0 4px; }
+    .scope-pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .scope-intracity { background: #ecfeff; color: #0e7490; }
+    .scope-domestic { background: #eff6ff; color: #1d4ed8; }
+    .scope-international { background: #fdf4ff; color: #a21caf; }
+    .price-cell { font-weight: 800; color: #047857; white-space: nowrap; }
+    .deadline { font-size: 12px; color: #b45309; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h2 class="h4 mb-1">اعلام بار زمینی</h2>
+            <p class="text-muted mb-0 small">درخواست‌هایی که با حوزه‌ی فعالیت و ناوگان شما منطبق است. اولین شرکتی که بپذیرد، حمل را برعهده می‌گیرد.</p>
+        </div>
+        {% if user.role == 'forwarder_admin' %}
+        <a href="{% url 'forwarder_panel:land_service_area' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-map-marked-alt"></i> حوزه‌ی فعالیت و ناوگان
+        </a>
+        {% endif %}
+    </div>
+
+    {% include 'forwarder_panel/partials/messages.html' %}
+
+    <nav class="land-tabs">
+        {% for key, label in tabs.items %}
+        <a href="?tab={{ key }}" class="{% if tab == key %}active{% endif %}">
+            {{ label }}
+            {% if key == 'open' and counts.open %}<span class="count">{{ counts.open }}</span>{% endif %}
+            {% if key == 'mine' and counts.mine %}<span class="count">{{ counts.mine }}</span>{% endif %}
+        </a>
+        {% endfor %}
+    </nav>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>کد</th>
+                            <th>نوع</th>
+                            <th>مسیر</th>
+                            <th>بار</th>
+                            <th>ناوگان</th>
+                            <th>بارگیری</th>
+                            <th>کرایه</th>
+                            <th>{% if tab == 'open' %}مهلت پذیرش{% else %}وضعیت{% endif %}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                        <tr>
+                            <td class="fw-bold">{{ req.reference }}</td>
+                            <td><span class="scope-pill scope-{{ req.scope }}">{{ req.get_scope_display }}</span></td>
+                            <td class="route-cell">
+                                <b>{{ req.origin_display }}</b><span class="arrow">←</span><b>{{ req.destination_display }}</b>
+                            </td>
+                            <td>{{ req.cargo_type.name }} — {{ req.weight_kg|floatformat:0|intcomma }} kg</td>
+                            <td>{{ req.vehicle_type.name }}</td>
+                            <td>{{ req.pickup_date|jformat:"%Y/%m/%d" }}</td>
+                            <td class="price-cell">{{ req.proposed_price|floatformat:0|intcomma }} ریال</td>
+                            <td>
+                                {% if tab == 'open' %}
+                                <span class="deadline"><i class="far fa-clock"></i> تا {{ req.expires_at|jformat:"%Y/%m/%d %H:%M" }}</span>
+                                {% else %}
+                                {{ req.get_status_display }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'forwarder_panel:land_request_detail' req.pk %}" class="btn btn-sm {% if tab == 'open' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    {% if tab == 'open' %}مشاهده و پذیرش{% else %}جزئیات{% endif %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                {% if tab == 'open' %}در حال حاضر درخواست بازی برای شرکت شما وجود ندارد.{% else %}موردی یافت نشد.{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% include 'forwarder_panel/partials/pagination.html' %}
+        </div>
+    </div>
+</div>
+{% endblock %}

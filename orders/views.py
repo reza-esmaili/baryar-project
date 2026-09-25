@@ -150,7 +150,15 @@ def _save_cargo_items(request, order):
 
 @login_required
 def create_cargo_request(request):
-    form = CargoRequestForm()
+    mode = request.GET.get('mode')
+    if mode == 'land':
+        return redirect('land_freight:request_create')
+
+    mode_aliases = {'sea': 'sea_fcl', 'fcl': 'sea_fcl', 'lcl': 'sea_lcl'}
+    mode = mode_aliases.get(mode, mode)
+    initial = {'transport_mode': mode} if mode in ('air', 'sea_fcl', 'sea_lcl') else {}
+
+    form = CargoRequestForm(initial=initial)
     formset = CargoDimensionFormSet()
     return render(request, 'customer_panel/create_request.html', {
         'form': form,
@@ -176,6 +184,8 @@ def ajax_calculate_rates(request):
                     'actual_weight': match_data.get('actual_weight', 0),
                     'volumetric_weight': match_data.get('volumetric_weight', 0),
                     'chargeable_weight': match_data.get('chargeable_weight', 0),
+                    'chargeable_quantity': match_data.get('chargeable_quantity', 0),
+                    'chargeable_unit': match_data.get('chargeable_unit', 'kg'),
                     'rates': match_data['results']
                 })
 

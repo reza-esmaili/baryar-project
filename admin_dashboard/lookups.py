@@ -11,6 +11,7 @@ from rates.models import CargoType, CargoSubCategory, CargoSubCategoryChild
 from documents.models import DocumentType
 from support.models import SupportDepartment, TicketTopic, SupportAgent
 from forwarders.models import ForwarderRole
+from land_freight.models import LoaderType, VehicleType
 
 
 class LookupConfig:
@@ -166,6 +167,24 @@ LOOKUPS = {
         search_fields=["user__mobile", "user__first_name", "user__last_name"],
         order_by="id",
         select_related=["user"],
+    ),
+    "vehicle-types": LookupConfig(
+        key="vehicle-types",
+        model=VehicleType,
+        form_class=f.VehicleTypeForm,
+        title="انواع ناوگان (حمل زمینی)",
+        columns=[("name", "نام"), ("capacity_kg", "ظرفیت (کیلوگرم)")],
+        search_fields=["name"],
+        order_by="capacity_kg",
+    ),
+    "loader-types": LookupConfig(
+        key="loader-types",
+        model=LoaderType,
+        form_class=f.LoaderTypeForm,
+        title="انواع بارگیر (حمل زمینی)",
+        columns=[("name", "نام")],
+        search_fields=["name"],
+        order_by="name",
     ),
     "forwarder-roles": LookupConfig(
         key="forwarder-roles",

@@ -29,6 +29,39 @@ class ForwarderCompany(TimeStampedModel):
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
+    # دسته‌های خدمات شرکت. یک شرکت می‌تواند در چند دسته فعال باشد. هوایی و
+    # دریایی از مسیر نرخ‌گذاری کار می‌کنند؛ سه دسته‌ی زمینی از مسیر «اعلام بار»
+    # (درخواست مشتری → ارسال به شرکت‌های واجد شرایط → اولین پذیرنده).
+    service_air = models.BooleanField(default=False, verbose_name="حمل هوایی")
+    service_sea = models.BooleanField(default=False, verbose_name="حمل دریایی")
+    service_land_intracity = models.BooleanField(default=False, verbose_name="حمل زمینی درون‌شهری")
+    service_land_domestic = models.BooleanField(default=False, verbose_name="حمل زمینی برون‌شهری (داخلی)")
+    service_land_international = models.BooleanField(default=False, verbose_name="حمل زمینی بین‌المللی")
+
+    @property
+    def offers_land(self):
+        return self.service_land_intracity or self.service_land_domestic or self.service_land_international
+
+    def allowed_rate_transport_modes(self):
+        from rates.models import TransportMode
+
+        modes = []
+        if self.service_air:
+            modes.append(TransportMode.AIR)
+        if self.service_sea:
+            modes.extend([TransportMode.SEA_FCL, TransportMode.SEA_LCL])
+        return modes
+
+    def service_labels(self):
+        labels = []
+        for field in (
+            "service_air", "service_sea", "service_land_intracity",
+            "service_land_domestic", "service_land_international",
+        ):
+            if getattr(self, field):
+                labels.append(self._meta.get_field(field).verbose_name)
+        return labels
+
     def __str__(self):
         return self.national_id
 
@@ -100,6 +133,10 @@ class ForwarderRole(TimeStampedModel):
     can_edit_rates = models.BooleanField(default=False, verbose_name="ویرایش نرخ‌ها")
     can_delete_rates = models.BooleanField(default=False, verbose_name="حذف نرخ‌ها")
     can_bulk_upload_rates = models.BooleanField(default=False, verbose_name="آپلود گروهی نرخ")
+
+    # حمل زمینی (اعلام بار)
+    can_view_land_requests = models.BooleanField(default=False, verbose_name="مشاهده درخواست‌های حمل زمینی")
+    can_accept_land_requests = models.BooleanField(default=False, verbose_name="پذیرش و پیگیری درخواست‌های حمل زمینی")
 
     # شعب و کارمندان
     can_view_branches = models.BooleanField(default=False, verbose_name="مشاهده شعب")

@@ -5,6 +5,7 @@ from . import (
     views_branches,
     views_dashboard,
     views_documents,
+    views_land,
     views_orders,
     views_rates,
     views_settings,
@@ -56,6 +57,13 @@ urlpatterns = [
     path("order/<int:order_id>/send-message/", views_orders.send_order_message, name="send_order_message"),
     path("notifications/", views_orders.forwarder_notifications_api, name="notifications_api"),
     path("notifications/mark-read/", views_orders.forwarder_mark_notifications_read, name="mark_notifications_read"),
+
+    # حمل زمینی (اعلام بار)
+    path("land-requests/", views_land.land_request_list, name="land_request_list"),
+    path("land-requests/<int:pk>/", views_land.land_request_detail, name="land_request_detail"),
+    path("land-requests/<int:pk>/accept/", views_land.land_request_accept, name="land_request_accept"),
+    path("land-requests/<int:pk>/status/", views_land.land_request_update_status, name="land_request_update_status"),
+    path("settings/land-service-area/", views_land.land_service_area, name="land_service_area"),
 
     # تنظیمات
     path("settings/", views_settings.settings_view, name="settings"),

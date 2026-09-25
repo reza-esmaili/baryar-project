@@ -1,0 +1,152 @@
+{% extends 'forwarder_panel/base.html' %}
+{% load humanize jformat %}
+
+{% block extra_css %}
+<style>
+    .lr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .lr-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px; }
+    .lr-card h3 { font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom: 12px; display: flex; gap: 8px; align-items: center; }
+    .lr-card h3 i { color: #64748b; }
+    .lr-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px dashed #eef2f7; font-size: 14px; }
+    .lr-row:last-child { border-bottom: 0; }
+    .lr-row span { color: #64748b; }
+    .lr-row b { color: #0f172a; text-align: left; }
+    .lr-hero { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #fff; border-radius: 16px; padding: 22px; margin-bottom: 18px; }
+    .lr-hero .route { font-size: 20px; font-weight: 800; }
+    .lr-hero .price { font-size: 26px; font-weight: 900; }
+    .lr-hero small { opacity: .85; }
+    .lr-flags span { display: inline-block; margin: 0 0 6px 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #fef3c7; color: #92400e; }
+    .lr-locked { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 14px; color: #64748b; font-size: 14px; }
+    .accept-box { border: 2px solid #16a34a; background: #f0fdf4; border-radius: 16px; padding: 18px; }
+    .timeline li { font-size: 13px; color: #475569; margin-bottom: 6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">درخواست حمل زمینی {{ req.reference }}</h2>
+        <a href="{% url 'forwarder_panel:land_request_list' %}" class="btn btn-outline-secondary btn-sm">بازگشت به صندوق درخواست‌ها</a>
+    </div>
+
+    {% include 'forwarder_panel/partials/messages.html' %}
+
+    <div class="lr-hero d-flex justify-content-between flex-wrap gap-3">
+        <div>
+            <small>{{ req.get_scope_display }}{% if req.direction %} — {{ req.get_direction_display }}{% endif %}</small>
+            <div class="route">{{ req.origin_display }} ← {{ req.destination_display }}</div>
+            <small>بارگیری: {{ req.pickup_date|jformat:"%Y/%m/%d" }} — {{ req.get_pickup_window_display }}</small>
+        </div>
+        <div class="text-start">
+            <small>{% if req.agreed_price %}کرایه‌ی توافق‌شده{% else %}کرایه‌ی پیشنهادی مشتری{% endif %}</small>
+            <div class="price">{{ req.agreed_price|default:req.proposed_price|floatformat:0|intcomma }} ریال</div>
+            <small>وضعیت: {{ req.get_status_display }}</small>
+        </div>
+    </div>
+
+    {% if can_accept %}
+    <div class="accept-box mb-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <b>این درخواست هنوز باز است.</b>
+            <div class="small text-muted">مهلت پذیرش تا {{ req.expires_at|jformat:"%Y/%m/%d %H:%M" }}. با پذیرش، حمل با کرایه‌ی بالا به نام شرکت شما ثبت و اطلاعات تماس مشتری نمایش داده می‌شود.</div>
+        </div>
+        <form method="post" action="{% url 'forwarder_panel:land_request_accept' req.pk %}"
+              onsubmit="return confirm('با پذیرش، متعهد به انجام این حمل با کرایه‌ی {{ req.proposed_price|floatformat:0|intcomma }} ریال می‌شوید. ادامه می‌دهید؟');">
+            {% csrf_token %}
+            <input type="hidden" name="expected_price" value="{{ req.proposed_price|floatformat:0 }}">
+            <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check-circle"></i> پذیرش درخواست</button>
+        </form>
+    </div>
+    {% elif not is_ours and req.status != Status.OPEN %}
+    <div class="alert alert-secondary">
+        {% if dispatch.status == 'missed' %}این درخواست توسط شرکت دیگری زودتر پذیرفته شد.{% else %}این درخواست دیگر قابل پذیرش نیست ({{ req.get_status_display }}).{% endif %}
+    </div>
+    {% endif %}
+
+    {% if can_update %}
+    <div class="lr-card mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div><b>پیگیری حمل:</b> وضعیت فعلی «{{ req.get_status_display }}»</div>
+        <div class="d-flex gap-2">
+            {% if req.status == Status.ASSIGNED %}
+            <form method="post" action="{% url 'forwarder_panel:land_request_update_status' req.pk %}">
+                {% csrf_token %}<input type="hidden" name="status" value="{{ Status.IN_TRANSIT }}">
+                <button class="btn btn-warning btn-sm"><i class="fas fa-truck"></i> بار بارگیری شد (در حال حمل)</button>
+            </form>
+            {% endif %}
+            {% if req.status == Status.ASSIGNED or req.status == Status.IN_TRANSIT %}
+            <form method="post" action="{% url 'forwarder_panel:land_request_update_status' req.pk %}"
+                  onsubmit="return confirm('تحویل بار به گیرنده تایید می‌شود؟');">
+                {% csrf_token %}<input type="hidden" name="status" value="{{ Status.DELIVERED }}">
+                <button class="btn btn-success btn-sm"><i class="fas fa-flag-checkered"></i> بار تحویل شد</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="lr-grid">
+        <div class="lr-card">
+            <h3><i class="fas fa-route"></i> مسیر</h3>
+            <div class="lr-row"><span>نوع حمل</span><b>{{ req.get_scope_display }}</b></div>
+            {% if req.direction %}<div class="lr-row"><span>جهت</span><b>{{ req.get_direction_display }}</b></div>{% endif %}
+            <div class="lr-row"><span>مبدا</span><b>{{ req.origin_display }}</b></div>
+            <div class="lr-row"><span>مقصد</span><b>{{ req.destination_display }}</b></div>
+            {% if req.border_crossing %}<div class="lr-row"><span>مرز ترجیحی</span><b>{{ req.border_crossing.name }}</b></div>{% endif %}
+            {% if req.needs_customs_clearance %}<div class="lr-row"><span>ترخیص گمرکی</span><b>درخواست شده</b></div>{% endif %}
+        </div>
+
+        <div class="lr-card">
+            <h3><i class="fas fa-box"></i> مشخصات بار</h3>
+            <div class="lr-row"><span>نوع کالا</span><b>{{ req.cargo_type.name }}</b></div>
+            <div class="lr-row"><span>شرح</span><b>{{ req.cargo_description }}</b></div>
+            <div class="lr-row"><span>وزن</span><b>{{ req.weight_kg|floatformat:0|intcomma }} کیلوگرم</b></div>
+            {% if req.volume_cbm %}<div class="lr-row"><span>حجم</span><b>{{ req.volume_cbm }} متر مکعب</b></div>{% endif %}
+            {% if req.package_count %}<div class="lr-row"><span>تعداد بسته</span><b>{{ req.package_count }}</b></div>{% endif %}
+            <div class="lr-row"><span>بسته‌بندی</span><b>{{ req.get_packaging_type_display }}</b></div>
+            {% if req.cargo_value %}<div class="lr-row"><span>ارزش تقریبی</span><b>{{ req.cargo_value|floatformat:0|intcomma }} ریال</b></div>{% endif %}
+            <div class="lr-flags mt-2">
+                {% if req.is_hazardous %}<span>کالای خطرناک</span>{% endif %}
+                {% if req.is_fragile %}<span>شکستنی</span>{% endif %}
+                {% if req.needs_refrigeration %}<span>نیاز به یخچال</span>{% endif %}
+            </div>
+        </div>
+
+        <div class="lr-card">
+            <h3><i class="fas fa-truck"></i> ناوگان و خدمات</h3>
+            <div class="lr-row"><span>نوع ناوگان</span><b>{{ req.vehicle_type.name }}</b></div>
+            <div class="lr-row"><span>نوع بارگیر</span><b>{{ req.loader_type.name|default:"فرقی نمی‌کند" }}</b></div>
+            <div class="lr-row"><span>کارگر بارگیری/تخلیه</span><b>{{ req.needs_loading_help|yesno:"بله,خیر" }}</b></div>
+            <div class="lr-row"><span>بیمه‌ی بار</span><b>{{ req.needs_insurance|yesno:"بله,خیر" }}</b></div>
+            <div class="lr-row"><span>بازه‌ی بارگیری</span><b>{{ req.get_pickup_window_display }}</b></div>
+        </div>
+
+        <div class="lr-card">
+            <h3><i class="fas fa-address-card"></i> آدرس‌ها و تماس</h3>
+            {% if show_contact %}
+            <div class="lr-row"><span>مشتری</span><b>{% if req.customer.first_name or req.customer.last_name %}{{ req.customer.first_name }} {{ req.customer.last_name }} — {% endif %}{{ req.customer.mobile }}</b></div>
+            <div class="lr-row"><span>تحویل‌دهنده</span><b>{{ req.sender_name }} — {{ req.sender_phone }}</b></div>
+            <div class="lr-row"><span>آدرس بارگیری</span><b>{{ req.pickup_address }}</b></div>
+            <div class="lr-row"><span>تحویل‌گیرنده</span><b>{{ req.receiver_name }} — {{ req.receiver_phone }}</b></div>
+            <div class="lr-row"><span>آدرس تخلیه</span><b>{{ req.delivery_address }}</b></div>
+            {% else %}
+            <div class="lr-locked"><i class="fas fa-lock"></i> آدرس دقیق و اطلاعات تماس مشتری پس از پذیرش درخواست نمایش داده می‌شود.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if req.notes %}
+    <div class="lr-card mt-3"><h3><i class="fas fa-comment-dots"></i> توضیحات مشتری</h3><p class="mb-0">{{ req.notes|linebreaksbr }}</p></div>
+    {% endif %}
+
+    {% if events %}
+    <div class="lr-card mt-3">
+        <h3><i class="fas fa-history"></i> تاریخچه</h3>
+        <ul class="timeline mb-0">
+            {% for e in events %}
+            <li>{{ e.created_at|jformat:"%Y/%m/%d %H:%M" }} — <b>{{ e.get_event_type_display }}</b>{% if e.note %}: {{ e.note }}{% endif %}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

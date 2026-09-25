@@ -26,6 +26,8 @@ ROLE_PERMISSION_FIELDS = [
     ("can_edit_rates",       "ویرایش نرخ‌ها"),
     ("can_delete_rates",     "حذف نرخ‌ها"),
     ("can_bulk_upload_rates","آپلود گروهی نرخ"),
+    ("can_view_land_requests",   "مشاهده درخواست‌های حمل زمینی"),
+    ("can_accept_land_requests", "پذیرش و پیگیری درخواست‌های حمل زمینی"),
     ("can_view_branches",    "مشاهده شعب"),
     ("can_manage_branches",  "مدیریت شعب"),
     ("can_view_staff",       "مشاهده کارمندان"),
@@ -68,6 +70,17 @@ ROLE_PERMISSION_GROUPS = [
             ("can_edit_rates",        "ویرایش نرخ‌ها"),
             ("can_delete_rates",      "حذف نرخ‌ها"),
             ("can_bulk_upload_rates", "آپلود گروهی (اکسل)"),
+        ],
+    },
+    {
+        "id": "land",
+        "label": "حمل زمینی (اعلام بار)",
+        "icon": "fas fa-truck",
+        "icon_bg": "#fefce8",
+        "icon_color": "#ca8a04",
+        "perms": [
+            ("can_view_land_requests",   "مشاهده درخواست‌های حمل زمینی"),
+            ("can_accept_land_requests", "پذیرش و پیگیری درخواست‌ها"),
         ],
     },
     {

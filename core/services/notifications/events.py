@@ -12,6 +12,8 @@ RATE_MATCH_FOUND_CUSTOMER = "rate_match_found_customer"
 RATE_MATCH_FOUND_FORWARDER = "rate_match_found_forwarder"
 ORDER_FINALIZED = "order_finalized"
 ADDITIONAL_DOCUMENT_REQUESTED = "additional_document_requested"
+LAND_REQUEST_NEW_FORWARDER = "land_request_new_forwarder"
+LAND_REQUEST_ACCEPTED_CUSTOMER = "land_request_accepted_customer"
 
 
 NOTIFICATION_EVENTS = {
@@ -65,6 +67,28 @@ NOTIFICATION_EVENTS = {
             "order_id": "شماره سفارش",
             "doc_title": "عنوان مدرک",
             "link": "لینک آپلود",
+        },
+    },
+    LAND_REQUEST_NEW_FORWARDER: {
+        "label": "درخواست حمل زمینی جدید (به شرکت حمل)",
+        "description": "وقتی مشتری درخواست حمل زمینی ثبت می‌کند، برای هر شرکت واجد شرایط ارسال می‌شود.",
+        "params": {
+            "request_ref": "کد درخواست",
+            "scope": "نوع حمل (درون‌شهری/برون‌شهری/بین‌المللی)",
+            "origin": "مبدا",
+            "destination": "مقصد",
+            "vehicle": "نوع ناوگان",
+            "price": "کرایه‌ی پیشنهادی (ریال)",
+            "pickup_date": "تاریخ بارگیری",
+        },
+    },
+    LAND_REQUEST_ACCEPTED_CUSTOMER: {
+        "label": "پذیرش درخواست حمل زمینی (به مشتری)",
+        "description": "وقتی اولین شرکت حمل درخواست زمینی مشتری را می‌پذیرد.",
+        "params": {
+            "request_ref": "کد درخواست",
+            "company_name": "نام شرکت حمل",
+            "company_phone": "تلفن شرکت حمل",
         },
     },
 }

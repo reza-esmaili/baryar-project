@@ -6,7 +6,7 @@ from locations.models import Country, Province, City
 from accounts.models import CompanyType, User
 from core.validators import validate_iranian_national_code
 from forwarders.models import ForwarderBranch, ForwarderCompany, ForwarderStaff, ForwarderRole
-from rates.models import CargoType, Rate, RateTier
+from rates.models import CargoType, RATE_BASED_TRANSPORT_MODES, Rate, RateTier, TransportMode
 
 class RateForm(forms.ModelForm):
     class Meta:
@@ -103,8 +103,20 @@ class RateForm(forms.ModelForm):
             "doorstep_packaging_price": "در صورتی که نوع هزینه رایگان یا ارائه نمی‌شود باشد، این مبلغ در محاسبات استفاده نمی‌شود.",
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, company=None, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # حمل زمینی از مسیر «اعلام بار» کار می‌کند و نرخ ثابت ندارد؛ نرخ فقط
+        # برای هوایی و دریایی تعریف می‌شود، و برای فورواردر فقط در دسته‌هایی
+        # که شرکتش فعال است.
+        allowed_modes = set(RATE_BASED_TRANSPORT_MODES)
+        if company is not None:
+            allowed_modes &= set(company.allowed_rate_transport_modes())
+        if self.instance.pk and self.instance.transport_mode:
+            allowed_modes.add(self.instance.transport_mode)
+        self.fields["transport_mode"].choices = [("", "---------")] + [
+            (value, label) for value, label in TransportMode.choices if value in allowed_modes
+        ]
 
         self.fields["cargo_types"].queryset = CargoType.objects.all()
         self.fields["cargo_types"].widget.choices = [
@@ -507,6 +519,21 @@ class ForwarderDocumentsForm(forms.Form):
         widget=forms.ClearableFileInput(attrs={"class": "form-control"}),
     )
 
+    SERVICE_FIELDS = [
+        ("service_air", "حمل هوایی"),
+        ("service_sea", "حمل دریایی"),
+        ("service_land_intracity", "حمل زمینی درون‌شهری"),
+        ("service_land_domestic", "حمل زمینی برون‌شهری (داخلی)"),
+        ("service_land_international", "حمل زمینی بین‌المللی"),
+    ]
+
+    services = forms.MultipleChoiceField(
+        label="دسته‌های خدمات شرکت",
+        choices=SERVICE_FIELDS,
+        widget=forms.CheckboxSelectMultiple(),
+        help_text="دسته‌های انتخابی پس از بررسی کارشناس برای شرکت فعال می‌شود.",
+    )
+
     def __init__(self, *args, user=None, company=None, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -514,6 +541,9 @@ class ForwarderDocumentsForm(forms.Form):
         self.company = company
 
         if company:
+            self.fields["services"].initial = [
+                field for field, _ in self.SERVICE_FIELDS if getattr(company, field)
+            ]
             self.fields["company_name"].initial = company.company_name
             self.fields["company_type"].initial = company.company_type
             self.fields["national_id"].initial = company.national_id

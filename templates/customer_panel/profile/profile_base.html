@@ -166,6 +166,11 @@
           سفارشات من
         </a>
 
+        <a href="{% url 'land_freight:request_list' %}" class="{% if request.resolver_match.app_name == 'land_freight' %}active{% endif %}">
+          <i class="fas fa-truck-moving"></i>
+          حمل زمینی
+        </a>
+
         <a href="{% url 'customer:documents' %}" class="{% if request.resolver_match.url_name == 'documents' %}active{% endif %}">
           <i class="fas fa-id-card"></i>
           مدارک هویتی

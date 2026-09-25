@@ -57,6 +57,13 @@ class PricingUnit(models.TextChoices):
     FIXED = 'fixed', 'نرخ ثابت (Fixed)'
     PER_KG = 'per_kg', 'به ازای هر کیلوگرم (Per KG)'
     PER_CONTAINER = 'per_container', 'به ازای هر کانتینر (Per Container)'
+    # حمل دریایی LCL: هر W/M (Weight/Measure) برابر با بیشترِ «۱ متر مکعب» و «۱ تن»
+    PER_CBM = 'per_cbm', 'به ازای هر W/M (متر مکعب یا تن)'
+
+
+# روش‌های حمل که از مسیر نرخ‌گذاری (Rate/RateTier) کار می‌کنند. حمل زمینی از
+# مسیر «اعلام بار» در اپ land_freight کار می‌کند و نرخ ثابت ندارد.
+RATE_BASED_TRANSPORT_MODES = ('air', 'sea_fcl', 'sea_lcl')
 
 
 class ContainerSize(models.TextChoices):
@@ -435,6 +442,21 @@ class RateTier(models.Model):
 
             if self.weight_from is not None or self.weight_to is not None:
                 raise ValidationError("در FCL بازه وزن استفاده نمی‌شود.")
+
+        elif t_mode == TransportMode.SEA_LCL:
+
+            # در LCL «از/تا» به واحد W/M است (هر W/M = بیشترِ ۱ متر مکعب و ۱ تن).
+            if self.pricing_unit not in [PricingUnit.PER_CBM, PricingUnit.FIXED]:
+                raise ValidationError("واحد قیمت برای حمل دریایی LCL باید «به ازای هر W/M» یا ثابت باشد.")
+
+            if self.weight_from is None or self.weight_to is None:
+                raise ValidationError("برای حمل LCL تعیین بازه (بر حسب W/M) الزامی است.")
+
+            if self.container_size or self.container_type:
+                raise ValidationError("در حمل LCL اطلاعات کانتینر نباید پر شود.")
+
+        if self.weight_from is not None and self.weight_to is not None and self.weight_from > self.weight_to:
+            raise ValidationError("ابتدای بازه نمی‌تواند از انتهای آن بزرگ‌تر باشد.")
 
 
  

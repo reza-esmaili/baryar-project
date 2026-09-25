@@ -21,6 +21,13 @@
         <div>
             <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">{{ company.company_name }}</h1>
             <p style="color:#64748b;font-size:0.9rem;">شناسه ملی: {{ company.national_id }}</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+                {% for label in company.service_labels %}
+                    <span class="badge-pill badge-blue">{{ label }}</span>
+                {% empty %}
+                    <span class="badge-pill badge-gray">دسته‌ی خدماتی تعیین نشده</span>
+                {% endfor %}
+            </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
             {% if company.is_verified %}

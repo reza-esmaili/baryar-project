@@ -20,7 +20,8 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     # مسیر جدید برای اپلیکیشن سفارشات/درخواست‌های مشتری
-    path('orders/', include('orders.urls', namespace='orders')), 
+    path('orders/', include('orders.urls', namespace='orders')),
+    path('land/', include('land_freight.urls', namespace='land_freight')),
     path('locations/', include('locations.urls')),
     path('api/v1/orders/', include('orders.api.v1.urls')),
     path('api/v1/locations/', include('locations.api.v1.urls')),

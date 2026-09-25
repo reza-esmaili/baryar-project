@@ -1,0 +1,72 @@
+{% extends 'admin_dashboard/base.html' %}
+{% load humanize jformat %}
+
+{% block title %}{{ req.reference }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">درخواست حمل زمینی {{ req.reference }}</h1>
+        <a href="{% url 'staff_dashboard:land_request_list' %}" class="btn-soft btn-soft-gray">بازگشت</a>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+        <div class="detail-card">
+            <h3>خلاصه</h3>
+            <table class="data-table">
+                <tr><th>وضعیت</th><td>{{ req.get_status_display }}</td></tr>
+                <tr><th>نوع</th><td>{{ req.get_scope_display }}{% if req.direction %} — {{ req.get_direction_display }}{% endif %}</td></tr>
+                <tr><th>مسیر</th><td>{{ req.origin_display }} ← {{ req.destination_display }}</td></tr>
+                {% if req.border_crossing %}<tr><th>مرز ترجیحی</th><td>{{ req.border_crossing.name }}</td></tr>{% endif %}
+                <tr><th>کرایه‌ی پیشنهادی</th><td>{{ req.proposed_price|floatformat:0|intcomma }} ریال</td></tr>
+                {% if req.agreed_price %}<tr><th>کرایه‌ی توافق‌شده</th><td>{{ req.agreed_price|floatformat:0|intcomma }} ریال</td></tr>{% endif %}
+                <tr><th>مهلت پذیرش</th><td>{{ req.expires_at|jformat:"%Y/%m/%d %H:%M" }}</td></tr>
+                <tr><th>مشتری</th><td>{{ req.customer.first_name }} {{ req.customer.last_name }} — {{ req.customer.mobile }}</td></tr>
+                {% if req.assigned_company %}<tr><th>شرکت پذیرنده</th><td><a class="row-link" href="{% url 'staff_dashboard:forwarder_detail' req.assigned_company.id %}">{{ req.assigned_company.company_name }}</a> ({{ req.assigned_at|jformat:"%Y/%m/%d %H:%M" }})</td></tr>{% endif %}
+                {% if req.cancel_reason %}<tr><th>دلیل لغو</th><td>{{ req.cancel_reason }}</td></tr>{% endif %}
+            </table>
+        </div>
+
+        <div class="detail-card">
+            <h3>بار و ناوگان</h3>
+            <table class="data-table">
+                <tr><th>کالا</th><td>{{ req.cargo_type.name }} — {{ req.cargo_description }}</td></tr>
+                <tr><th>وزن</th><td>{{ req.weight_kg|floatformat:0|intcomma }} کیلوگرم</td></tr>
+                <tr><th>ناوگان</th><td>{{ req.vehicle_type.name }}{% if req.loader_type %} / {{ req.loader_type.name }}{% endif %}</td></tr>
+                <tr><th>بارگیری</th><td>{{ req.pickup_date|jformat:"%Y/%m/%d" }} — {{ req.get_pickup_window_display }}</td></tr>
+                <tr><th>آدرس بارگیری</th><td>{{ req.pickup_address }}</td></tr>
+                <tr><th>آدرس تخلیه</th><td>{{ req.delivery_address }}</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="detail-card" style="margin-top:16px;">
+        <h3>ارسال به شرکت‌ها ({{ dispatches|length }})</h3>
+        <table class="data-table">
+            <thead><tr><th>شرکت</th><th>وضعیت</th><th>ارسال</th><th>مشاهده</th><th>پاسخ</th></tr></thead>
+            <tbody>
+                {% for d in dispatches %}
+                <tr>
+                    <td>{{ d.company.company_name }}</td>
+                    <td>{{ d.get_status_display }}</td>
+                    <td>{{ d.sent_at|jformat:"%Y/%m/%d %H:%M" }}</td>
+                    <td>{{ d.seen_at|jformat:"%Y/%m/%d %H:%M"|default:"-" }}</td>
+                    <td>{{ d.responded_at|jformat:"%Y/%m/%d %H:%M"|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align:center;color:#94a3b8;">هیچ شرکت واجد شرایطی یافت نشد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="detail-card" style="margin-top:16px;">
+        <h3>تاریخچه</h3>
+        <table class="data-table">
+            {% for e in events %}
+            <tr><td style="white-space:nowrap;">{{ e.created_at|jformat:"%Y/%m/%d %H:%M" }}</td><td>{{ e.get_event_type_display }}</td><td>{{ e.note }}</td><td>{{ e.actor.mobile|default:"سیستم" }}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endblock %}

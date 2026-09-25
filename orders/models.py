@@ -310,6 +310,7 @@ class CustomerNotification(models.Model):
         ORDER_STATUS = 'order_status', 'تغییر وضعیت سفارش'
         DOC_STATUS = 'doc_status', 'تغییر وضعیت مدرک'
         MESSAGE = 'message', 'پیام جدید از فورواردر'
+        LAND_REQUEST = 'land_request', 'درخواست حمل زمینی'
 
     user = models.ForeignKey(
         User,
@@ -351,6 +352,7 @@ class ForwarderNotification(models.Model):
     class NotifType(models.TextChoices):
         MESSAGE = 'message', 'پیام جدید از مشتری'
         DOC_UPLOAD = 'doc_upload', 'آپلود مدرک توسط مشتری'
+        LAND_REQUEST = 'land_request', 'درخواست حمل زمینی جدید'
 
     forwarder_company = models.ForeignKey(
         'forwarders.ForwarderCompany',

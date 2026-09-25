@@ -1,0 +1,132 @@
+{% extends 'customer_panel/profile/profile_base.html' %}
+{% load static humanize jformat %}
+
+{% block title %}درخواست حمل زمینی {{ req.reference }}{% endblock %}
+
+{% block profile_extra_css %}
+  <link rel="stylesheet" href="{% static 'land_freight/css/land_request.css' %}" />
+{% endblock %}
+
+{% block profile_content %}
+<section class="land-request-page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+    <h2 style="margin:0;">درخواست حمل زمینی {{ req.reference }}</h2>
+    <a href="{% url 'land_freight:request_list' %}">بازگشت به فهرست</a>
+  </div>
+
+  {% if messages %}{% for message in messages %}<div class="land-alert land-alert--{{ message.tags }}">{{ message }}</div>{% endfor %}{% endif %}
+
+  <div class="lr-status-hero {% if carrier_visible %}is-assigned{% elif req.status != Status.OPEN %}is-closed{% endif %}"
+       id="lr-hero" data-status="{{ req.status }}" data-status-url="{% url 'land_freight:request_status' req.pk %}">
+    <div>
+      <small>{{ req.get_scope_display }}{% if req.direction %} — {{ req.get_direction_display }}{% endif %}</small>
+      <div class="route">{{ req.origin_display }} ← {{ req.destination_display }}</div>
+      <small>بارگیری {{ req.pickup_date|jformat:"%Y/%m/%d" }} — {{ req.get_pickup_window_display }}</small>
+    </div>
+    <div>
+      <small>{% if req.agreed_price %}کرایه‌ی توافق‌شده{% else %}کرایه‌ی پیشنهادی شما{% endif %}</small>
+      <div class="price">{{ req.agreed_price|default:req.proposed_price|floatformat:0|intcomma }} ریال</div>
+      {% if req.status == Status.OPEN %}
+        <div class="lr-waiting">
+          <span class="lr-pulse" aria-hidden="true"></span>
+          <span id="lr-live-text">در انتظار پذیرش — ارسال‌شده برای {{ stats.total }} شرکت، مشاهده توسط {{ stats.seen }} شرکت</span>
+        </div>
+        <small>مهلت پذیرش: {{ req.expires_at|jformat:"%Y/%m/%d %H:%M" }}</small>
+      {% else %}
+        <div><b>{{ req.get_status_display }}</b></div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if carrier_visible and req.assigned_company %}
+  <div class="lr-card carrier-card" style="margin-bottom:14px;">
+    <div class="carrier-head">
+      {% if req.assigned_company.logo %}<img src="{{ req.assigned_company.logo.url }}" alt="لوگوی {{ req.assigned_company.company_name }}">{% endif %}
+      <div>
+        <h3 style="margin:0;">{{ req.assigned_company.company_name }}</h3>
+        <small class="muted-note">پذیرش در {{ req.assigned_at|jformat:"%Y/%m/%d %H:%M" }}</small>
+      </div>
+    </div>
+    <div class="lr-row"><span>تلفن شرکت</span><b><a href="tel:{{ req.assigned_company.phone }}">{{ req.assigned_company.phone }}</a></b></div>
+    {% if req.assigned_by %}<div class="lr-row"><span>کارشناس پذیرنده</span><b>{{ req.assigned_by.first_name }} {{ req.assigned_by.last_name }} — <a href="tel:{{ req.assigned_by.mobile }}">{{ req.assigned_by.mobile }}</a></b></div>{% endif %}
+    <div class="lr-row"><span>ایمیل</span><b>{{ req.assigned_company.email }}</b></div>
+    <div class="lr-row"><span>آدرس</span><b>{{ req.assigned_company.address }}</b></div>
+    {% if req.assigned_company.website %}<div class="lr-row"><span>وب‌سایت</span><b><a href="{{ req.assigned_company.website }}" target="_blank" rel="noopener">{{ req.assigned_company.website }}</a></b></div>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if req.status == Status.OPEN or req.status == Status.EXPIRED or req.status == Status.ASSIGNED %}
+  <div class="lr-card" style="margin-bottom:14px;">
+    <h3>اقدامات</h3>
+    <div class="lr-actions">
+      {% if req.status == Status.OPEN or req.status == Status.EXPIRED %}
+      <form method="post" action="{% url 'land_freight:request_republish' req.pk %}">
+        {% csrf_token %}
+        <input type="number" name="proposed_price" min="1" required value="{{ req.proposed_price|floatformat:0 }}" aria-label="کرایه‌ی جدید (ریال)">
+        <button type="submit" class="lr-btn lr-btn--primary">{% if req.status == Status.EXPIRED %}انتشار دوباره{% else %}تغییر کرایه و ارسال دوباره{% endif %}</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{% url 'land_freight:request_cancel' req.pk %}"
+            onsubmit="return confirm('درخواست لغو شود؟{% if req.status == Status.ASSIGNED %} شرکت حمل از لغو مطلع می‌شود.{% endif %}');">
+        {% csrf_token %}
+        <input type="text" name="reason" placeholder="دلیل لغو (اختیاری)" maxlength="255">
+        <button type="submit" class="lr-btn lr-btn--danger">لغو درخواست</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="lr-grid">
+    <div class="lr-card">
+      <h3>مسیر</h3>
+      <div class="lr-row"><span>مبدا</span><b>{{ req.origin_display }}</b></div>
+      <div class="lr-row"><span>آدرس بارگیری</span><b>{{ req.pickup_address }}</b></div>
+      <div class="lr-row"><span>مقصد</span><b>{{ req.destination_display }}</b></div>
+      <div class="lr-row"><span>آدرس تخلیه</span><b>{{ req.delivery_address }}</b></div>
+      {% if req.border_crossing %}<div class="lr-row"><span>مرز ترجیحی</span><b>{{ req.border_crossing.name }}</b></div>{% endif %}
+    </div>
+    <div class="lr-card">
+      <h3>بار و ناوگان</h3>
+      <div class="lr-row"><span>کالا</span><b>{{ req.cargo_type.name }} — {{ req.cargo_description }}</b></div>
+      <div class="lr-row"><span>وزن</span><b>{{ req.weight_kg|floatformat:0|intcomma }} کیلوگرم</b></div>
+      <div class="lr-row"><span>ناوگان</span><b>{{ req.vehicle_type.name }}{% if req.loader_type %} / {{ req.loader_type.name }}{% endif %}</b></div>
+      <div class="lr-row"><span>خدمات</span><b>{% if req.needs_loading_help %}کارگر بارگیری {% endif %}{% if req.needs_insurance %}بیمه {% endif %}{% if req.needs_customs_clearance %}ترخیص گمرکی{% endif %}{% if not req.needs_loading_help and not req.needs_insurance and not req.needs_customs_clearance %}—{% endif %}</b></div>
+    </div>
+    <div class="lr-card">
+      <h3>تاریخچه</h3>
+      <ul class="lr-timeline">
+        {% for e in events %}
+          <li>{{ e.created_at|jformat:"%Y/%m/%d %H:%M" }} — <b>{{ e.get_event_type_display }}</b>{% if e.note %}: {{ e.note }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  // تا زمانی که درخواست باز است، هر ۱۵ ثانیه وضعیت بررسی می‌شود تا پذیرش بلافاصله دیده شود.
+  (function () {
+    const hero = document.getElementById('lr-hero');
+    if (!hero || hero.dataset.status !== 'open') return;
+    const liveText = document.getElementById('lr-live-text');
+    const timer = setInterval(function () {
+      fetch(hero.dataset.statusUrl, { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.status !== 'open') {
+            clearInterval(timer);
+            window.location.reload();
+            return;
+          }
+          if (liveText) {
+            liveText.textContent = 'در انتظار پذیرش — ارسال‌شده برای ' + data.dispatched + ' شرکت، مشاهده توسط ' + data.seen + ' شرکت';
+          }
+        })
+        .catch(function () {});
+    }, 15000);
+  })();
+</script>
+{% endblock %}

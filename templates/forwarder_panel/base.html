@@ -112,6 +112,12 @@
                 {% if fw_perms.can_view_rates %}
                 <a href="{% url 'forwarder_panel:rate_list' %}"><i class="fas fa-tags"></i><span class="nav-label">مدیریت نرخ‌ها</span></a>
                 {% endif %}
+                {% if fw_offers_land and fw_perms.can_view_land_requests %}
+                <a href="{% url 'forwarder_panel:land_request_list' %}"><i class="fas fa-truck-moving"></i><span class="nav-label">اعلام بار زمینی</span></a>
+                {% endif %}
+                {% if fw_offers_land and user.role == 'forwarder_admin' %}
+                <a href="{% url 'forwarder_panel:land_service_area' %}"><i class="fas fa-map-marked-alt"></i><span class="nav-label">حوزه‌ی فعالیت زمینی</span></a>
+                {% endif %}
                 {% if fw_perms.can_view_branches %}
                 <a href="{% url 'forwarder_panel:branch_list' %}"><i class="fas fa-building"></i><span class="nav-label">مدیریت شعب</span></a>
                 {% endif %}

@@ -100,6 +100,45 @@
             </div>
         </div>
 
+        <div class="detail-card">
+            <h3>دسته‌های خدمات</h3>
+            <p style="color:#64748b;font-size:0.85rem;margin:0 0 10px;">هوایی و دریایی از مسیر نرخ‌گذاری کار می‌کنند؛ دسته‌های زمینی درخواست‌های «اعلام بار» را دریافت می‌کنند.</p>
+            <div style="display:flex;gap:18px;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:8px;">{{ company_form.service_air }} {{ company_form.service_air.label }}</label>
+                <label style="display:flex;align-items:center;gap:8px;">{{ company_form.service_sea }} {{ company_form.service_sea.label }}</label>
+                <label style="display:flex;align-items:center;gap:8px;">{{ company_form.service_land_intracity }} {{ company_form.service_land_intracity.label }}</label>
+                <label style="display:flex;align-items:center;gap:8px;">{{ company_form.service_land_domestic }} {{ company_form.service_land_domestic.label }}</label>
+                <label style="display:flex;align-items:center;gap:8px;">{{ company_form.service_land_international }} {{ company_form.service_land_international.label }}</label>
+            </div>
+        </div>
+
+        {% if land_form %}
+        <div class="detail-card">
+            <input type="hidden" name="land-present" value="1">
+            <h3>حوزه‌ی فعالیت حمل زمینی</h3>
+            {% if land_form.non_field_errors %}<div class="fc-error">{{ land_form.non_field_errors }}</div>{% endif %}
+            <div class="fc-field">
+                <label>{{ land_form.vehicle_types.label }}</label>
+                <div style="display:flex;flex-wrap:wrap;gap:6px 16px;">{% for cb in land_form.vehicle_types %}<label style="display:flex;gap:6px;align-items:center;">{{ cb.tag }} {{ cb.choice_label }}</label>{% endfor %}</div>
+                {% if land_form.vehicle_types.errors %}<div class="fc-error">{{ land_form.vehicle_types.errors.0 }}</div>{% endif %}
+            </div>
+            {% if instance.service_land_intracity %}
+            <div class="fc-field">
+                <label>{{ land_form.service_cities.label }}</label>
+                {{ land_form.service_cities }}
+                {% if land_form.service_cities.errors %}<div class="fc-error">{{ land_form.service_cities.errors.0 }}</div>{% endif %}
+            </div>
+            {% endif %}
+            {% if instance.service_land_international %}
+            <div class="fc-field">
+                <label>{{ land_form.service_countries.label }}</label>
+                {{ land_form.service_countries }}
+                <small style="color:#64748b;">{{ land_form.service_countries.help_text }}</small>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره</button>
     </form>
 

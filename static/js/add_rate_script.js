@@ -161,9 +161,10 @@ panelReady(function () {
                 select.innerHTML += '<option value="per_container">به ازای هر کانتینر (Per Container)</option>';
                 
             } else if (transportMode === 'SEA_LCL') {
+                // LCL بر اساس W/M قیمت‌گذاری می‌شود (بیشترِ ۱ متر مکعب و ۱ تن)
+                select.innerHTML += '<option value="per_cbm">به ازای هر W/M (متر مکعب یا تن)</option>';
                 select.innerHTML += '<option value="fixed">نرخ ثابت (Fixed)</option>';
-                select.innerHTML += '<option value="per_kg">به ازای هر کیلوگرم (Per KG)</option>';
-                
+
             } else {
                 select.innerHTML += '<option value="fixed">نرخ ثابت (Fixed)</option>';
                 select.innerHTML += '<option value="per_kg">به ازای هر کیلوگرم (Per KG)</option>';
@@ -215,6 +216,16 @@ panelReady(function () {
                 toggleFieldDisplay(containerSize, false);
                 toggleFieldDisplay(containerType, false);
             }
+
+            // در LCL بازه‌ی «از/تا» به واحد W/M است، نه کیلوگرم
+            const unitLabel = mode === 'sea_lcl' ? 'W/M' : 'KG';
+            if (weightFrom) weightFrom.placeholder = 'از (' + unitLabel + ')';
+            if (weightTo) weightTo.placeholder = 'تا (' + unitLabel + ')';
+            [weightFrom, weightTo].forEach(function (input) {
+                const label = input && input.closest('div') && input.closest('div').querySelector('label');
+                if (label && !label.dataset.baseText) label.dataset.baseText = label.textContent.replace(/\s*\((KG|W\/M)\)\s*$/, '');
+                if (label) label.textContent = label.dataset.baseText + ' (' + unitLabel + ')';
+            });
         });
     }
 

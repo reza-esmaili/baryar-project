@@ -6,6 +6,7 @@ from . import views_documents
 from . import views_import
 from . import views_ajax
 from . import views_sms
+from . import views_land
 
 app_name = "admin_dashboard"
 
@@ -62,6 +63,9 @@ urlpatterns = [
     path("orders/", views.order_list, name="order_list"),
     path("orders/<int:order_id>/edit/", views.order_edit, name="order_edit"),
     path("orders/<int:order_id>/", views.order_detail, name="order_detail"),
+
+    path("land-requests/", views_land.land_request_list, name="land_request_list"),
+    path("land-requests/<int:pk>/", views_land.land_request_detail, name="land_request_detail"),
 
     path("tickets/", views.ticket_list, name="ticket_list"),
     path("tickets/<int:ticket_id>/", views.ticket_detail, name="ticket_detail"),

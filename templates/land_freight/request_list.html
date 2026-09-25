@@ -1,0 +1,74 @@
+{% extends 'customer_panel/profile/profile_base.html' %}
+{% load static humanize jformat %}
+
+{% block title %}درخواست‌های حمل زمینی{% endblock %}
+
+{% block profile_extra_css %}
+  <link rel="stylesheet" href="{% static 'land_freight/css/land_request.css' %}" />
+{% endblock %}
+
+{% block profile_content %}
+<section class="orders-card">
+  <div class="orders-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+    <div>
+      <h2 style="margin:0;">درخواست‌های حمل زمینی</h2>
+      <p class="muted-note" style="margin:4px 0 0;">اعلام بار درون‌شهری، برون‌شهری و بین‌المللی</p>
+    </div>
+    <a href="{% url 'land_freight:request_create' %}" class="btn-primary"><i class="fas fa-plus"></i> درخواست جدید</a>
+  </div>
+
+  {% if messages %}{% for message in messages %}<div class="land-alert land-alert--{{ message.tags }}">{{ message }}</div>{% endfor %}{% endif %}
+
+  <form method="get" style="margin-bottom:12px;">
+    <select name="status" onchange="this.form.submit()" class="form-select" style="max-width:260px;">
+      <option value="">همه‌ی وضعیت‌ها</option>
+      {% for value, label in statuses %}
+        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <div class="orders-table-wrapper">
+    <table class="modern-table orders-table">
+      <thead>
+        <tr>
+          <th>کد</th>
+          <th>نوع</th>
+          <th>مسیر</th>
+          <th>ناوگان</th>
+          <th>کرایه</th>
+          <th>وضعیت</th>
+          <th>شرکت حمل</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requests %}
+        <tr>
+          <td><b>{{ req.reference }}</b><div class="muted-note">{{ req.created_at|jformat:"%Y/%m/%d" }}</div></td>
+          <td>{{ req.get_scope_display }}</td>
+          <td>{{ req.origin_display }} ← {{ req.destination_display }}</td>
+          <td>{{ req.vehicle_type.name }}</td>
+          <td>{{ req.agreed_price|default:req.proposed_price|floatformat:0|intcomma }} ریال</td>
+          <td><span class="lr-status-badge lr-status-{{ req.status }}">{{ req.get_status_display }}</span></td>
+          <td>{{ req.assigned_company.company_name|default:"—" }}</td>
+          <td><a href="{% url 'land_freight:request_detail' req.pk %}">مشاهده</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center;padding:24px;">هنوز درخواست حمل زمینی ثبت نکرده‌اید. <a href="{% url 'land_freight:request_create' %}">ثبت اولین درخواست</a></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav aria-label="صفحه‌بندی" style="margin-top:14px;">
+    <ul class="pagination">
+      {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}">قبلی</a></li>{% endif %}
+      <li class="page-item active"><span class="page-link">{{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}">بعدی</a></li>{% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</section>
+{% endblock %}

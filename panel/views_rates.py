@@ -35,11 +35,20 @@ def rate_create_view(request):
     ports_data = list(Port.objects.values('id', 'name', 'port_type'))
     ports_json = json.dumps(ports_data)
 
+    company = get_company_for_user(request.user)
+    if not company or not company.allowed_rate_transport_modes():
+        messages.warning(
+            request,
+            "شرکت شما در دسته‌ی حمل هوایی یا دریایی فعال نیست؛ نرخ‌گذاری فقط برای این دو دسته است. "
+            "درخواست‌های حمل زمینی از بخش «اعلام بار زمینی» دریافت می‌شوند.",
+        )
+        return redirect('forwarder_panel:rate_list')
+
     if request.method == 'POST':
-        form = RateForm(request.POST)
+        form = RateForm(request.POST, company=company)
 
         # ۱. مقداردهی مالک نرخ قبل از اعتبارسنجی (is_valid) تا خطای مدل رخ ندهد
-        form.instance.forwarder = get_company_for_user(request.user)
+        form.instance.forwarder = company
 
         # ۲. پاس دادن instance فرم اصلی به فرم‌ست
         formset = RateTierFormSet(request.POST, instance=form.instance)
@@ -52,7 +61,7 @@ def rate_create_view(request):
             messages.success(request, "نرخ با موفقیت ذخیره شد.")
             return redirect('forwarder_panel:rate_list')
     else:
-        form = RateForm()
+        form = RateForm(company=company)
         formset = RateTierFormSet()
 
     return render(request, 'forwarder_panel/rate_form.html', {
@@ -201,6 +210,11 @@ class RateDetailUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             return Rate.objects.filter(forwarder=forwarder_company)
         return Rate.objects.none()
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["company"] = get_company_for_user(self.request.user)
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         ports_data = list(Port.objects.values('id', 'name', 'port_type'))
@@ -267,7 +281,9 @@ def download_rate_template_excel(request):
     # لیست‌های dropdown از داده‌های واقعی پایگاه‌داده ساخته می‌شوند (نه
     # مقادیر ثابت نمونه) تا هر مقداری که کاربر از این فایل انتخاب می‌کند،
     # در upload_rate_excel قابل تطبیق با رکورد واقعی باشد.
-    shipping_methods = [label for _, label in TransportMode.choices]
+    company = get_company_for_user(request.user)
+    allowed_modes = company.allowed_rate_transport_modes() if company else []
+    shipping_methods = [label for value, label in TransportMode.choices if value in allowed_modes]
     provinces = list(Province.objects.filter(is_active=True).order_by('name').values_list('name', flat=True))
     origin_cities = list(City.objects.filter(is_active=True).order_by('name').values_list('name', flat=True))
     countries = list(Country.objects.filter(is_active=True).order_by('name').values_list('name', flat=True))
@@ -370,6 +386,8 @@ def _build_rate_from_excel_row(row, forwarder_company):
     transport_mode = transport_mode_by_label.get(transport_label)
     if not transport_mode:
         raise ValueError(f"روش حمل «{transport_label}» معتبر نیست.")
+    if transport_mode not in forwarder_company.allowed_rate_transport_modes():
+        raise ValueError(f"شرکت شما در دسته‌ی «{transport_label}» فعال نیست.")
 
     origin_province_name = _excel_cell_str(row, 'استان مبدا')
     origin_province = Province.objects.filter(name=origin_province_name, is_active=True).first()

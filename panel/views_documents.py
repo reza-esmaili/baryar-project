@@ -83,6 +83,13 @@ def documents_view(request):
                         "postal_code": form.cleaned_data["postal_code"],
                         "address": form.cleaned_data["address"],
 
+                        # دسته‌های خدمات؛ چون ارسال دوباره‌ی مدارک تایید را برمی‌دارد،
+                        # هر تغییر دسته دوباره توسط کارشناس بررسی می‌شود.
+                        **{
+                            field: field in form.cleaned_data["services"]
+                            for field, _ in ForwarderDocumentsForm.SERVICE_FIELDS
+                        },
+
                         # مهم:
                         # بعد از ارسال مدارک، شرکت فعال عملیاتی نیست تا کارشناس تایید کند.
                         "is_verified": False,

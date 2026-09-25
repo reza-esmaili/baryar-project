@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'panel',
     'admin_dashboard',
+    'land_freight',
 ]
 
 ASGI_APPLICATION = "cargo1.asgi.application"

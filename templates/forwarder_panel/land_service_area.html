@@ -1,0 +1,92 @@
+{% extends 'forwarder_panel/base.html' %}
+
+{% block extra_css %}
+<style>
+    .area-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+    .area-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+    .area-card p.hint { color: #64748b; font-size: 13px; margin-bottom: 12px; }
+    .service-badges span { display: inline-block; padding: 5px 12px; margin: 0 0 6px 6px; border-radius: 999px; background: #e0f2fe; color: #075985; font-weight: 700; font-size: 13px; }
+    .vehicle-grid ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+    .vehicle-grid li label { display: flex; gap: 8px; align-items: center; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+    .land-multiselect { min-height: 220px; }
+    .field-error { color: #dc2626; font-size: 13px; margin-top: 6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="h4 mb-1">حوزه‌ی فعالیت حمل زمینی</h2>
+    <p class="text-muted small mb-3">درخواست‌های «اعلام بار» فقط برای شرکت‌هایی ارسال می‌شود که ناوگان و حوزه‌ی جغرافیایی آن‌ها با درخواست منطبق باشد.</p>
+
+    {% include 'forwarder_panel/partials/messages.html' %}
+
+    <div class="area-card">
+        <h3>دسته‌های فعال شرکت</h3>
+        <div class="service-badges">
+            {% for label in company.service_labels %}<span>{{ label }}</span>{% endfor %}
+        </div>
+        <p class="hint mb-0">دسته‌های خدمات هنگام احراز هویت شرکت توسط کارشناس تایید می‌شود. برای تغییر آن، اطلاعات را در بخش «مدارک و مستندات» دوباره ارسال کنید یا با پشتیبانی تماس بگیرید.</p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <fieldset {% if not can_edit %}disabled{% endif %}>
+
+        <div class="area-card vehicle-grid">
+            <h3>ناوگان در اختیار</h3>
+            <p class="hint">فقط درخواست‌هایی که نوع ناوگانشان در این فهرست است برای شما ارسال می‌شود.</p>
+            {{ form.vehicle_types }}
+            {% if form.vehicle_types.errors %}<div class="field-error">{{ form.vehicle_types.errors.0 }}</div>{% endif %}
+        </div>
+
+        {% if company.service_land_intracity %}
+        <div class="area-card">
+            <h3>شهرهای تحت پوشش (حمل درون‌شهری)</h3>
+            <p class="hint">درخواست‌های درون‌شهری فقط در این شهرها برای شما ارسال می‌شود. برای انتخاب چند شهر، Ctrl (یا Cmd) را نگه دارید.</p>
+            <input type="search" class="form-control mb-2" placeholder="جستجوی شهر یا استان..." data-filter-for="id_service_cities">
+            {{ form.service_cities }}
+            {% if form.service_cities.errors %}<div class="field-error">{{ form.service_cities.errors.0 }}</div>{% endif %}
+        </div>
+        {% endif %}
+
+        {% if company.service_land_domestic %}
+        <div class="area-card">
+            <h3>حمل برون‌شهری</h3>
+            <p class="hint mb-0">درخواست‌های برون‌شهری از سراسر ایران (با ناوگان منطبق) برای شما ارسال می‌شود.</p>
+        </div>
+        {% endif %}
+
+        {% if company.service_land_international %}
+        <div class="area-card">
+            <h3>کشورهای تحت پوشش (حمل بین‌المللی)</h3>
+            <p class="hint">{{ form.service_countries.help_text }}</p>
+            <input type="search" class="form-control mb-2" placeholder="جستجوی کشور..." data-filter-for="id_service_countries">
+            {{ form.service_countries }}
+        </div>
+        {% endif %}
+
+        </fieldset>
+
+        {% if can_edit %}
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> ذخیره‌ی حوزه‌ی فعالیت</button>
+        {% else %}
+        <p class="text-muted small">فقط ادمین شرکت می‌تواند این بخش را ویرایش کند.</p>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('[data-filter-for]').forEach(function (input) {
+        const select = document.getElementById(input.dataset.filterFor);
+        if (!select) return;
+        input.addEventListener('input', function () {
+            const term = input.value.trim();
+            Array.from(select.options).forEach(function (opt) {
+                opt.hidden = term !== '' && !opt.text.includes(term) && !opt.selected;
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,9 +1,42 @@
 from decimal import Decimal, ROUND_HALF_UP
+from django.db.models import Q
 from django.utils import timezone
-from rates.models import RateTier, ExtraChargeType
+from rates.models import RateTier, ExtraChargeType, PricingUnit
 
 
 VAT_RATE = Decimal("0.10")
+
+# وزن حجمی هوایی: سانتی‌متر مکعب ÷ ۶۰۰۰ (استاندارد IATA)
+AIR_VOLUMETRIC_DIVISOR = Decimal("6000")
+CM3_PER_CBM = Decimal("1000000")
+# حمل دریایی LCL بر اساس W/M: هر «revenue ton» = بیشترِ ۱ متر مکعب و ۱۰۰۰ کیلوگرم،
+# با حداقل ۱ W/M برای هر محموله.
+KG_PER_REVENUE_TON = Decimal("1000")
+LCL_MINIMUM_REVENUE_TONS = Decimal("1")
+
+# دسته‌ی خدماتی که صاحب نرخ باید برای هر روش حمل داشته باشد
+MODE_SERVICE_FLAG = {
+    "air": "service_air",
+    "sea_fcl": "service_sea",
+    "sea_lcl": "service_sea",
+}
+
+
+def rate_owner_eligibility_q(transport_mode):
+    """
+    نرخ فقط وقتی به مشتری نمایش داده می‌شود که شرکت صاحب آن (مستقیم یا از
+    طریق شعبه) تایید‌شده، فعال و در دسته‌ی همان روش حمل فعال باشد.
+    """
+    flag = MODE_SERVICE_FLAG.get(transport_mode)
+    company_conditions = {"is_verified": True, "is_active": True}
+    if flag:
+        company_conditions[flag] = True
+
+    direct = Q(**{f"rate__forwarder__{k}": v for k, v in company_conditions.items()})
+    via_branch = Q(rate__branch__is_active=True) & Q(
+        **{f"rate__branch__company__{k}": v for k, v in company_conditions.items()}
+    )
+    return direct | via_branch
 
 
 def money(value):
@@ -33,32 +66,44 @@ def calculate_and_match_rates(data, dimensions_data):
     transport_mode = data.get('transport_mode')
     shipping_procedure = data.get('shipping_procedure')
     is_fcl = transport_mode in ['sea_fcl', 'FCL']
+    is_lcl = transport_mode == 'sea_lcl'
 
     # فیلدهای جدید انتخاب سرویس‌های بسته‌بندی
     needs_office_packaging = bool(data.get('needs_office_packaging'))
     needs_onsite_packaging = bool(data.get('needs_onsite_packaging'))
     needs_doorstep_packaging = bool(data.get('needs_doorstep_packaging'))
 
-    # 1. محاسبه وزن حجمی
-    total_volumetric_weight = Decimal('0.0')
+    # 1. حجم کل بسته‌ها (سانتی‌متر مکعب)
+    total_volume_cm3 = Decimal('0')
 
     if not is_fcl and dimensions_data:
-        divisor = Decimal('6000')
-
         for dim in dimensions_data:
             if dim and not dim.get('DELETE', False) and dim.get('length'):
-                volume = (
+                total_volume_cm3 += (
                     Decimal(str(dim['length'])) *
                     Decimal(str(dim['width'])) *
                     Decimal(str(dim['height'])) *
                     Decimal(str(dim['quantity']))
                 )
-                total_volumetric_weight += volume / divisor
 
-    # 2. تعیین Chargeable Weight
     weight_val = data.get('gross_weight') or data.get('actual_weight') or '0.0'
     actual_wt = Decimal(str(weight_val))
-    cw = max(actual_wt, total_volumetric_weight)
+
+    # 2. مبنای محاسبه‌ی کرایه (chargeable)
+    #    هوایی: بیشترِ وزن واقعی و وزن حجمی (cm³ ÷ ۶۰۰۰) به کیلوگرم.
+    #    دریایی LCL: W/M = بیشترِ حجم (CBM) و وزن به تن، حداقل ۱.
+    #    cw همیشه به کیلوگرم (معادل) است تا در سفارش ذخیره شود.
+    if is_lcl:
+        total_cbm = total_volume_cm3 / CM3_PER_CBM
+        chargeable_quantity = max(total_cbm, actual_wt / KG_PER_REVENUE_TON, LCL_MINIMUM_REVENUE_TONS)
+        total_volumetric_weight = total_cbm * KG_PER_REVENUE_TON
+        cw = chargeable_quantity * KG_PER_REVENUE_TON
+        chargeable_unit = 'W/M'
+    else:
+        total_volumetric_weight = total_volume_cm3 / AIR_VOLUMETRIC_DIVISOR
+        cw = max(actual_wt, total_volumetric_weight)
+        chargeable_quantity = cw
+        chargeable_unit = 'kg'
 
     # 3. ساخت فیلترهای پایه برای جستجوی نرخ‌ها
     query_filters = {
@@ -94,7 +139,9 @@ def calculate_and_match_rates(data, dimensions_data):
     if data.get('cargo_type'):
         query_filters['rate__cargo_types'] = data.get('cargo_type')
 
-    base_query = RateTier.objects.filter(**query_filters).select_related(
+    base_query = RateTier.objects.filter(**query_filters).filter(
+        rate_owner_eligibility_q(transport_mode)
+    ).select_related(
         'rate',
         'rate__forwarder',
         'rate__branch',
@@ -111,9 +158,10 @@ def calculate_and_match_rates(data, dimensions_data):
 
         valid_tiers = base_query.filter(**fcl_filters)
     else:
+        # بازه‌ی ردیف قیمتی به واحد همان روش حمل است (هوایی: کیلوگرم، LCL: W/M)
         valid_tiers = base_query.filter(
-            weight_from__lte=cw,
-            weight_to__gte=cw
+            weight_from__lte=chargeable_quantity,
+            weight_to__gte=chargeable_quantity
         )
 
     results = []
@@ -127,8 +175,10 @@ def calculate_and_match_rates(data, dimensions_data):
             base_shipping_price = Decimal(str(tier.price)) * count
             extra_charge_weight = actual_wt
         else:
-            if tier.pricing_unit == 'per_kg':
+            if tier.pricing_unit == PricingUnit.PER_KG:
                 base_shipping_price = Decimal(str(tier.price)) * cw
+            elif tier.pricing_unit == PricingUnit.PER_CBM:
+                base_shipping_price = Decimal(str(tier.price)) * chargeable_quantity
             else:
                 base_shipping_price = Decimal(str(tier.price))
 
@@ -263,6 +313,8 @@ def calculate_and_match_rates(data, dimensions_data):
         'actual_weight': str(money(actual_wt)),
         'volumetric_weight': str(money(total_volumetric_weight)),
         'chargeable_weight': str(money(cw)),
+        'chargeable_quantity': str(money(chargeable_quantity)),
+        'chargeable_unit': chargeable_unit,
         'results': results
     }
 

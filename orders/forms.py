@@ -2,7 +2,7 @@ from django import forms
 from django.forms import inlineformset_factory
 from .models import CargoRequest, CargoDimension
 from locations.models import Province, City, Country, DestinationCity, Port
-from rates.models import ContainerSize, ContainerType, CargoSubCategory
+from rates.models import ContainerSize, ContainerType, CargoSubCategory, RATE_BASED_TRANSPORT_MODES, TransportMode
 from core.validators import validate_iranian_national_code
 
 class CargoRequestForm(forms.ModelForm):
@@ -135,6 +135,13 @@ class CargoRequestForm(forms.ModelForm):
 
         if iran:
             self.fields['origin_country'].initial = iran
+
+        # استعلام نرخ فقط برای روش‌های نرخ‌محور (هوایی، دریایی FCL/LCL)؛ حمل
+        # زمینی از مسیر «اعلام بار» (اپ land_freight) ثبت می‌شود.
+        self.fields['transport_mode'].choices = [('', '---------')] + [
+            (value, label) for value, label in TransportMode.choices
+            if value in RATE_BASED_TRANSPORT_MODES
+        ]
 
         self.fields['origin_city'].queryset = City.objects.none()
         self.fields['destination_port'].queryset = Port.objects.none()

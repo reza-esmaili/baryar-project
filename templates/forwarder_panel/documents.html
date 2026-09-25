@@ -265,6 +265,19 @@
                 </div>
             </div>
 
+            <div class="page-card">
+                <h3 class="section-title">{{ form.services.label }} <span class="required-mark">*</span></h3>
+                <p class="text-muted small mb-2">{{ form.services.help_text }} هوایی و دریایی با اعلام نرخ کار می‌کنند؛ دسته‌های زمینی درخواست‌های «اعلام بار» مشتریان را دریافت می‌کنند.</p>
+                <div class="d-flex flex-wrap gap-3">
+                    {% for checkbox in form.services %}
+                    <label class="d-flex align-items-center gap-2 border rounded-3 px-3 py-2" style="cursor:pointer;">
+                        {{ checkbox.tag }} {{ checkbox.choice_label }}
+                    </label>
+                    {% endfor %}
+                </div>
+                {% for error in form.services.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+            </div>
+
             <div class="page-card" id="ceoInfoCard">
                 <h3 class="section-title">اطلاعات مدیرعامل</h3>
 

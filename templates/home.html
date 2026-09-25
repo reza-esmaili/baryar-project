@@ -271,22 +271,6 @@
         },
         { passive: true },
       );
-
-      // Tab switch
-      function setTab(btn) {
-        document
-          .querySelectorAll(".tab-btn")
-          .forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById("mode-input").value = btn.dataset.mode;
-      }
-
-      // Swap origin/destination
-      function swapFields() {
-        const o = document.querySelector('[name="origin"]');
-        const d = document.querySelector('[name="destination"]');
-        [o.value, d.value] = [d.value, o.value];
-      }
     </script>
   </body>
 </html>

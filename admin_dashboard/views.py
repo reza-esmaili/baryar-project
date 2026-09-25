@@ -13,6 +13,8 @@ from django.utils import timezone
 
 from accounts.models import IdentityDocument, User
 from forwarders.models import ForwarderCompany, ForwarderBranch, ForwarderStaff
+from land_freight.forms import LandCarrierProfileForm
+from land_freight.models import LandCarrierProfile
 from orders.models import CargoRequest, OrderStatus
 from support.models import Ticket, TicketMessage
 
@@ -224,18 +226,36 @@ def forwarder_create(request):
 @platform_staff_required
 def forwarder_edit(request, company_id):
     company = get_object_or_404(ForwarderCompany, id=company_id)
+    land_profile, _ = LandCarrierProfile.objects.get_or_create(company=company)
 
     if request.method == "POST":
         company_form = ForwarderCompanyForm(request.POST, request.FILES, instance=company)
+        # فرم حوزه‌ی زمینی فقط وقتی اعتبارسنجی می‌شود که روی صفحه بوده؛ اگر
+        # دسته‌ی زمینی همین حالا فعال شده، پس از ذخیره نمایش داده می‌شود.
+        land_submitted = request.POST.get("land-present") == "1"
+        land_form = None
         if company_form.is_valid():
-            company_form.save()
-            messages.success(request, "اطلاعات شرکت با موفقیت بروزرسانی شد.")
-            return redirect("staff_dashboard:forwarder_edit", company_id=company.id)
+            if land_submitted and company_form.instance.offers_land:
+                land_form = LandCarrierProfileForm(
+                    request.POST, instance=land_profile, company=company_form.instance, prefix="land",
+                )
+            if land_form is None or land_form.is_valid():
+                with transaction.atomic():
+                    company_form.save()
+                    if land_form is not None:
+                        land_form.save()
+                messages.success(request, "اطلاعات شرکت با موفقیت بروزرسانی شد.")
+                return redirect("staff_dashboard:forwarder_edit", company_id=company.id)
     else:
         company_form = ForwarderCompanyForm(instance=company)
+        land_form = None
+
+    if land_form is None and company.offers_land:
+        land_form = LandCarrierProfileForm(instance=land_profile, company=company, prefix="land")
 
     context = {
         "company_form": company_form,
+        "land_form": land_form,
         "user_form": None,
         "instance": company,
         "branches": company.branches.all(),

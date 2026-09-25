@@ -1,0 +1,67 @@
+{% extends 'admin_dashboard/base.html' %}
+{% load humanize jformat %}
+
+{% block title %}درخواست‌های حمل زمینی{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">درخواست‌های حمل زمینی (اعلام بار)</h1>
+    </div>
+
+    <form method="get" class="data-toolbar">
+        <input type="text" name="q" value="{{ q }}" placeholder="کد LF-، موبایل مشتری یا نام شرکت...">
+        <select name="scope">
+            <option value="">همه‌ی انواع</option>
+            {% for value, label in scopes %}<option value="{{ value }}" {% if selected_scope == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <select name="status">
+            <option value="">همه‌ی وضعیت‌ها</option>
+            {% for value, label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button type="submit"><i class="fas fa-search"></i> جستجو</button>
+    </form>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>کد</th>
+                    <th>مشتری</th>
+                    <th>نوع</th>
+                    <th>مسیر</th>
+                    <th>کرایه</th>
+                    <th>ارسال به</th>
+                    <th>وضعیت</th>
+                    <th>شرکت پذیرنده</th>
+                    <th>تاریخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in page_obj %}
+                <tr>
+                    <td><a class="row-link" href="{% url 'staff_dashboard:land_request_detail' req.pk %}">{{ req.reference }}</a></td>
+                    <td>{{ req.customer.first_name }} {{ req.customer.last_name }}<br><small style="color:#94a3b8;">{{ req.customer.mobile }}</small></td>
+                    <td>{{ req.get_scope_display }}</td>
+                    <td>{{ req.origin_display }} ← {{ req.destination_display }}</td>
+                    <td>{{ req.agreed_price|default:req.proposed_price|floatformat:0|intcomma }}</td>
+                    <td>{{ req.dispatch_count }} شرکت</td>
+                    <td>
+                        {% if req.status == 'open' %}<span class="badge-pill badge-amber">{{ req.get_status_display }}</span>
+                        {% elif req.status == 'assigned' or req.status == 'in_transit' %}<span class="badge-pill badge-green">{{ req.get_status_display }}</span>
+                        {% elif req.status == 'delivered' %}<span class="badge-pill badge-blue">{{ req.get_status_display }}</span>
+                        {% else %}<span class="badge-pill badge-gray">{{ req.get_status_display }}</span>{% endif %}
+                    </td>
+                    <td>{{ req.assigned_company.company_name|default:"-" }}</td>
+                    <td>{{ req.created_at|jformat:"%Y/%m/%d" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">درخواستی یافت نشد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'admin_dashboard/partials/pagination.html' %}
+</div>
+{% endblock %}

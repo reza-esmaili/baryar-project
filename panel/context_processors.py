@@ -5,6 +5,7 @@ _PERM_FIELDS = [
     "can_send_order_message", "can_request_documents",
     "can_view_rates", "can_create_rates", "can_edit_rates",
     "can_delete_rates", "can_bulk_upload_rates",
+    "can_view_land_requests", "can_accept_land_requests",
     "can_view_branches", "can_manage_branches",
     "can_view_staff", "can_manage_staff",
     "can_view_reports", "can_export_reports",
@@ -29,11 +30,18 @@ def forwarder_permissions(request):
     if not user.is_authenticated or user.role not in _FORWARDER_ROLES:
         return {}
 
+    from panel.decorators import get_company_for_user
+
+    company = get_company_for_user(user)
+    context = {'fw_offers_land': bool(company and company.offers_land)}
+
     if user.role == User.Role.FORWARDER_ADMIN:
-        return {'fw_perms': {f: True for f in _PERM_FIELDS}}
+        context['fw_perms'] = {f: True for f in _PERM_FIELDS}
+        return context
 
     staff = getattr(user, 'forwarder_staff', None)
     if staff and staff.role:
-        return {'fw_perms': {f: bool(getattr(staff.role, f, False)) for f in _PERM_FIELDS}}
-
-    return {'fw_perms': {f: False for f in _PERM_FIELDS}}
+        context['fw_perms'] = {f: bool(getattr(staff.role, f, False)) for f in _PERM_FIELDS}
+    else:
+        context['fw_perms'] = {f: False for f in _PERM_FIELDS}
+    return context
