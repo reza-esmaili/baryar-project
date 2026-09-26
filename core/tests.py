@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest import mock
 
 from django.test import TestCase
@@ -9,6 +10,7 @@ from core.integrations.sms_ir import SMSIRException, SMSIRProvider
 from .models import SmsEvent, SmsLog, SmsProviderConfig
 from .services.notifications.events import (
     COMPANY_VERIFIED,
+    OTP_VERIFICATION,
     DEFAULT_TEXTS,
     NOTIFICATION_EVENTS,
     get_event_params,
@@ -75,7 +77,43 @@ class NotifyTests(TestCase):
             })
         init.assert_called_once_with(api_key="live-key", line_number="")
         send_text.assert_called_once_with(mobile="09123456789", message="علی گرامی، حساب ترابر فعال شد.")
-        self.assertEqual(SmsLog.objects.get(template_key=COMPANY_VERIFIED).status, "sent")
+        log = SmsLog.objects.get(template_key=COMPANY_VERIFIED)
+        self.assertEqual(log.status, "sent")
+        self.assertEqual(log.message, "علی گرامی، حساب ترابر فعال شد.")
+
+    def test_template_mode_logs_template_id_and_labelled_values(self):
+        self.event.send_mode = SmsEvent.SendMode.TEMPLATE
+        self.event.template_id = 123456
+        self.event.parameter_mapping = {"company_name": "COMPANY"}
+        self.event.save()
+        with mock.patch.object(SMSIRProvider, "__init__", return_value=None), \
+                mock.patch.object(SMSIRProvider, "send_verify", return_value={"status": 1}) as send_verify:
+            SmsNotificationService().notify(COMPANY_VERIFIED, "09123456789", {
+                "contact_name": "علی", "company_name": "ترابر",
+            })
+        send_verify.assert_called_once_with(mobile="09123456789", template_id=123456, parameters={"COMPANY": "ترابر"})
+        message = SmsLog.objects.get(template_key=COMPANY_VERIFIED).message
+        self.assertIn("123456", message)
+        self.assertIn("نام شرکت: ترابر", message)
+
+    def test_otp_template_send_logs_the_code(self):
+        SmsEvent.objects.filter(code=OTP_VERIFICATION).update(
+            is_enabled=True, send_mode=SmsEvent.SendMode.TEMPLATE, template_id=438020,
+            parameter_mapping={"code": "Code"},
+        )
+        with mock.patch.object(SMSIRProvider, "__init__", return_value=None), \
+                mock.patch.object(SMSIRProvider, "send_verify", return_value={"status": 1}) as send_verify:
+            SmsNotificationService().notify(OTP_VERIFICATION, "09123456789", {"code": "48213"})
+        send_verify.assert_called_once_with(mobile="09123456789", template_id=438020, parameters={"Code": "48213"})
+        log = SmsLog.objects.get(template_key=OTP_VERIFICATION)
+        self.assertEqual(log.message, "قالب sms.ir شماره 438020 — کد تایید: 48213")
+
+    def test_smsir_error_keeps_only_the_readable_message(self):
+        provider = SMSIRProvider.__new__(SMSIRProvider)
+        response = mock.Mock(status_code=400, text='{"status":16,"message":"شماره خط نامعتبر است","data":null}')
+        response.json.return_value = {"status": 16, "message": "شماره خط نامعتبر است", "data": None}
+        with self.assertRaisesMessage(SMSIRException, "خطای sms.ir (کد 400): شماره خط نامعتبر است"):
+            provider._handle_response(response)
 
     def test_disabled_event_sends_nothing(self):
         self.event.is_enabled = False
@@ -92,6 +130,7 @@ class NotifyTests(TestCase):
         log = SmsLog.objects.get(template_key=COMPANY_VERIFIED)
         self.assertEqual(log.status, "failed")
         self.assertIn("فعالی", log.error_message)
+        self.assertEqual(log.message, "a گرامی، حساب b فعال شد.")  # متن حتی در ارسال ناموفق ثبت می‌شود
 
 
 class SmsDashboardTests(TestCase):
@@ -163,6 +202,48 @@ class SmsDashboardTests(TestCase):
         SmsEvent.objects.filter(code=COMPANY_VERIFIED).update(custom_text="متن دستی")
         self.client.post(reverse("staff_dashboard:sms_event_edit", args=[COMPANY_VERIFIED]), {"action": "restore_default"})
         self.assertEqual(SmsEvent.objects.get(code=COMPANY_VERIFIED).custom_text, DEFAULT_TEXTS[COMPANY_VERIFIED])
+
+    def test_log_page_shows_content_and_jalali_date(self):
+        SmsLog.objects.create(
+            mobile="09121110001", template_key=COMPANY_VERIFIED, status="sent",
+            parameters={"contact_name": "علی", "company_name": "ترابر"},
+            message="علی گرامی، حساب ترابر فعال شد.",
+        )
+        SmsLog.objects.create(
+            mobile="09121110002", template_key=COMPANY_VERIFIED, status="failed",
+            parameters={}, message="متنی که نباید نمایش داده شود", error_message="کلید API نامعتبر است.",
+        )
+        # لاگ قدیمی بدون متن ذخیره‌شده: با متن فعلی رویداد بازسازی می‌شود
+        SmsEvent.objects.filter(code=COMPANY_VERIFIED).update(
+            send_mode=SmsEvent.SendMode.CUSTOM, custom_text="{contact_name} عزیز، {company_name} فعال شد.",
+        )
+        SmsLog.objects.create(
+            mobile="09121110003", template_key=COMPANY_VERIFIED, status="sent",
+            parameters={"contact_name": "سارا", "company_name": "بارکش"},
+        )
+        SmsLog.objects.create(
+            mobile="09121110005", template_key="provider_test", status="failed", parameters={},
+            error_message='خطا در ارسال پیامک. status=400, response={"data":null,"status":16,"message":"شماره خط نامعتبر"}',
+        )
+        # لاگ OTP قدیمی بدون متن ذخیره‌شده: کد از پارامترها نمایش داده می‌شود
+        SmsLog.objects.create(
+            mobile="09121110004", template_key=OTP_VERIFICATION, status="sent", parameters={"code": "77331"},
+        )
+        log = SmsLog.objects.get(mobile="09121110001")
+        SmsLog.objects.filter(pk=log.pk).update(created_at=datetime(2026, 9, 26, 14, 30))
+
+        response = self.client.get(reverse("staff_dashboard:sms_log_list"))
+        self.assertContains(response, "<th>محتوا</th>", html=True)
+        self.assertNotContains(response, "<th>خطا</th>", html=True)
+        self.assertContains(response, "علی گرامی، حساب ترابر فعال شد.")
+        self.assertContains(response, '<div class="log-content is-error">کلید API نامعتبر است.</div>', html=True)
+        self.assertNotContains(response, "متنی که نباید نمایش داده شود")
+        self.assertContains(response, "سارا عزیز، بارکش فعال شد.")
+        self.assertContains(response, "بازسازی شده است")
+        self.assertContains(response, "1405/07/04 14:30")  # ۲۶ سپتامبر ۲۰۲۶ = ۴ مهر ۱۴۰۵
+        self.assertContains(response, "کد تایید: 77331")
+        self.assertContains(response, "خطای sms.ir (کد 400): شماره خط نامعتبر")
+        self.assertNotContains(response, '"status":16')
 
     def test_event_form_rejects_unknown_variables_and_shows_preview(self):
         url = reverse("staff_dashboard:sms_event_edit", args=[COMPANY_VERIFIED])

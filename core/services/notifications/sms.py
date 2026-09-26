@@ -54,12 +54,21 @@ class SmsNotificationService:
         )
 
         try:
-            provider = self._get_provider()
-
+            # متن پیش از اتصال به سامانه ساخته می‌شود تا حتی در صورت خطای ارسال در لاگ بماند
             if event.send_mode == SmsEvent.SendMode.TEMPLATE:
                 if not event.template_id:
                     raise SMSIRException(f"شناسه قالب رویداد «{event.label}» تنظیم نشده است.")
+                log.message = describe_template_message(event, context)
+            else:
+                try:
+                    log.message = event.custom_text.format(**context)
+                except (KeyError, IndexError) as exc:
+                    raise SMSIRException(
+                        f"پارامتر {exc} در متن رویداد «{event.label}» یافت نشد."
+                    ) from exc
 
+            provider = self._get_provider()
+            if event.send_mode == SmsEvent.SendMode.TEMPLATE:
                 parameters = {
                     smsir_name: context[internal_key]
                     for internal_key, smsir_name in event.parameter_mapping.items()
@@ -71,30 +80,24 @@ class SmsNotificationService:
                     parameters=parameters,
                 )
             else:
-                try:
-                    text = event.custom_text.format(**context)
-                except (KeyError, IndexError) as exc:
-                    raise SMSIRException(
-                        f"پارامتر {exc} در متن رویداد «{event.label}» یافت نشد."
-                    ) from exc
-                response = provider.send_text(mobile=mobile, message=text)
+                response = provider.send_text(mobile=mobile, message=log.message)
 
             log.status = "sent"
             log.response_data = response
-            log.save(update_fields=["status", "response_data"])
+            log.save(update_fields=["status", "response_data", "message"])
             return response
 
         except SMSIRException as exc:
             logger.error("SMS send failed for event=%s mobile=%s: %s", event_code, mobile, exc)
             log.status = "failed"
             log.error_message = str(exc)
-            log.save(update_fields=["status", "error_message"])
+            log.save(update_fields=["status", "error_message", "message"])
             return None
         except Exception:
             logger.exception("Unexpected error sending SMS for event=%s mobile=%s", event_code, mobile)
             log.status = "failed"
             log.error_message = "خطای غیرمنتظره در ارسال پیامک."
-            log.save(update_fields=["status", "error_message"])
+            log.save(update_fields=["status", "error_message", "message"])
             return None
 
     def _get_provider(self):
@@ -117,6 +120,18 @@ class SmsNotificationService:
         if result is None:
             raise SMSIRException("ارسال پیامک کد تایید ناموفق بود.")
         return result
+
+
+def describe_template_message(event, context):
+    """
+    متن پیامک‌های قالبی در پنل sms.ir تعریف شده و این‌جا در دسترس نیست؛ برای لاگ،
+    شناسه‌ی قالب و مقدار متغیرها با عنوان فارسی‌شان ثبت می‌شود.
+    """
+    from core.services.notifications.events import get_event_params
+
+    labels = get_event_params(event.code)
+    values = "، ".join(f"{labels.get(key, key)}: {value}" for key, value in context.items())
+    return f"قالب sms.ir شماره {event.template_id}" + (f" — {values}" if values else "")
 
 
 def validate_custom_text_params(text, allowed_keys):

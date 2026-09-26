@@ -62,9 +62,13 @@ class SMSIRProvider:
                 response.status_code,
                 response.text,
             )
-            raise SMSIRException(
-                f"خطا در ارسال پیامک. status={response.status_code}, response={response.text}"
-            )
+            # پاسخ sms.ir پیام فارسی خوانا دارد؛ همان در لاگ نمایش داده می‌شود (متن خام در لاگ سرور می‌ماند)
+            detail = response.text
+            try:
+                detail = response.json().get("message") or detail
+            except (ValueError, AttributeError):
+                pass
+            raise SMSIRException(f"خطای sms.ir (کد {response.status_code}): {detail}")
 
         try:
             return response.json()

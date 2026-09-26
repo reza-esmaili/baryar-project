@@ -4,6 +4,7 @@
 # لحظه فعال است و همه‌ی ارسال‌ها از همان انجام می‌شود)، تنظیم رویدادهای پیامکی
 # (فعال/غیرفعال، متن با متغیرهای پویا یا قالب sms.ir) و لاگ ارسال‌ها.
 
+import json
 import re
 
 from django.contrib import messages
@@ -113,7 +114,7 @@ def sms_provider_test(request, pk):
     text = request.POST.get("message", "").strip() or "پیامک آزمایشی باریار — اتصال سامانه‌ی پیامکی برقرار است."
     log = SmsLog.objects.create(
         mobile=mobile, template_key="provider_test",
-        parameters={"provider": provider.name, "message": text}, status="pending",
+        parameters={"provider": provider.name}, message=text, status="pending",
     )
     try:
         log.response_data = build_provider(provider).send_text(mobile=mobile, message=text)
@@ -218,6 +219,49 @@ def sms_event_form(request, code):
     return render(request, "admin_dashboard/sms_event_form.html", context)
 
 
+# قالب خطای قدیمی لاگ‌ها: «... status=400, response={json}»
+RAW_SMSIR_ERROR_RE = re.compile(r"status=(\d+),\s*response=(\{.*\})", re.S)
+
+
+def readable_error(error):
+    """از خطاهای قدیمیِ ذخیره‌شده با JSON خام، فقط پیام خوانای sms.ir را برمی‌گرداند."""
+    match = RAW_SMSIR_ERROR_RE.search(error or "")
+    if match:
+        try:
+            message = json.loads(match.group(2)).get("message")
+        except (ValueError, AttributeError):
+            message = None
+        if message:
+            return f"خطای sms.ir (کد {match.group(1)}): {message}"
+    return error
+
+
+def _attach_log_content(logs):
+    """
+    متن هر ردیف لاگ برای ستون «محتوا». لاگ‌های قدیمی‌تر از ذخیره‌ی متن، فقط
+    پارامترها را دارند؛ متن آن‌ها با متن فعلی رویداد بازسازی و علامت‌گذاری می‌شود.
+    """
+    events = {event.code: event for event in SmsEvent.objects.all()}
+    for log in logs:
+        log.error_display = readable_error(log.error_message)
+        log.content = log.message or (log.parameters or {}).get("message", "")
+        log.content_reconstructed = False
+        if log.content or not log.parameters:
+            continue
+        parameters = log.parameters
+        event = events.get(log.template_key)
+        if event and event.send_mode == SmsEvent.SendMode.CUSTOM and event.custom_text:
+            try:
+                log.content = event.custom_text.format(**parameters)
+                log.content_reconstructed = True
+                continue
+            except (KeyError, IndexError, ValueError):
+                pass
+        labels = get_event_params(log.template_key)
+        log.content = "، ".join(f"{labels.get(key, key)}: {value}" for key, value in parameters.items())
+        log.content_reconstructed = True
+
+
 @login_required
 @platform_staff_required
 def sms_log_list(request):
@@ -234,6 +278,7 @@ def sms_log_list(request):
 
     paginator = Paginator(logs, 25)
     page_obj = paginator.get_page(request.GET.get("page"))
+    _attach_log_content(page_obj)
     params = request.GET.copy()
     params.pop("page", None)
     querystring = params.urlencode()

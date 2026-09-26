@@ -1,6 +1,18 @@
 {% extends 'admin_dashboard/base.html' %}
+{% load jformat %}
 
 {% block title %}لاگ پیامک‌ها{% endblock %}
+
+{% block extra_css %}
+<style>
+    .log-content { font-size: 0.8rem; line-height: 1.8; white-space: pre-line; max-width: 520px; color: #334155; }
+    .log-content.is-error { color: #dc2626; font-weight: 700; }
+    .log-content.is-pending { color: #94a3b8; }
+    .log-content .reconstructed { display: block; color: #94a3b8; font-size: 0.7rem; font-weight: 400; margin-top: 2px; }
+    .log-date { white-space: nowrap; direction: ltr; text-align: right; }
+    .log-status { white-space: nowrap; }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="p-6">
@@ -35,7 +47,7 @@
                     <th>موبایل</th>
                     <th>رویداد</th>
                     <th>وضعیت</th>
-                    <th>خطا</th>
+                    <th>محتوا</th>
                     <th>تاریخ</th>
                 </tr>
             </thead>
@@ -43,18 +55,24 @@
                 {% for log in page_obj %}
                 <tr>
                     <td style="direction:ltr;text-align:right;">{{ log.mobile }}</td>
-                    <td>{% for code, label in event_choices %}{% if code == log.template_key %}{{ label }}{% endif %}{% endfor %}<br><small style="color:#94a3b8;">{{ log.template_key }}</small></td>
-                    <td>
+                    <td>{% if log.template_key == 'provider_test' %}ارسال آزمایشی سامانه{% else %}{% for code, label in event_choices %}{% if code == log.template_key %}{{ label }}{% endif %}{% endfor %}{% endif %}<br><small style="color:#94a3b8;">{{ log.template_key }}</small></td>
+                    <td class="log-status">
                         {% if log.status == 'sent' %}
                             <span class="badge-pill badge-green">ارسال شد</span>
                         {% elif log.status == 'failed' %}
                             <span class="badge-pill badge-red">ناموفق</span>
                         {% else %}
-                            <span class="badge-pill badge-amber">{{ log.status }}</span>
+                            <span class="badge-pill badge-amber">{% if log.status == 'pending' %}در صف{% else %}{{ log.status }}{% endif %}</span>
                         {% endif %}
                     </td>
-                    <td style="color:#dc2626;font-size:0.78rem;">{{ log.error_message|default:"-" }}</td>
-                    <td>{{ log.created_at|date:"Y/m/d H:i" }}</td>
+                    <td>
+                        {% if log.status == 'failed' %}
+                            <div class="log-content is-error">{{ log.error_display|default:"خطای نامشخص در ارسال پیامک" }}</div>
+                        {% else %}
+                            <div class="log-content{% if log.status != 'sent' %} is-pending{% endif %}">{{ log.content|default:"-" }}{% if log.content_reconstructed %}<span class="reconstructed">متن ذخیره نشده بود؛ از پارامترها و متن فعلی رویداد بازسازی شده است.</span>{% endif %}</div>
+                        {% endif %}
+                    </td>
+                    <td class="log-date">{{ log.created_at|jformat:"%Y/%m/%d %H:%M" }}</td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:24px;">پیامکی ثبت نشده است.</td></tr>

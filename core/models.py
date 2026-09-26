@@ -105,6 +105,8 @@ class SmsLog(models.Model):
     response_data = models.JSONField(null=True, blank=True, encoder=DjangoJSONEncoder)
     status = models.CharField(max_length=20, default="pending")
     error_message = models.TextField(null=True, blank=True)
+    # متن نهایی ارسال‌شده (برای ارسال با قالب sms.ir: شناسه‌ی قالب و مقادیر متغیرها)
+    message = models.TextField(blank=True, verbose_name="متن پیامک")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
