@@ -10,7 +10,7 @@ from locations.models import Country, Province, City, DestinationCity, Port
 from rates.models import CargoType, CargoSubCategory, CargoSubCategoryChild
 from documents.models import DocumentType
 from support.models import SupportDepartment, TicketTopic, SupportAgent
-from forwarders.models import ForwarderRole
+from forwarders.models import CompanyDocumentRequirement, ForwarderRole
 from land_freight.models import LoaderType, VehicleType
 
 
@@ -138,6 +138,21 @@ LOOKUPS = {
         columns=[("title", "عنوان"), ("code", "کد"), ("allowed_extensions", "فرمت‌های مجاز")],
         search_fields=["title", "code"],
         order_by="title",
+    ),
+    "company-document-requirements": LookupConfig(
+        key="company-document-requirements",
+        model=CompanyDocumentRequirement,
+        form_class=f.CompanyDocumentRequirementForm,
+        title="مدارک ثبت‌نام شرکت‌های حمل (بر اساس دسته)",
+        columns=[
+            ("document_type.title", "مدرک"),
+            ("get_service_display", "دسته‌ی خدمات"),
+            ("is_required", "اجباری؟"),
+            ("sort_order", "ترتیب"),
+        ],
+        search_fields=["document_type__title", "guidance"],
+        order_by="sort_order",
+        select_related=["document_type"],
     ),
     "support-departments": LookupConfig(
         key="support-departments",

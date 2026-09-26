@@ -10,6 +10,7 @@ from core.models import TimeStampedModel
 from rates.models import TransportMode, CargoType, CargoSubCategory
 from core.choices import ShippingProcedure
 from core.storage import protected_storage
+from land_freight.models import LandServiceScope
 
 class DocumentRequirementLevel(models.TextChoices):
     GENERAL = "general", "عمومی"
@@ -133,6 +134,16 @@ class DocumentRule(TimeStampedModel):
         null=True,
         blank=True,
         verbose_name="روش حمل"
+    )
+
+    # فقط برای روش حمل «زمینی»: محدود کردن قانون به درون‌شهری/برون‌شهری/بین‌المللی
+    land_scope = models.CharField(
+        max_length=20,
+        choices=LandServiceScope.choices,
+        null=True,
+        blank=True,
+        verbose_name="حوزه‌ی حمل زمینی",
+        help_text="فقط وقتی روش حمل «زمینی» است؛ خالی یعنی همه‌ی حوزه‌های زمینی.",
     )
     origin_province = models.ForeignKey(
         "locations.Province",
@@ -277,9 +288,15 @@ class DocumentRule(TimeStampedModel):
                     "cargo_type": "دسته کالا انتخاب شده با روش حمل انتخاب‌شده همخوانی ندارد."
                 })
 
+        if self.land_scope and self.transport_mode != TransportMode.LAND:
+            raise ValidationError({
+                "land_scope": "حوزه‌ی حمل زمینی فقط وقتی قابل انتخاب است که روش حمل «زمینی» باشد."
+            })
+
         conditional_fields = [
             self.shipping_procedure,
             self.transport_mode,
+            self.land_scope,
             self.origin_province_id,
             self.origin_city_id,
             self.destination_country_id,
@@ -339,6 +356,8 @@ class DocumentRule(TimeStampedModel):
         if self.shipping_procedure:
             score += 1
         if self.transport_mode:
+            score += 1
+        if self.land_scope:
             score += 1
         if self.origin_province_id:
             score += 1

@@ -7,8 +7,12 @@ from django.http import FileResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from core.services.notifications.events import ADDITIONAL_DOCUMENT_UPLOADED
+from core.services.notifications.tasks import notify_task
+from core.services.notifications.utils import display_name
 from orders.models import CargoRequest, OrderStatus
 from orders.models import OrderHistory
+from orders.services import get_forwarder_notification_target
 
 from locations.models import City, DestinationCity, Port
 from .forms import (
@@ -274,6 +278,16 @@ def additional_document_upload(request, token):
                 changed_by=request.user if request.user.is_authenticated else None,
                 note=f"مدرک تکمیلی '{additional_request.document_title}' توسط مشتری آپلود شد."
             )
+
+            order = additional_request.order
+            if order.selected_rate_id:
+                forwarder_mobile, company_name = get_forwarder_notification_target(order.selected_rate)
+                notify_task.delay(ADDITIONAL_DOCUMENT_UPLOADED, forwarder_mobile, {
+                    "company_name": company_name or "",
+                    "order_id": order.id,
+                    "doc_title": additional_request.document_title,
+                    "customer_name": display_name(order.customer),
+                })
 
             messages.success(request, "مدرک با موفقیت ارسال شد.")
 

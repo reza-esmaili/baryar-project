@@ -63,6 +63,12 @@ urlpatterns = [
     path("land-requests/<int:pk>/", views_land.land_request_detail, name="land_request_detail"),
     path("land-requests/<int:pk>/accept/", views_land.land_request_accept, name="land_request_accept"),
     path("land-requests/<int:pk>/status/", views_land.land_request_update_status, name="land_request_update_status"),
+    path("land-requests/<int:pk>/decline/", views_land.land_request_decline, name="land_request_decline"),
+    path(
+        "land-requests/<int:pk>/documents/<int:document_id>/review/",
+        views_land.land_document_review,
+        name="land_document_review",
+    ),
     path("settings/land-service-area/", views_land.land_service_area, name="land_service_area"),
 
     # تنظیمات

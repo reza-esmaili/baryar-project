@@ -78,7 +78,7 @@
             <tbody>
                 {% for doc in identity_documents %}
                 <tr>
-                    <td>{{ doc.get_doc_type_display }}</td>
+                    <td>{{ doc.title }}</td>
                     <td>
                         {% if doc.status == 'approved' %}<span class="badge-pill badge-green">{{ doc.get_status_display }}</span>
                         {% elif doc.status == 'rejected' %}<span class="badge-pill badge-red">{{ doc.get_status_display }}</span>

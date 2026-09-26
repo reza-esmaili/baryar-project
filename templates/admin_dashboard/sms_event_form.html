@@ -9,72 +9,148 @@
     .fc-field select, .fc-field input:not([type=checkbox]), .fc-field textarea {
         width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.85rem;font-family:inherit;
     }
+    .fc-field textarea { line-height: 1.9; }
     .fc-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:0 16px; }
     @media (max-width:900px){ .fc-grid { grid-template-columns:1fr; } }
     .fc-error { color:#dc2626;font-size:0.8rem;margin-top:4px; }
+    .param-list { display: flex; flex-wrap: wrap; gap: 6px; }
     .param-chip {
-        display:inline-block;background:#eff6ff;color:#1e40af;border-radius:6px;
-        padding:2px 8px;font-family:monospace;font-size:0.78rem;margin:2px 3px 2px 0;
+        display:inline-flex;align-items:center;gap:6px;background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;border-radius:8px;
+        padding:4px 10px;font-size:0.78rem;cursor:pointer;font-family:inherit;
     }
+    .param-chip code { direction:ltr;unicode-bidi:embed;font-size:0.76rem;color:inherit;background:none; }
+    .param-chip:hover { background:#dbeafe; }
+    .sms-preview {
+        background:#f1f5f9;border-radius:16px 16px 4px 16px;padding:12px 14px;font-size:0.85rem;color:#0f172a;line-height:1.9;
+        white-space:pre-line;max-width:420px;min-height:44px;
+    }
+    .sms-meta { color:#64748b;font-size:0.75rem;margin-top:6px; }
+    .mode-section[hidden] { display:none; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="p-6">
-    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;">
-        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">ویرایش رویداد: {{ event.label }}</h1>
-        <a href="{% url 'staff_dashboard:sms_event_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+            <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">{{ event.label }}</h1>
+            {% if event.description %}<p style="color:#64748b;font-size:0.85rem;">{{ event.description }}{% if event_meta.recipient %} — گیرنده: {{ event_meta.recipient }}{% endif %}</p>{% endif %}
+        </div>
+        <a href="{% url 'staff_dashboard:sms_event_list' %}#event-{{ event.code }}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت به رویدادها</a>
     </div>
 
-    {% if event.description %}
-    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">{{ event.description }}</p>
-    {% endif %}
+    {% if form.non_field_errors %}<div class="alert-box alert-error">{{ form.non_field_errors }}</div>{% endif %}
 
-    {% if form.non_field_errors %}
-    <div class="alert-box alert-error">{{ form.non_field_errors }}</div>
-    {% endif %}
-
-    <form method="post">
+    <form method="post" id="sms-event-form">
         {% csrf_token %}
 
         <div class="detail-card">
             <h3>وضعیت و روش ارسال</h3>
-            <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">{{ form.is_enabled }} {{ form.is_enabled.label }}</label>
-            <div class="fc-field"><label>{{ form.send_mode.label }}</label>{{ form.send_mode }}{{ form.send_mode.errors }}</div>
+            <label for="{{ form.is_enabled.id_for_label }}" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">{{ form.is_enabled }} ارسال پیامک برای این رویداد فعال باشد</label>
+            <div class="fc-field" style="max-width:320px;"><label for="{{ form.send_mode.id_for_label }}">{{ form.send_mode.label }}</label>{{ form.send_mode }}{{ form.send_mode.errors }}</div>
         </div>
 
-        <div class="detail-card">
-            <h3>پارامترهای در دسترس این رویداد</h3>
-            <div>
-                {% for key, label, placeholder in param_list %}
-                    <span class="param-chip">{{ placeholder }}</span> {{ label }}<br>
+        <div class="detail-card mode-section" data-mode="custom">
+            <h3>متن پیامک</h3>
+            <p style="color:#94a3b8;font-size:0.8rem;margin-bottom:10px;">برای درج متغیر، روی آن کلیک کنید تا در محل نشانگر متن قرار بگیرد.</p>
+            <div class="param-list" style="margin-bottom:12px;">
+                {% for key, label, placeholder, sample in param_list %}
+                    <button type="button" class="param-chip" data-insert="{{ placeholder }}" title="مقدار نمونه: {{ sample }}"><code>{{ placeholder }}</code> {{ label }}</button>
                 {% empty %}
-                    <span style="color:#94a3b8;font-size:0.8rem;">این رویداد پارامتری ندارد.</span>
+                    <span style="color:#94a3b8;font-size:0.8rem;">این رویداد متغیری ندارد.</span>
                 {% endfor %}
+            </div>
+            <div class="fc-grid" style="align-items:start;">
+                <div class="fc-field">
+                    <label for="{{ form.custom_text.id_for_label }}">متن</label>
+                    {{ form.custom_text }}
+                    {% if form.custom_text.errors %}<div class="fc-error">{{ form.custom_text.errors|join:" " }}</div>{% endif %}
+                    <div class="sms-meta" id="sms-length" aria-live="polite"></div>
+                </div>
+                <div class="fc-field">
+                    <label>پیش‌نمایش با مقادیر نمونه</label>
+                    <div class="sms-preview" id="sms-preview">{{ preview }}</div>
+                    <div class="sms-meta">مقادیر واقعی هنگام ارسال جایگزین می‌شوند.</div>
+                </div>
             </div>
         </div>
 
-        <div class="detail-card">
-            <h3>متن دلخواه</h3>
-            <p style="color:#94a3b8;font-size:0.8rem;margin-bottom:10px;">فقط زمانی استفاده می‌شود که «روش ارسال» روی «متن دلخواه» باشد. از پارامترهای بالا به شکل {نام_پارامتر} استفاده کنید.</p>
-            <div class="fc-field">{{ form.custom_text }}{% if form.custom_text.errors %}<div class="fc-error">{{ form.custom_text.errors }}</div>{% endif %}</div>
-        </div>
-
-        <div class="detail-card">
-            <h3>ارسال با قالب sms.ir</h3>
-            <div class="fc-field" style="max-width:260px;"><label>{{ form.template_id.label }}</label>{{ form.template_id }}{% if form.template_id.errors %}<div class="fc-error">{{ form.template_id.errors }}</div>{% endif %}</div>
-
+        <div class="detail-card mode-section" data-mode="template">
+            <h3>ارسال با قالب تاییدشده‌ی sms.ir</h3>
+            <div class="fc-field" style="max-width:260px;"><label for="{{ form.template_id.id_for_label }}">{{ form.template_id.label }}</label>{{ form.template_id }}{% if form.template_id.errors %}<div class="fc-error">{{ form.template_id.errors|join:" " }}</div>{% endif %}</div>
             {% if param_fields %}
-            <p style="color:#94a3b8;font-size:0.8rem;margin:10px 0;">برای هر پارامتر، نام همان پارامتر را در قالب sms.ir وارد کنید:</p>
+            <p style="color:#94a3b8;font-size:0.8rem;margin:10px 0;">نام هر متغیر را همان‌طور که در قالب sms.ir تعریف کرده‌اید وارد کنید:</p>
             <div class="fc-grid">
                 {% for key, label, field, placeholder in param_fields %}
-                <div class="fc-field"><label>{{ label }} <span style="color:#94a3b8;">({{ placeholder }})</span></label>{{ field }}</div>
+                <div class="fc-field"><label for="{{ field.id_for_label }}">{{ label }} <span style="color:#94a3b8;direction:ltr;unicode-bidi:embed;">{{ placeholder }}</span></label>{{ field }}</div>
                 {% endfor %}
             </div>
             {% endif %}
         </div>
 
-        <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره</button>
+        </div>
     </form>
+
+    {% if default_text %}
+    <form method="post" style="margin-top:12px;" onsubmit="return confirm('متن فعلی با متن پیش‌فرض جایگزین شود؟');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="restore_default">
+        <button type="submit" class="btn-soft btn-soft-gray"><i class="fas fa-undo"></i> بازگردانی متن پیش‌فرض</button>
+    </form>
+    {% endif %}
 </div>
+
+{{ sample_values|json_script:"sms-sample-values" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+panelReady(function () {
+    var form = document.getElementById('sms-event-form');
+    if (!form) return;
+    var textarea = form.querySelector('textarea[name="custom_text"]');
+    var preview = document.getElementById('sms-preview');
+    var lengthInfo = document.getElementById('sms-length');
+    var modeSelect = form.querySelector('select[name="send_mode"]');
+    var samples = JSON.parse(document.getElementById('sms-sample-values').textContent || '{}');
+
+    function render() {
+        if (!textarea) return;
+        var text = textarea.value;
+        preview.textContent = text.replace(/\{(\w+)\}/g, function (match, key) {
+            return Object.prototype.hasOwnProperty.call(samples, key) ? samples[key] : match;
+        });
+        // پیامک فارسی (UCS-2): ۷۰ نویسه در یک پیامک، ۶۷ نویسه در هر بخش پیامک چندبخشی
+        var length = preview.textContent.length;
+        var parts = length <= 70 ? 1 : Math.ceil(length / 67);
+        lengthInfo.textContent = 'حدود ' + length + ' نویسه با مقادیر نمونه — ' + parts + ' پیامک';
+    }
+
+    function toggleMode() {
+        var mode = modeSelect ? modeSelect.value : 'custom';
+        form.querySelectorAll('.mode-section').forEach(function (section) {
+            section.hidden = section.dataset.mode !== mode;
+        });
+    }
+
+    form.querySelectorAll('[data-insert]').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            var token = chip.dataset.insert;
+            var start = textarea.selectionStart || textarea.value.length;
+            var end = textarea.selectionEnd || start;
+            textarea.value = textarea.value.slice(0, start) + token + textarea.value.slice(end);
+            textarea.focus();
+            textarea.selectionStart = textarea.selectionEnd = start + token.length;
+            render();
+        });
+    });
+
+    if (textarea) textarea.addEventListener('input', render);
+    if (modeSelect) modeSelect.addEventListener('change', toggleMode);
+    render();
+    toggleMode();
+});
+</script>
 {% endblock %}

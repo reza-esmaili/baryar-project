@@ -7,16 +7,27 @@ from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, F, Max, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from accounts.models import IdentityDocument, User
-from forwarders.models import ForwarderCompany, ForwarderBranch, ForwarderStaff
+from forwarders.models import SERVICE_FIELD, ForwarderCompany, ForwarderBranch, ForwarderStaff
+from forwarders.services import (
+    REGISTRATION_STATE_LABELS,
+    SERVICE_CATEGORY_CHOICES,
+    approve_registration,
+    document_checklist,
+    notify_company,
+    registration_state,
+    reject_registration,
+)
 from land_freight.forms import LandCarrierProfileForm
 from land_freight.models import LandCarrierProfile
 from orders.models import CargoRequest, OrderStatus
 from support.models import Ticket, TicketMessage
+from support.services import notify_ticket_answered
 
 from .decorators import platform_staff_required
 from .forms import ForwarderCompanyForm, ForwarderAdminUserForm, UserForm, BranchForm, StaffForm, OrderForm
@@ -174,13 +185,33 @@ def forwarder_list(request):
     elif verified == "0":
         qs = qs.filter(is_verified=False)
 
+    active = request.GET.get("active", "").strip()
+    if active == "1":
+        qs = qs.filter(is_active=True)
+    elif active == "0":
+        qs = qs.filter(is_active=False)
+
+    service = request.GET.get("service", "").strip()
+    if service in SERVICE_FIELD:
+        qs = qs.filter(**{SERVICE_FIELD[service]: True})
+
     paginator = Paginator(qs, 25)
     page_obj = paginator.get_page(request.GET.get("page"))
+
+    # شمارش هر دسته برای تب‌های بالای فهرست
+    service_counts = [
+        {"value": value, "label": label, "count": ForwarderCompany.objects.filter(**{SERVICE_FIELD[value]: True}).count()}
+        for value, label in SERVICE_CATEGORY_CHOICES
+    ]
 
     context = {
         "page_obj": page_obj,
         "q": q,
         "verified": verified,
+        "active": active,
+        "service": service,
+        "service_counts": service_counts,
+        "total_count": ForwarderCompany.objects.count(),
         "querystring": _querystring(request),
     }
     return render(request, "admin_dashboard/forwarder_list.html", context)
@@ -229,6 +260,7 @@ def forwarder_edit(request, company_id):
     land_profile, _ = LandCarrierProfile.objects.get_or_create(company=company)
 
     if request.method == "POST":
+        was_verified = company.is_verified
         company_form = ForwarderCompanyForm(request.POST, request.FILES, instance=company)
         # فرم حوزه‌ی زمینی فقط وقتی اعتبارسنجی می‌شود که روی صفحه بوده؛ اگر
         # دسته‌ی زمینی همین حالا فعال شده، پس از ذخیره نمایش داده می‌شود.
@@ -244,6 +276,8 @@ def forwarder_edit(request, company_id):
                     company_form.save()
                     if land_form is not None:
                         land_form.save()
+                    if company.is_verified and not was_verified:
+                        notify_company(company, "company_verified")
                 messages.success(request, "اطلاعات شرکت با موفقیت بروزرسانی شد.")
                 return redirect("staff_dashboard:forwarder_edit", company_id=company.id)
     else:
@@ -349,14 +383,106 @@ def forwarder_detail(request, company_id):
         messages.success(request, "وضعیت فعال‌بودن شرکت بروزرسانی شد.")
         return redirect("staff_dashboard:forwarder_detail", company_id=company.id)
 
+    land_profile = LandCarrierProfile.objects.filter(company=company).prefetch_related(
+        "service_cities", "service_countries", "vehicle_types",
+    ).first()
+    checklist = document_checklist(company)
     context = {
         "company": company,
-        "identity_documents": company.identity_documents.all().order_by("-created_at"),
+        "identity_documents": company.identity_documents.select_related("document_type").order_by("-created_at"),
+        "checklist": checklist,
+        "missing_required": [item for item in checklist if item["is_required"] and item["status"] != IdentityDocument.Status.APPROVED],
+        "registration_state": registration_state(company),
+        "registration_state_labels": REGISTRATION_STATE_LABELS,
+        "land_profile": land_profile if company.offers_land else None,
+        "service_choices": SERVICE_CATEGORY_CHOICES,
         "branches": company.branches.all(),
         "staff": company.staff.select_related("user", "role").all(),
         "doc_statuses": IdentityDocument.Status.choices,
     }
     return render(request, "admin_dashboard/forwarder_detail.html", context)
+
+
+@login_required
+@platform_staff_required
+def registration_queue(request):
+    """
+    صف درخواست‌های ثبت‌نام شرکت حمل: شرکت‌های تایید‌نشده، با فیلتر دسته‌ی
+    خدمات و وضعیت بررسی، مرتب بر اساس آخرین ارسال مدارک.
+    """
+    qs = (
+        ForwarderCompany.objects.filter(is_verified=False)
+        .select_related("admin_user")
+        .annotate(
+            last_submitted=Max("identity_documents__created_at"),
+            pending_docs=Count("identity_documents", filter=Q(identity_documents__status=IdentityDocument.Status.PENDING)),
+        )
+        .order_by(F("last_submitted").desc(nulls_last=True), "-created_at")
+    )
+
+    service = request.GET.get("service", "").strip()
+    if service in SERVICE_FIELD:
+        qs = qs.filter(**{SERVICE_FIELD[service]: True})
+
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(
+            Q(company_name__icontains=q) | Q(national_id__icontains=q) | Q(admin_user__mobile__icontains=q)
+        )
+
+    state = request.GET.get("state", "").strip()
+    rows = []
+    for company in qs:
+        checklist = document_checklist(company)
+        company_state = registration_state(company)
+        if state and state != company_state:
+            continue
+        required = [item for item in checklist if item["is_required"]]
+        rows.append({
+            "company": company,
+            "state": company_state,
+            "state_label": REGISTRATION_STATE_LABELS[company_state],
+            "required_total": len(required),
+            "required_approved": sum(1 for item in required if item["status"] == IdentityDocument.Status.APPROVED),
+            "required_missing": sum(1 for item in required if item["status"] is None),
+        })
+
+    paginator = Paginator(rows, 25)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    return render(request, "admin_dashboard/registration_queue.html", {
+        "page_obj": page_obj,
+        "service": service,
+        "state": state,
+        "q": q,
+        "service_choices": SERVICE_CATEGORY_CHOICES,
+        "state_choices": [(key, REGISTRATION_STATE_LABELS[key]) for key in ("pending", "rejected", "incomplete")],
+        "querystring": _querystring(request),
+    })
+
+
+@login_required
+@platform_staff_required
+@require_POST
+def registration_decision(request, company_id):
+    company = get_object_or_404(ForwarderCompany.objects.select_related("admin_user"), id=company_id)
+    action = request.POST.get("action")
+    if action == "approve":
+        approve_registration(company)
+        messages.success(request, f"ثبت‌نام «{company.company_name}» تایید و شرکت فعال شد؛ پیامک تایید برای ادمین شرکت ارسال می‌شود.")
+    elif action == "reject":
+        reason = request.POST.get("reason", "").strip()
+        if not reason:
+            messages.error(request, "برای رد ثبت‌نام، دلیل آن را بنویسید تا شرکت بداند چه چیزی را اصلاح کند.")
+        else:
+            reject_registration(company, reason)
+            messages.success(request, f"ثبت‌نام «{company.company_name}» رد شد و دلیل آن برای شرکت ارسال می‌شود.")
+    else:
+        messages.error(request, "اقدام نامعتبر است.")
+
+    next_url = request.POST.get("next")
+    if next_url == "queue":
+        return redirect("staff_dashboard:registration_queue")
+    return redirect("staff_dashboard:forwarder_detail", company_id=company.id)
 
 
 @login_required
@@ -520,6 +646,8 @@ def ticket_detail(request, ticket_id):
                 if ticket.status != Ticket.Status.CLOSED:
                     ticket.status = Ticket.Status.ANSWERED
                     ticket.save(update_fields=["status"])
+                if ticket.user_id != request.user.id:
+                    notify_ticket_answered(ticket)
                 messages.success(request, "پاسخ ثبت شد.")
             else:
                 messages.error(request, "متن پیام نمی‌تواند خالی باشد.")

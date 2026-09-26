@@ -39,6 +39,23 @@ def staff_permission_required(perm_name):
     return decorator
 
 
+def rate_carrier_required(view_func):
+    """
+    نرخ‌ها، سفارش‌های نرخ‌محور و گزارش‌های فروش فقط برای شرکت‌هایی است که در
+    دسته‌ی هوایی یا دریایی فعال‌اند؛ شرکت فقط‌زمینی به صندوق اعلام بار می‌رود.
+    """
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        company = get_company_for_user(request.user)
+        if not company or not company.offers_rates:
+            messages.warning(request, "این بخش مخصوص شرکت‌های حمل هوایی و دریایی است.")
+            if company and company.offers_land:
+                return redirect("forwarder_panel:land_request_list")
+            return redirect("forwarder_panel:dashboard")
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
+
 def forwarder_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):

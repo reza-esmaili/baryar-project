@@ -15,6 +15,7 @@ from rates.models import CargoType, Rate, CargoSubCategory, CargoSubCategoryChil
 from documents.services import sync_order_required_documents, OrderDocument
 from orders.crosssite import consume_order_token
 from core.services.notifications.tasks import notify_task
+from core.services.notifications.utils import display_name
 from core.services.notifications.events import (
     ORDER_DRAFT_CREATED,
     RATE_MATCH_FOUND_CUSTOMER,
@@ -278,12 +279,14 @@ def submit_order(request):
                 forwarder_name = (rate.forwarder.company_name if rate.forwarder_id
                                   else rate.branch.company.company_name if rate.branch_id else "")
                 notify_task.delay(RATE_MATCH_FOUND_CUSTOMER, request.user.mobile, {
+                    "customer_name": customer_name,
                     "order_id": cargo_request.id,
                     "forwarder_name": forwarder_name,
                 })
 
-                forwarder_mobile, _ = get_forwarder_notification_target(rate)
+                forwarder_mobile, company_name = get_forwarder_notification_target(rate)
                 notify_task.delay(RATE_MATCH_FOUND_FORWARDER, forwarder_mobile, {
+                    "company_name": company_name or forwarder_name,
                     "order_id": cargo_request.id,
                     "origin": origin_name,
                     "destination": destination_name,
@@ -413,9 +416,14 @@ def complete_order_details(request, order_id):
                 note="اطلاعات سفارش تکمیل و مدارک بارگذاری شد و سفارش ثبت نهایی گردید."
             )
 
+            _, forwarder_name = (
+                get_forwarder_notification_target(order.selected_rate) if order.selected_rate_id else (None, "")
+            )
             notify_task.delay(ORDER_FINALIZED, request.user.mobile, {
+                "customer_name": display_name(request.user),
                 "order_id": order.id,
-                "final_price": order.final_price,
+                "final_price": f"{int(order.final_price or 0):,}",
+                "forwarder_name": forwarder_name or "",
             })
 
             return redirect("customer:order_detail", pk=order.id)

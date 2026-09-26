@@ -1,0 +1,5 @@
+<nav class="filter-tabs" aria-label="بخش‌های پیامک">
+    <a href="{% url 'staff_dashboard:sms_provider_settings' %}" class="{% if sms_tab == 'providers' %}active{% endif %}"><i class="fas fa-plug"></i> سامانه‌های پیامکی</a>
+    <a href="{% url 'staff_dashboard:sms_event_list' %}" class="{% if sms_tab == 'events' %}active{% endif %}"><i class="fas fa-bell"></i> رویدادها و متن پیامک‌ها</a>
+    <a href="{% url 'staff_dashboard:sms_log_list' %}" class="{% if sms_tab == 'logs' %}active{% endif %}"><i class="fas fa-list"></i> لاگ ارسال</a>
+</nav>

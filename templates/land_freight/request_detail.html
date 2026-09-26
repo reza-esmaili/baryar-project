@@ -38,15 +38,34 @@
     </div>
   </div>
 
+  <ol class="lr-steps{% if req.status == Status.CANCELLED or req.status == Status.EXPIRED %} is-stopped{% endif %}" aria-label="مراحل درخواست">
+    {% for step in steps %}
+      <li class="lr-step is-{{ step.state }}"{% if step.state == 'current' %} aria-current="step"{% endif %}>
+        <span class="lr-step__dot">{% if step.state == 'done' %}✓{% else %}{{ forloop.counter }}{% endif %}</span>
+        <span>{{ step.label }}</span>
+      </li>
+    {% endfor %}
+  </ol>
+  {% if req.status == Status.CANCELLED %}
+    <div class="land-alert land-alert--warning">این درخواست در {{ req.cancelled_at|jformat:"%Y/%m/%d %H:%M" }} لغو شد{% if req.cancel_reason %} — {{ req.cancel_reason }}{% endif %}.</div>
+  {% elif req.status == Status.EXPIRED %}
+    <div class="land-alert land-alert--warning">مهلت پذیرش به پایان رسید و هیچ شرکتی درخواست را نپذیرفت. می‌توانید با کرایه‌ی جدید دوباره منتشرش کنید.</div>
+  {% endif %}
+
   {% if carrier_visible and req.assigned_company %}
   <div class="lr-card carrier-card" style="margin-bottom:14px;">
     <div class="carrier-head">
       {% if req.assigned_company.logo %}<img src="{{ req.assigned_company.logo.url }}" alt="لوگوی {{ req.assigned_company.company_name }}">{% endif %}
       <div>
         <h3 style="margin:0;">{{ req.assigned_company.company_name }}</h3>
-        <small class="muted-note">پذیرش در {{ req.assigned_at|jformat:"%Y/%m/%d %H:%M" }}</small>
+        <small class="muted-note">شرکت حمل پذیرنده — پذیرش در {{ req.assigned_at|jformat:"%Y/%m/%d %H:%M" }}</small>
+        <div>
+          {% for category in req.assigned_company.active_service_categories %}<span class="lr-tag">{{ category.label }}</span>{% endfor %}
+          {% if req.assigned_company.is_verified %}<span class="lr-tag" style="background:#dcfce7;color:#166534;">تایید‌شده توسط باریار</span>{% endif %}
+        </div>
       </div>
     </div>
+    <div class="lr-row"><span>کرایه‌ی توافق‌شده</span><b>{{ req.agreed_price|floatformat:0|intcomma }} ریال</b></div>
     <div class="lr-row"><span>تلفن شرکت</span><b><a href="tel:{{ req.assigned_company.phone }}">{{ req.assigned_company.phone }}</a></b></div>
     {% if req.assigned_by %}<div class="lr-row"><span>کارشناس پذیرنده</span><b>{{ req.assigned_by.first_name }} {{ req.assigned_by.last_name }} — <a href="tel:{{ req.assigned_by.mobile }}">{{ req.assigned_by.mobile }}</a></b></div>{% endif %}
     <div class="lr-row"><span>ایمیل</span><b>{{ req.assigned_company.email }}</b></div>
@@ -73,6 +92,54 @@
         <button type="submit" class="lr-btn lr-btn--danger">لغو درخواست</button>
       </form>
     </div>
+  </div>
+  {% endif %}
+
+  {% if documents %}
+  <div class="lr-card lr-docs" id="documents">
+    <div class="lr-docs__head">
+      <h3 style="margin:0;">مدارک محموله</h3>
+      <span class="lr-docs__progress">
+        {{ documents_summary.approved }} از {{ documents_summary.total }} مدرک تایید شده
+        {% if documents_summary.missing %} — {{ documents_summary.missing }} مدرک اجباری منتظر بارگذاری/اصلاح{% endif %}
+      </span>
+    </div>
+    <p class="muted-note" style="margin:0 0 6px;">
+      {% if req.assigned_company %}مدارک را شرکت حمل پذیرنده بررسی و تایید می‌کند.{% else %}می‌توانید مدارک را از همین حالا بارگذاری کنید؛ پس از پذیرش، شرکت حمل آن‌ها را بررسی می‌کند.{% endif %}
+    </p>
+    {% for doc in documents %}
+    <div class="lr-doc">
+      <div>
+        <div class="lr-doc__title">
+          {{ doc.document_type.title }}
+          <span class="lr-tag">{% if doc.is_required %}اجباری{% else %}اختیاری{% endif %}</span>
+          <span class="lr-doc-badge lr-doc-badge--{{ doc.status }}">{{ doc.get_status_display }}</span>
+        </div>
+        {% if doc.source_rule.customer_description %}<div class="lr-doc__meta">{{ doc.source_rule.customer_description }}</div>{% endif %}
+        <div class="lr-doc__meta">
+          فرمت مجاز: {{ doc.document_type.allowed_extensions|default:"همه" }} — حداکثر {{ doc.document_type.max_file_size_mb }} مگابایت
+          {% if doc.uploaded_at %} · بارگذاری: {{ doc.uploaded_at|jformat:"%Y/%m/%d %H:%M" }}{% endif %}
+        </div>
+        {% if doc.status == DocStatus.REJECTED and doc.rejection_reason %}
+          <div class="lr-doc__reject">دلیل رد: {{ doc.rejection_reason }}</div>
+        {% endif %}
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        {% if doc.file %}
+          <a class="lr-btn lr-btn--ghost" href="{% url 'land_freight:document_file' doc.pk %}" target="_blank" rel="noopener">مشاهده فایل</a>
+        {% endif %}
+        {% if can_upload_documents and doc.status != DocStatus.APPROVED %}
+        <form method="post" enctype="multipart/form-data" action="{% url 'land_freight:document_upload' req.pk doc.pk %}">
+          {% csrf_token %}
+          <label class="visually-hidden" for="doc-file-{{ doc.pk }}">فایل {{ doc.document_type.title }}</label>
+          <input type="file" name="file" id="doc-file-{{ doc.pk }}" required
+                 {% if doc.document_type.allowed_extensions %}accept="{% for ext in doc.document_type.get_allowed_extensions_list %}.{{ ext }}{% if not forloop.last %},{% endif %}{% endfor %}"{% endif %}>
+          <button type="submit" class="lr-btn lr-btn--primary">{% if doc.file %}بارگذاری دوباره{% else %}بارگذاری{% endif %}</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
   </div>
   {% endif %}
 

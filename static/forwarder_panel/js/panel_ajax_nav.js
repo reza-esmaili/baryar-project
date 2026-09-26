@@ -147,12 +147,22 @@
         // زیرمسیرها (مثل پشتیبانی) واقعا زیر /panel/ نیستند، مسیر ریشه را
         // به‌جای هارد-کد کردن /panel/ از خودِ سایدبار می‌خوانیم.
         var rootPath = pathOf(links[0].href);
+        // فقط طولانی‌ترین پیشوند منطبق فعال می‌شود؛ وگرنه در مسیرهای تو در تو
+        // (مثل /staff/settings/sms/ زیر /staff/settings/) دو آیتم هم‌زمان فعال می‌شدند.
+        var best = null;
+        var bestLength = -1;
         links.forEach(function (a) {
             var linkPath = pathOf(a.href);
-            var isActive = linkPath === rootPath
+            var matches = linkPath === rootPath
                 ? currentPath === rootPath
                 : currentPath.indexOf(linkPath) === 0;
-            a.classList.toggle('active', isActive);
+            if (matches && linkPath.length > bestLength) {
+                best = a;
+                bestLength = linkPath.length;
+            }
+        });
+        links.forEach(function (a) {
+            a.classList.toggle('active', a === best);
         });
     }
 

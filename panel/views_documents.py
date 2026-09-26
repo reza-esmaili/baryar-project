@@ -6,8 +6,10 @@ from django.shortcuts import redirect, render
 
 from accounts.models import User, IdentityDocument
 from forwarders.models import ForwarderCompany
+from forwarders.services import document_checklist, notify_company
+from land_freight.models import LandCarrierProfile
 
-from .decorators import forwarder_required
+from .decorators import forwarder_required, get_company_for_user
 from .forms import ForwarderDocumentsForm
 
 
@@ -16,6 +18,7 @@ def get_forwarder_verification_status(user):
     خروجی:
     - no_company: هنوز اطلاعات شرکت ثبت نشده
     - pending: شرکت ثبت شده ولی تایید نشده
+    - rejected: کارشناس یک یا چند مدرک را رد کرده و اصلاح لازم است
     - verified: شرکت تایید شده
     - not_forwarder_admin: کاربر ادمین فورواردر نیست
     """
@@ -29,6 +32,12 @@ def get_forwarder_verification_status(user):
 
     if company.is_verified and company.is_active:
         return "verified", company
+
+    if company.is_verified:
+        return "inactive", company
+
+    if any(item["status"] == IdentityDocument.Status.REJECTED for item in document_checklist(company)):
+        return "rejected", company
 
     return "pending", company
 
@@ -46,9 +55,21 @@ def documents_view(request):
     status, company = get_forwarder_verification_status(user)
 
     if status == "not_forwarder_admin":
-        return HttpResponseForbidden("شما دسترسی مشاهده این صفحه را ندارید.")
+        # کارمند شرکت: مدارک را فقط ادمین شرکت ارسال می‌کند؛ تا تایید شرکت،
+        # به‌جای خطای ۴۰۳ وضعیت شرکت را می‌بیند.
+        company = get_company_for_user(user)
+        if company is None:
+            return HttpResponseForbidden("شما دسترسی مشاهده این صفحه را ندارید.")
+        if company.is_operational:
+            return redirect("forwarder_panel:dashboard")
+        return render(request, "forwarder_panel/company_inactive.html", {"company": company})
 
     documents = IdentityDocument.objects.filter(user=user).order_by("-created_at")
+
+    if request.method == "POST" and status in ("verified", "inactive"):
+        # ارسال دوباره تایید را برمی‌دارد؛ برای شرکت تایید‌شده فقط از مسیر پشتیبانی
+        messages.error(request, "اطلاعات شرکت تایید‌شده از این صفحه قابل تغییر نیست؛ با پشتیبانی تماس بگیرید.")
+        return redirect("forwarder_panel:documents")
 
     if request.method == "POST":
         form = ForwarderDocumentsForm(request.POST, request.FILES, user=user, company=company)
@@ -97,25 +118,24 @@ def documents_view(request):
                     },
                 )
 
-                uploaded_docs = {
-                    "articles_of_association": IdentityDocument.DocType.ARTICLES_OF_ASSOCIATION,
-                    "establishment_notice": IdentityDocument.DocType.ESTABLISHMENT_NOTICE,
-                    "latest_changes": IdentityDocument.DocType.LATEST_CHANGES,
-                    "ceo_national_card": IdentityDocument.DocType.CEO_NATIONAL_CARD,
-                }
+                # هر بارگذاری یک نسخه‌ی تازه است؛ نسخه‌های قبلی برای سابقه‌ی
+                # بررسی باقی می‌مانند و آخرین نسخه‌ی هر نوع مدرک معیار تایید است.
+                for document_type, uploaded_file in form.uploaded_documents():
+                    IdentityDocument.objects.create(
+                        user=user,
+                        company=company,
+                        document_type=document_type,
+                        file=uploaded_file,
+                        status=IdentityDocument.Status.PENDING,
+                    )
 
-                for file_field, doc_type in uploaded_docs.items():
-                    uploaded_file = request.FILES.get(file_field)
-                    if uploaded_file:
-                        # اگر کاربر دوباره مدارک را ارسال کرد، مدرک قبلی از همان نوع رد/آرشیو منطقی ندارد
-                        # اما برای سادگی، مدرک جدید ساخته می‌شود و مدارک قبلی باقی می‌مانند.
-                        IdentityDocument.objects.create(
-                            user=user,
-                            doc_type=doc_type,
-                            company=company,
-                            file=uploaded_file,
-                            status=IdentityDocument.Status.PENDING,
-                        )
+                if company.offers_land:
+                    profile, _ = LandCarrierProfile.objects.get_or_create(company=company)
+                    profile.service_cities.set(form.cleaned_data["land_service_cities"])
+                    profile.service_countries.set(form.cleaned_data["land_service_countries"])
+                    profile.vehicle_types.set(form.cleaned_data["land_vehicle_types"])
+
+                notify_company(company, "company_registration_received")
 
                 messages.success(
                     request,
@@ -135,6 +155,7 @@ def documents_view(request):
         "form": form,
         "company": company,
         "documents": documents,
+        "checklist": document_checklist(company) if company else [],
         "verification_status": status,
         "registered_user": user,
     }

@@ -50,8 +50,21 @@ panelReady(function () {
                 clearField(name);
             }
         });
+        toggleLandScope();
+    }
+
+    // حوزه‌ی حمل زمینی (درون‌شهری/برون‌شهری/بین‌المللی) فقط کنار روش حمل «زمینی» معنا دارد.
+    var modeField = getInput('transport_mode');
+    function toggleLandScope() {
+        var row = getRow('land_scope');
+        if (!row) return;
+        var modeRow = getRow('transport_mode');
+        var visible = modeField && modeField.value === 'land' && (!modeRow || modeRow.style.display !== 'none');
+        row.style.display = visible ? '' : 'none';
+        if (!visible) clearField('land_scope');
     }
 
     toggleFields();
     levelField.addEventListener('change', toggleFields);
+    if (modeField) modeField.addEventListener('change', toggleLandScope);
 });

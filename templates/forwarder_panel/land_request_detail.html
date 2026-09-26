@@ -19,6 +19,13 @@
     .lr-locked { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 14px; color: #64748b; font-size: 14px; }
     .accept-box { border: 2px solid #16a34a; background: #f0fdf4; border-radius: 16px; padding: 18px; }
     .timeline li { font-size: 13px; color: #475569; margin-bottom: 6px; }
+    .lr-doc-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; padding: 10px 0; border-bottom: 1px dashed #eef2f7; font-size: 14px; }
+    .lr-doc-row:last-child { border-bottom: 0; }
+    .lr-doc-status { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+    .lr-doc-status--pending_upload { background: #fef3c7; color: #92400e; }
+    .lr-doc-status--uploaded { background: #dbeafe; color: #1e40af; }
+    .lr-doc-status--approved { background: #dcfce7; color: #166534; }
+    .lr-doc-status--rejected { background: #fee2e2; color: #991b1b; }
 </style>
 {% endblock %}
 
@@ -45,21 +52,54 @@
     </div>
 
     {% if can_accept %}
-    <div class="accept-box mb-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <div>
-            <b>این درخواست هنوز باز است.</b>
-            <div class="small text-muted">مهلت پذیرش تا {{ req.expires_at|jformat:"%Y/%m/%d %H:%M" }}. با پذیرش، حمل با کرایه‌ی بالا به نام شرکت شما ثبت و اطلاعات تماس مشتری نمایش داده می‌شود.</div>
+    <div class="accept-box mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <b>این درخواست هنوز باز است.</b>
+                <div class="small text-muted">مهلت پذیرش تا {{ req.expires_at|jformat:"%Y/%m/%d %H:%M" }} ({{ req.expires_at|timeuntil }} دیگر). با پذیرش، حمل با کرایه‌ی بالا به نام شرکت شما ثبت و اطلاعات تماس مشتری نمایش داده می‌شود. اولین شرکتی که بپذیرد برنده است.</div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <form method="post" action="{% url 'forwarder_panel:land_request_accept' req.pk %}"
+                      onsubmit="return confirm('با پذیرش، متعهد به انجام این حمل با کرایه‌ی {{ req.proposed_price|floatformat:0|intcomma }} ریال می‌شوید. ادامه می‌دهید؟');">
+                    {% csrf_token %}
+                    <input type="hidden" name="expected_price" value="{{ req.proposed_price|floatformat:0 }}">
+                    <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check-circle"></i> پذیرش درخواست</button>
+                </form>
+                {% if can_decline %}
+                <button type="button" class="btn btn-outline-danger btn-lg" data-bs-toggle="collapse" data-bs-target="#declineBox" aria-expanded="false" aria-controls="declineBox">
+                    <i class="fas fa-times-circle"></i> رد درخواست
+                </button>
+                {% endif %}
+            </div>
         </div>
-        <form method="post" action="{% url 'forwarder_panel:land_request_accept' req.pk %}"
-              onsubmit="return confirm('با پذیرش، متعهد به انجام این حمل با کرایه‌ی {{ req.proposed_price|floatformat:0|intcomma }} ریال می‌شوید. ادامه می‌دهید؟');">
-            {% csrf_token %}
-            <input type="hidden" name="expected_price" value="{{ req.proposed_price|floatformat:0 }}">
-            <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check-circle"></i> پذیرش درخواست</button>
-        </form>
+        {% if can_decline %}
+        <div class="collapse mt-3" id="declineBox">
+            <form method="post" action="{% url 'forwarder_panel:land_request_decline' req.pk %}" class="d-flex gap-2 flex-wrap align-items-end">
+                {% csrf_token %}
+                <div class="flex-grow-1">
+                    <label for="decline-reason" class="form-label small fw-bold">دلیل رد (فقط برای مدیریت سامانه ثبت می‌شود)</label>
+                    <select id="decline-reason" name="reason" class="form-select">
+                        <option value="کرایه‌ی پیشنهادی کم است">کرایه‌ی پیشنهادی کم است</option>
+                        <option value="ناوگان مناسب در این تاریخ آزاد نیست">ناوگان مناسب در این تاریخ آزاد نیست</option>
+                        <option value="مسیر در برنامه‌ی ما نیست">مسیر در برنامه‌ی ما نیست</option>
+                        <option value="نوع بار با خدمات ما سازگار نیست">نوع بار با خدمات ما سازگار نیست</option>
+                        <option value="سایر">سایر</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-danger">ثبت رد و حذف از صندوق</button>
+            </form>
+            <div class="small text-muted mt-2">رد کردن فقط این درخواست را از صندوق شما حذف می‌کند؛ مشتری از آن مطلع نمی‌شود و درخواست برای شرکت‌های دیگر باز می‌ماند.</div>
+        </div>
+        {% endif %}
+    </div>
+    {% elif dispatch.status == DispatchStatus.DECLINED and not is_ours %}
+    <div class="alert alert-secondary">
+        شرکت شما این درخواست را در {{ dispatch.responded_at|jformat:"%Y/%m/%d %H:%M" }} رد کرده است{% if dispatch.decline_reason %} ({{ dispatch.decline_reason }}){% endif %}.
+        اگر مشتری کرایه را تغییر دهد، درخواست دوباره در صندوق باز شما قرار می‌گیرد.
     </div>
     {% elif not is_ours and req.status != Status.OPEN %}
     <div class="alert alert-secondary">
-        {% if dispatch.status == 'missed' %}این درخواست توسط شرکت دیگری زودتر پذیرفته شد.{% else %}این درخواست دیگر قابل پذیرش نیست ({{ req.get_status_display }}).{% endif %}
+        {% if dispatch.status == DispatchStatus.MISSED %}این درخواست توسط شرکت دیگری زودتر پذیرفته شد.{% else %}این درخواست دیگر قابل پذیرش نیست ({{ req.get_status_display }}).{% endif %}
     </div>
     {% endif %}
 
@@ -136,6 +176,53 @@
 
     {% if req.notes %}
     <div class="lr-card mt-3"><h3><i class="fas fa-comment-dots"></i> توضیحات مشتری</h3><p class="mb-0">{{ req.notes|linebreaksbr }}</p></div>
+    {% endif %}
+
+    {% if documents %}
+    <div class="lr-card mt-3" id="documents">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+            <h3 class="mb-0"><i class="fas fa-file-contract"></i> مدارک محموله</h3>
+            <span class="small text-muted fw-bold">
+                {{ documents_summary.approved }} از {{ documents_summary.total }} تایید شده
+                {% if documents_summary.missing %} — {{ documents_summary.missing }} مدرک اجباری ناقص{% endif %}
+            </span>
+        </div>
+        {% if not is_ours %}
+            <div class="lr-locked mb-2"><i class="fas fa-lock"></i> فایل مدارک پس از پذیرش درخواست برای شرکت پذیرنده قابل مشاهده و بررسی است. فهرست زیر مدارکی است که مشتری باید ارائه کند.</div>
+        {% endif %}
+        {% for doc in documents %}
+        <div class="lr-doc-row">
+            <div>
+                <b>{{ doc.document_type.title }}</b>
+                <span class="badge {% if doc.is_required %}bg-dark{% else %}bg-light text-dark border{% endif %}">{% if doc.is_required %}اجباری{% else %}اختیاری{% endif %}</span>
+                <span class="lr-doc-status lr-doc-status--{{ doc.status }}">{{ doc.get_status_display }}</span>
+                {% if doc.uploaded_at %}<div class="small text-muted">بارگذاری: {{ doc.uploaded_at|jformat:"%Y/%m/%d %H:%M" }}</div>{% endif %}
+                {% if doc.status == DocStatus.REJECTED and doc.rejection_reason %}<div class="small text-danger">دلیل رد: {{ doc.rejection_reason }}</div>{% endif %}
+            </div>
+            {% if is_ours %}
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                {% if doc.file %}
+                <a href="{% url 'land_freight:document_file' doc.pk %}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm" data-no-ajax>
+                    <i class="fas fa-eye"></i> مشاهده فایل
+                </a>
+                {% endif %}
+                {% if can_review_documents and doc.status == DocStatus.UPLOADED %}
+                <form method="post" action="{% url 'forwarder_panel:land_document_review' req.pk doc.pk %}">
+                    {% csrf_token %}<input type="hidden" name="action" value="approve">
+                    <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-check"></i> تایید</button>
+                </form>
+                <form method="post" action="{% url 'forwarder_panel:land_document_review' req.pk doc.pk %}" class="d-flex gap-1">
+                    {% csrf_token %}<input type="hidden" name="action" value="reject">
+                    <label class="visually-hidden" for="reject-reason-{{ doc.pk }}">دلیل رد {{ doc.document_type.title }}</label>
+                    <input type="text" name="reason" id="reject-reason-{{ doc.pk }}" class="form-control form-control-sm" placeholder="دلیل رد (الزامی)" required maxlength="255">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">رد</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
     {% endif %}
 
     {% if events %}

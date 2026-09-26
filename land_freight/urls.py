@@ -11,6 +11,8 @@ urlpatterns = [
     path("<int:pk>/status/", views.request_status, name="request_status"),
     path("<int:pk>/cancel/", views.request_cancel, name="request_cancel"),
     path("<int:pk>/republish/", views.request_republish, name="request_republish"),
+    path("<int:pk>/documents/<int:document_id>/upload/", views.request_document_upload, name="document_upload"),
+    path("documents/<int:document_id>/file/", views.document_file, name="document_file"),
 
     path("ajax/cities/", views.ajax_cities, name="ajax_cities"),
     path("ajax/foreign-cities/", views.ajax_foreign_cities, name="ajax_foreign_cities"),

@@ -79,7 +79,10 @@
                     <i class="fas fa-users"></i><span class="nav-label">کاربران</span>
                 </a>
                 <a href="{% url 'staff_dashboard:forwarder_list' %}">
-                    <i class="fas fa-building"></i><span class="nav-label">شرکت‌های فورواردر</span>
+                    <i class="fas fa-building"></i><span class="nav-label">شرکت‌های حمل</span>
+                </a>
+                <a href="{% url 'staff_dashboard:registration_queue' %}">
+                    <i class="fas fa-user-check"></i><span class="nav-label">درخواست‌های ثبت‌نام</span>
                 </a>
                 <a href="{% url 'staff_dashboard:order_list' %}">
                     <i class="fas fa-box"></i><span class="nav-label">سفارشات</span>
@@ -92,6 +95,9 @@
                 </a>
                 <a href="{% url 'staff_dashboard:ticket_list' %}">
                     <i class="fas fa-headset"></i><span class="nav-label">پشتیبانی</span>
+                </a>
+                <a href="{% url 'staff_dashboard:sms_provider_settings' %}">
+                    <i class="fas fa-sms"></i><span class="nav-label">پیامک</span>
                 </a>
                 <a href="{% url 'staff_dashboard:settings_hub' %}">
                     <i class="fas fa-cog"></i><span class="nav-label">تنظیمات پایه</span>

@@ -43,18 +43,40 @@
     <div class="detail-card" style="margin-top:16px;">
         <h3>ارسال به شرکت‌ها ({{ dispatches|length }})</h3>
         <table class="data-table">
-            <thead><tr><th>شرکت</th><th>وضعیت</th><th>ارسال</th><th>مشاهده</th><th>پاسخ</th></tr></thead>
+            <thead><tr><th>شرکت</th><th>وضعیت</th><th>ارسال</th><th>مشاهده</th><th>پاسخ</th><th>دلیل رد</th></tr></thead>
             <tbody>
                 {% for d in dispatches %}
                 <tr>
-                    <td>{{ d.company.company_name }}</td>
+                    <td><a class="row-link" href="{% url 'staff_dashboard:forwarder_detail' d.company.id %}">{{ d.company.company_name }}</a></td>
                     <td>{{ d.get_status_display }}</td>
                     <td>{{ d.sent_at|jformat:"%Y/%m/%d %H:%M" }}</td>
-                    <td>{{ d.seen_at|jformat:"%Y/%m/%d %H:%M"|default:"-" }}</td>
-                    <td>{{ d.responded_at|jformat:"%Y/%m/%d %H:%M"|default:"-" }}</td>
+                    <td>{% if d.seen_at %}{{ d.seen_at|jformat:"%Y/%m/%d %H:%M" }}{% else %}-{% endif %}</td>
+                    <td>{% if d.responded_at %}{{ d.responded_at|jformat:"%Y/%m/%d %H:%M" }}{% else %}-{% endif %}</td>
+                    <td>{{ d.decline_reason|default:"-" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="5" style="text-align:center;color:#94a3b8;">هیچ شرکت واجد شرایطی یافت نشد.</td></tr>
+                <tr><td colspan="6" style="text-align:center;color:#94a3b8;">هیچ شرکت واجد شرایطی یافت نشد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="detail-card" style="margin-top:16px;">
+        <h3>مدارک محموله ({{ documents|length }})</h3>
+        <table class="data-table">
+            <thead><tr><th>مدرک</th><th>الزام</th><th>وضعیت</th><th>بارگذاری</th><th>بررسی</th><th>فایل</th></tr></thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr>
+                    <td>{{ doc.document_type.title }}{% if doc.source_rule %}<br><small style="color:#94a3b8;">قانون: {{ doc.source_rule.title }}</small>{% endif %}</td>
+                    <td>{% if doc.is_required %}اجباری{% else %}اختیاری{% endif %}</td>
+                    <td>{{ doc.get_status_display }}{% if doc.rejection_reason %}<br><small style="color:#991b1b;">{{ doc.rejection_reason }}</small>{% endif %}</td>
+                    <td>{% if doc.uploaded_at %}{{ doc.uploaded_at|jformat:"%Y/%m/%d %H:%M" }}{% else %}-{% endif %}</td>
+                    <td>{% if doc.reviewed_at %}{{ doc.reviewed_at|jformat:"%Y/%m/%d %H:%M" }}{% else %}-{% endif %}</td>
+                    <td>{% if doc.file %}<a href="{% url 'land_freight:document_file' doc.pk %}" target="_blank" rel="noopener" data-no-ajax>مشاهده</a>{% else %}-{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center;color:#94a3b8;">قانون مدرکی برای این درخواست تعریف نشده است.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

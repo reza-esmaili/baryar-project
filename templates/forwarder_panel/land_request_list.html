@@ -19,6 +19,7 @@
     .scope-international { background: #fdf4ff; color: #a21caf; }
     .price-cell { font-weight: 800; color: #047857; white-space: nowrap; }
     .deadline { font-size: 12px; color: #b45309; }
+    .new-pill { display: inline-block; margin-inline-start: 6px; padding: 1px 8px; border-radius: 999px; background: #2563eb; color: #fff; font-size: 11px; font-weight: 700; }
 </style>
 {% endblock %}
 
@@ -68,7 +69,10 @@
                     <tbody>
                         {% for req in requests %}
                         <tr>
-                            <td class="fw-bold">{{ req.reference }}</td>
+                            <td class="fw-bold">
+                                {{ req.reference }}
+                                {% if tab == 'open' and req.company_dispatch_status == 'sent' %}<span class="new-pill">جدید</span>{% endif %}
+                            </td>
                             <td><span class="scope-pill scope-{{ req.scope }}">{{ req.get_scope_display }}</span></td>
                             <td class="route-cell">
                                 <b>{{ req.origin_display }}</b><span class="arrow">←</span><b>{{ req.destination_display }}</b>
@@ -80,6 +84,10 @@
                             <td>
                                 {% if tab == 'open' %}
                                 <span class="deadline"><i class="far fa-clock"></i> تا {{ req.expires_at|jformat:"%Y/%m/%d %H:%M" }}</span>
+                                {% elif tab == 'history' and req.company_dispatch_status == 'declined' %}
+                                <span class="text-danger fw-bold">رد شده توسط شما</span>
+                                {% elif tab == 'history' and req.company_dispatch_status == 'missed' %}
+                                <span class="text-muted">پذیرفته‌شده توسط شرکت دیگر</span>
                                 {% else %}
                                 {{ req.get_status_display }}
                                 {% endif %}

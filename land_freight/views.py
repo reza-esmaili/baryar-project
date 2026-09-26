@@ -1,3 +1,4 @@
+import os
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 
@@ -5,8 +6,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from accounts.models import User
@@ -16,16 +18,22 @@ from .forms import LandFreightRequestForm
 from .models import (
     ACTIVE_ASSIGNED_STATUSES,
     DispatchStatus,
+    LandDocumentStatus,
     LandFreightRequest,
+    LandRequestDocument,
     LandRequestStatus,
     LandServiceScope,
 )
 from .services import (
+    UPLOADABLE_REQUEST_STATUSES,
     LandRequestError,
     cancel_request,
     expire_stale_requests,
+    land_documents_summary,
     publish_request,
     republish_request,
+    sync_land_documents,
+    upload_land_document,
 )
 
 
@@ -115,8 +123,37 @@ def request_list(request):
 def _dispatch_stats(land_request):
     return land_request.dispatches.aggregate(
         total=Count("id"),
-        seen=Count("id", filter=Q(status__in=[DispatchStatus.SEEN, DispatchStatus.ACCEPTED, DispatchStatus.MISSED])),
+        seen=Count("id", filter=Q(status__in=[
+            DispatchStatus.SEEN, DispatchStatus.ACCEPTED, DispatchStatus.DECLINED, DispatchStatus.MISSED,
+        ])),
     )
+
+
+STATUS_STEPS = (
+    (LandRequestStatus.OPEN, "ثبت و ارسال به شرکت‌ها"),
+    (LandRequestStatus.ASSIGNED, "پذیرش توسط شرکت حمل"),
+    (LandRequestStatus.IN_TRANSIT, "بارگیری و حمل"),
+    (LandRequestStatus.DELIVERED, "تحویل به گیرنده"),
+)
+
+
+def _status_steps(land_request):
+    """مراحل مسیر اصلی درخواست؛ برای لغو/انقضا مسیر در همان مرحله متوقف می‌شود."""
+    order = [code for code, _ in STATUS_STEPS]
+    current = order.index(land_request.status) if land_request.status in order else 0
+    stopped = land_request.status in (LandRequestStatus.CANCELLED, LandRequestStatus.EXPIRED)
+    steps = []
+    for index, (code, label) in enumerate(STATUS_STEPS):
+        if stopped:
+            state = "done" if index == 0 else "todo"
+        elif index < current or land_request.status == LandRequestStatus.DELIVERED:
+            state = "done"
+        elif index == current:
+            state = "current"
+        else:
+            state = "todo"
+        steps.append({"code": code, "label": label, "state": state})
+    return steps
 
 
 @login_required
@@ -124,6 +161,8 @@ def _dispatch_stats(land_request):
 def request_detail(request, pk):
     expire_stale_requests()
     land_request = _customer_request_or_404(request, pk)
+    # قوانین مدارک ممکن است بعد از ثبت درخواست تغییر کرده باشند
+    documents = sync_land_documents(land_request)
 
     return render(request, "land_freight/request_detail.html", {
         "req": land_request,
@@ -131,7 +170,56 @@ def request_detail(request, pk):
         "events": land_request.events.select_related("actor").all(),
         "carrier_visible": land_request.status in (*ACTIVE_ASSIGNED_STATUSES, LandRequestStatus.DELIVERED),
         "Status": LandRequestStatus,
+        "DocStatus": LandDocumentStatus,
+        "steps": _status_steps(land_request),
+        "documents": documents,
+        "documents_summary": land_documents_summary(land_request),
+        "can_upload_documents": land_request.status in UPLOADABLE_REQUEST_STATUSES,
     })
+
+
+@login_required
+@customer_required
+@require_POST
+def request_document_upload(request, pk, document_id):
+    land_request = _customer_request_or_404(request, pk)
+    document = get_object_or_404(LandRequestDocument.objects.select_related("document_type"),
+                                 pk=document_id, request=land_request)
+    uploaded = request.FILES.get("file")
+    if not uploaded:
+        messages.error(request, "فایلی برای بارگذاری انتخاب نشده است.")
+        return redirect("land_freight:request_detail", pk=land_request.pk)
+    try:
+        upload_land_document(document, uploaded, request.user)
+        messages.success(request, f"مدرک «{document.document_type.title}» بارگذاری شد.")
+    except LandRequestError as exc:
+        messages.error(request, str(exc))
+    return redirect(f"{reverse('land_freight:request_detail', args=[land_request.pk])}#documents")
+
+
+def user_can_access_land_document(user, document):
+    """مشتری صاحب درخواست، کاربران شرکت پذیرنده و کارکنان سامانه."""
+    from panel.decorators import get_company_for_user
+
+    land_request = document.request
+    if land_request.customer_id == user.id:
+        return True
+    if user.is_staff or user.role == User.Role.PLATFORM_ADMIN:
+        return True
+    if land_request.assigned_company_id:
+        company = get_company_for_user(user)
+        return bool(company and company.pk == land_request.assigned_company_id)
+    return False
+
+
+@login_required
+def document_file(request, document_id):
+    document = get_object_or_404(LandRequestDocument.objects.select_related("request"), pk=document_id)
+    if not user_can_access_land_document(request.user, document):
+        return HttpResponseForbidden("شما اجازه مشاهده این مدرک را ندارید.")
+    if not document.file:
+        raise Http404()
+    return FileResponse(document.file.open("rb"), filename=os.path.basename(document.file.name))
 
 
 @login_required

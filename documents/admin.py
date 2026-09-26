@@ -155,6 +155,7 @@ class DocumentRuleAdmin(admin.ModelAdmin):
         "requirement_level",
         "shipping_procedure",
         "transport_mode",
+        "land_scope",
         "origin_province",
         "origin_city",
         "destination_country",
@@ -213,6 +214,7 @@ class DocumentRuleAdmin(admin.ModelAdmin):
                 "fields": (
                     "shipping_procedure",
                     "transport_mode",
+                    "land_scope",
                     "origin_province",
                     "origin_city",
                     "destination_country",

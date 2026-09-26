@@ -7,7 +7,7 @@ from core.models import SmsProviderConfig, SmsEvent
 from core.services.notifications.events import get_event_params
 from core.services.notifications.sms import validate_custom_text_params
 from documents.models import DocumentType, AdditionalDocumentRequest
-from forwarders.models import ForwarderRole, ForwarderCompany
+from forwarders.models import CompanyDocumentRequirement, ForwarderRole, ForwarderCompany
 from land_freight.models import LoaderType, VehicleType
 from locations.models import Country, Province, City, DestinationCity, Port
 from orders.models import CargoRequest
@@ -180,6 +180,30 @@ class VehicleTypeForm(forms.ModelForm):
             "capacity_kg": forms.NumberInput(attrs=FORM_CONTROL_ATTRS),
             "is_active": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
         }
+
+
+class CompanyDocumentRequirementForm(forms.ModelForm):
+    class Meta:
+        model = CompanyDocumentRequirement
+        fields = ["document_type", "service", "is_required", "guidance", "sort_order", "is_active"]
+        widgets = {
+            "document_type": forms.Select(attrs=FORM_CONTROL_ATTRS),
+            "service": forms.Select(attrs=FORM_CONTROL_ATTRS),
+            "is_required": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
+            "guidance": forms.Textarea(attrs={
+                **FORM_CONTROL_ATTRS, "rows": 2,
+                "placeholder": "راهنمای کوتاه برای شرکت؛ مثلاً «تصویر رنگی و خوانا از هر دو صفحه»",
+            }),
+            "sort_order": forms.NumberInput(attrs=FORM_CONTROL_ATTRS),
+            "is_active": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
+        }
+        help_texts = {
+            "service": "«همه‌ی شرکت‌ها» یعنی این مدرک از هر شرکتی، با هر دسته‌ی خدماتی، خواسته می‌شود.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["document_type"].queryset = DocumentType.objects.filter(is_active=True).order_by("title")
 
 
 class LoaderTypeForm(forms.ModelForm):
@@ -453,15 +477,43 @@ class AdditionalDocumentRequestForm(forms.ModelForm):
 
 
 class SmsProviderConfigForm(forms.ModelForm):
+    """
+    کلید API هیچ‌وقت در صفحه نمایش داده نمی‌شود؛ هنگام ویرایش، خالی گذاشتن
+    آن یعنی «کلید فعلی حفظ شود».
+    """
+
     class Meta:
         model = SmsProviderConfig
-        fields = ["provider_type", "api_key", "default_line_number", "is_active"]
+        fields = ["name", "provider_type", "api_key", "default_line_number", "is_active"]
         widgets = {
+            "name": forms.TextInput(attrs=FORM_CONTROL_ATTRS),
             "provider_type": forms.Select(attrs=FORM_SELECT_ATTRS),
-            "api_key": forms.TextInput(attrs={**FORM_CONTROL_ATTRS, "autocomplete": "off"}),
-            "default_line_number": forms.TextInput(attrs=FORM_CONTROL_ATTRS),
+            "api_key": forms.PasswordInput(attrs={**FORM_CONTROL_ATTRS, "autocomplete": "new-password"}, render_value=False),
+            "default_line_number": forms.TextInput(attrs={**FORM_CONTROL_ATTRS, "inputmode": "numeric", "dir": "ltr"}),
             "is_active": forms.CheckboxInput(attrs=FORM_CHECK_ATTRS),
         }
+        help_texts = {
+            "default_line_number": "شماره خط اختصاصی پنل؛ برای ارسال با خط پیش‌فرض پنل خالی بگذارید.",
+            "is_active": "با فعال‌کردن این سامانه، سامانه‌ی فعال قبلی غیرفعال می‌شود؛ همه‌ی پیامک‌ها از سامانه‌ی فعال ارسال می‌شوند.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._existing_api_key = self.instance.api_key if self.instance.pk else ""
+        if self._existing_api_key:
+            self.fields["api_key"].help_text = (
+                f"کلید فعلی: {self.instance.masked_api_key} — برای حفظ آن خالی بگذارید."
+            )
+
+    def clean_api_key(self):
+        api_key = (self.cleaned_data.get("api_key") or "").strip()
+        return api_key or self._existing_api_key
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("is_active") and not cleaned.get("api_key"):
+            self.add_error("api_key", "برای فعال‌کردن سامانه، کلید API لازم است.")
+        return cleaned
 
 
 class SmsEventForm(forms.ModelForm):

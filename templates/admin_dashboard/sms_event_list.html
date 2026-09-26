@@ -2,50 +2,80 @@
 
 {% block title %}رویدادهای پیامکی{% endblock %}
 
+{% block extra_css %}
+<style>
+    .event-group { margin-bottom: 22px; }
+    .event-group h2 { font-size: 0.95rem; font-weight: 800; color: #475569; margin-bottom: 10px; }
+    .event-row { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; margin-bottom: 8px; }
+    .event-row.is-off { background: #fafafa; }
+    .event-row.is-off .event-preview { opacity: .6; }
+    .event-title { font-weight: 800; color: #1e293b; font-size: 0.9rem; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .event-desc { color: #64748b; font-size: 0.78rem; margin-top: 2px; }
+    .event-preview { margin-top: 8px; background: #f8fafc; border-radius: 10px; padding: 8px 12px; font-size: 0.8rem; color: #334155; line-height: 1.8; white-space: pre-line; }
+    .event-preview.is-template { color: #1e3a8a; background: #eff6ff; }
+    .event-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    .event-side form { margin: 0; }
+    .switch-btn { border: 0; border-radius: 999px; width: 52px; height: 28px; position: relative; cursor: pointer; background: #cbd5e1; transition: background .15s; }
+    .switch-btn::after { content: ""; position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    .switch-btn[aria-checked="true"] { background: #16a34a; }
+    .switch-btn[aria-checked="true"]::after { transform: translateX(-24px); }
+    .switch-btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .switch-btn, .switch-btn::after { transition: none; } }
+    @media (max-width: 640px) { .event-row { grid-template-columns: 1fr; } .event-side { flex-direction: row; align-items: center; } }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="p-6">
-    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">رویدادهای پیامکی</h1>
-        <a href="{% url 'staff_dashboard:sms_provider_settings' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت به تنظیمات سامانه پیامکی</a>
+    <div class="mb-4">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">پیامک</h1>
+        <p style="color:#64748b;font-size:0.85rem;">
+            ارسال هر رویداد را با کلید کنار آن روشن یا خاموش کنید. متن‌ها متغیرهای پویا دارند (مثل
+            <code>{customer_name}</code>)؛ پیش‌نمایش زیر هر رویداد با مقادیر نمونه ساخته شده است.
+        </p>
     </div>
 
-    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">
-        برای هر رویداد پلتفرم می‌توانید پیامک را غیرفعال کنید، یک متن دلخواه با پارامترهای داینامیک تنظیم کنید، یا از یک قالب تاییدشده sms.ir استفاده کنید.
-    </p>
+    {% with sms_tab='events' %}{% include 'admin_dashboard/partials/sms_tabs.html' %}{% endwith %}
 
-    <div class="data-table-wrap">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>رویداد</th>
-                    <th>توضیح</th>
-                    <th>وضعیت</th>
-                    <th>روش ارسال</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for event in events %}
-                <tr>
-                    <td>{{ event.label }}</td>
-                    <td style="color:#64748b;font-size:0.8rem;">{{ event.description }}</td>
-                    <td>
-                        {% if event.is_enabled %}
-                            <span class="badge-pill badge-green">فعال</span>
-                        {% else %}
-                            <span class="badge-pill badge-red">غیرفعال</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ event.get_send_mode_display }}</td>
-                    <td>
-                        <a href="{% url 'staff_dashboard:sms_event_edit' event.code %}" class="btn-soft btn-soft-blue" title="ویرایش"><i class="fas fa-edit"></i></a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:24px;">رویدادی یافت نشد.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    {% if not has_active_provider %}
+    <div class="alert-box alert-warning">هیچ سامانه‌ی پیامکی فعالی تنظیم نشده است؛ رویدادهای فعال هم تا فعال‌سازی یک سامانه ارسال نمی‌شوند. <a href="{% url 'staff_dashboard:sms_provider_settings' %}">تنظیم سامانه</a></div>
+    {% endif %}
+
+    {% for group_name, rows in groups %}
+    <section class="event-group">
+        <h2>{{ group_name }}</h2>
+        {% for row in rows %}
+        {% with event=row.event %}
+        <div class="event-row{% if not event.is_enabled %} is-off{% endif %}" id="event-{{ event.code }}">
+            <div>
+                <div class="event-title">
+                    {{ event.label }}
+                    <span class="badge-pill badge-gray">گیرنده: {{ row.recipient }}</span>
+                    {% if event.send_mode == 'template' %}<span class="badge-pill badge-blue">قالب sms.ir #{{ event.template_id }}</span>{% endif %}
+                </div>
+                <div class="event-desc">{{ event.description }}</div>
+                {% if event.send_mode == 'template' %}
+                    <div class="event-preview is-template">ارسال با قالب تاییدشده‌ی sms.ir؛ متن در پنل sms.ir تعریف شده است.</div>
+                {% elif row.preview %}
+                    <div class="event-preview">{{ row.preview }}</div>
+                {% else %}
+                    <div class="event-preview" style="color:#991b1b;">متنی تعریف نشده است.</div>
+                {% endif %}
+            </div>
+            <div class="event-side">
+                <form method="post" action="{% url 'staff_dashboard:sms_event_toggle' event.code %}">
+                    {% csrf_token %}
+                    <button type="submit" class="switch-btn" role="switch" aria-checked="{% if event.is_enabled %}true{% else %}false{% endif %}"
+                            aria-label="ارسال پیامک «{{ event.label }}»" title="{% if event.is_enabled %}فعال — برای خاموش کردن کلیک کنید{% else %}غیرفعال — برای روشن کردن کلیک کنید{% endif %}"></button>
+                </form>
+                <a href="{% url 'staff_dashboard:sms_event_edit' event.code %}" class="btn-soft btn-soft-blue"><i class="fas fa-pen"></i> ویرایش متن</a>
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </section>
+    {% empty %}
+    <div class="detail-card" style="text-align:center;color:#94a3b8;">رویدادی یافت نشد؛ مهاجرت‌های پایگاه‌داده را اجرا کنید.</div>
+    {% endfor %}
 </div>
 {% endblock %}

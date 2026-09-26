@@ -13,26 +13,36 @@
     </div>
 
     <form method="get" class="data-toolbar">
-        <input type="text" name="q" value="{{ q }}" placeholder="عنوان قانون یا نوع مدرک...">
+        <input type="text" name="q" value="{{ q }}" placeholder="عنوان قانون یا نوع مدرک..." aria-label="جستجو">
+        <select name="mode" aria-label="روش حمل">
+            <option value="">روش حمل: همه</option>
+            {% for value, label in modes %}
+                <option value="{{ value }}" {% if mode == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
         <button type="submit"><i class="fas fa-search"></i> جستجو</button>
     </form>
+    <p style="color:#94a3b8;font-size:0.8rem;margin:-4px 0 12px;">
+        قوانین با روش حمل «زمینی» مدارک لازم درخواست‌های اعلام بار زمینی را تعیین می‌کنند (با امکان محدود کردن به درون‌شهری، برون‌شهری یا بین‌المللی).
+    </p>
 
     <div class="data-table-wrap">
         <table class="data-table">
-            <thead><tr><th>عنوان</th><th>نوع مدرک</th><th>سطح قانون</th><th>اولویت</th><th>اجباری</th><th>وضعیت</th><th></th></tr></thead>
+            <thead><tr><th>عنوان</th><th>نوع مدرک</th><th>سطح قانون</th><th>روش حمل</th><th>اولویت</th><th>اجباری</th><th>وضعیت</th><th></th></tr></thead>
             <tbody>
                 {% for rule in page_obj %}
                 <tr>
                     <td>{{ rule.title }}</td>
                     <td>{{ rule.document_type.title }}</td>
                     <td>{{ rule.get_requirement_level_display }}</td>
+                    <td>{{ rule.get_transport_mode_display|default:"همه" }}{% if rule.land_scope %} — {{ rule.get_land_scope_display }}{% endif %}</td>
                     <td>{{ rule.priority }}</td>
                     <td>{% if rule.is_required %}بله{% else %}خیر{% endif %}</td>
                     <td>{% if rule.is_active %}<span class="badge-pill badge-green">فعال</span>{% else %}<span class="badge-pill badge-red">غیرفعال</span>{% endif %}</td>
                     <td><a href="{% url 'staff_dashboard:document_rule_edit' rule.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-edit"></i></a></td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px;">قانونی ثبت نشده است.</td></tr>
+                <tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">قانونی ثبت نشده است.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

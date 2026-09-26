@@ -1,458 +1,377 @@
 {% extends "forwarder_panel/base.html" %}
+{% load jformat %}
 
-{% block title %}مدارک و مستندات{% endblock %}
+{% block title %}ثبت‌نام و مدارک شرکت{% endblock %}
 
 {% block extra_css %}
 <style>
-    .documents-page {
-        padding: 24px;
-    }
+    .documents-page { padding: 24px; }
+    .page-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06); margin-bottom: 20px; }
+    .section-title { font-size: 18px; font-weight: 800; margin-bottom: 6px; color: #111827; }
+    .section-sub { font-size: 13px; color: #6b7280; margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
+    .readonly-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; }
+    .status-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+    .status-no_company { background: #fff7ed; color: #c2410c; }
+    .status-pending { background: #fffbeb; color: #b45309; }
+    .status-rejected { background: #fef2f2; color: #b91c1c; }
+    .status-verified { background: #ecfdf5; color: #047857; }
+    .status-inactive { background: #f1f5f9; color: #475569; }
+    .form-label { font-weight: 700; margin-bottom: 6px; }
+    .field-error { color: #dc2626; font-size: 13px; margin-top: 5px; }
+    .required-mark { color: #dc2626; }
+    .help-text { font-size: 13px; color: #6b7280; margin-top: 6px; }
 
-    .page-card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-        margin-bottom: 20px;
-    }
+    .onboard-steps { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .onboard-steps span { flex: 1; min-width: 150px; text-align: center; padding: 8px; border-radius: 10px; font-size: 13px; font-weight: 700; background: #f1f5f9; color: #64748b; }
+    .onboard-steps span.done { background: #dcfce7; color: #166534; }
+    .onboard-steps span.current { background: #dbeafe; color: #1e40af; }
 
-    .section-title {
-        font-size: 18px;
-        font-weight: 800;
-        margin-bottom: 16px;
-        color: #111827;
-        border-bottom: 1px solid #e5e7eb;
-        padding-bottom: 10px;
-    }
+    .service-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+    .service-card { display: flex; gap: 10px; align-items: flex-start; border: 2px solid #e2e8f0; border-radius: 14px; padding: 14px; cursor: pointer; }
+    .service-card:has(input:checked) { border-color: #2563eb; background: #eff6ff; }
+    .service-card i { font-size: 20px; color: #2563eb; margin-top: 2px; }
+    .service-card b { display: block; }
+    .service-card small { color: #64748b; }
 
-    .readonly-box {
-        background: #f9fafb;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 14px;
-        margin-bottom: 16px;
-    }
-
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 14px;
-        border-radius: 999px;
-        font-size: 13px;
-        font-weight: 700;
-    }
-
-    .status-no-company {
-        background: #fff7ed;
-        color: #c2410c;
-    }
-
-    .status-pending {
-        background: #fffbeb;
-        color: #b45309;
-    }
-
-    .status-verified {
-        background: #ecfdf5;
-        color: #047857;
-    }
-
-    .form-label {
-        font-weight: 700;
-        margin-bottom: 6px;
-    }
-
-    .field-error {
-        color: #dc2626;
-        font-size: 13px;
-        margin-top: 5px;
-    }
-
-    .required-mark {
-        color: #dc2626;
-    }
-
-    .documents-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .documents-table th,
-    .documents-table td {
-        padding: 12px;
-        border-bottom: 1px solid #e5e7eb;
-        vertical-align: middle;
-    }
-
-    .documents-table th {
-        background: #f9fafb;
-        font-weight: 800;
-    }
-
-    .ceo-fields {
-        display: none;
-    }
-
-    .ceo-fields.active {
-        display: block;
-    }
-
-    .help-text {
-        font-size: 13px;
-        color: #6b7280;
-        margin-top: 6px;
-    }
+    .doc-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; padding: 14px 0; border-bottom: 1px dashed #e5e7eb; }
+    .doc-row:last-child { border-bottom: 0; }
+    .doc-row .doc-title { font-weight: 800; color: #0f172a; }
+    .doc-row .doc-meta { font-size: 12px; color: #64748b; margin-top: 4px; }
+    .doc-state { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .doc-state.pending { background: #fef3c7; color: #92400e; }
+    .doc-state.approved { background: #dcfce7; color: #166534; }
+    .doc-state.rejected { background: #fee2e2; color: #991b1b; }
+    .doc-state.missing { background: #f1f5f9; color: #475569; }
+    .reject-note { margin-top: 6px; font-size: 12px; color: #991b1b; }
+    .land-area { border: 1px dashed #93c5fd; border-radius: 14px; padding: 16px; margin-top: 16px; }
+    .vehicle-list ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+    .vehicle-list li label { display: flex; gap: 8px; align-items: center; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 10px; cursor: pointer; }
+    [hidden] { display: none !important; }
+    @media (max-width: 768px) { .doc-row { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="documents-page">
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} mb-3">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
+    {% include 'forwarder_panel/partials/messages.html' %}
 
     <div class="page-card">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <h2 class="mb-2">مدارک و مستندات فورواردر</h2>
-                <p class="text-muted mb-0">
-                    برای فعال‌سازی حساب فورواردر، اطلاعات شرکت و مدارک الزامی را تکمیل کنید.
-                </p>
+                <h2 class="mb-2">ثبت‌نام و مدارک شرکت حمل</h2>
+                <p class="text-muted mb-0">دسته‌های خدمات، حوزه‌ی فعالیت و مدارک لازم را ثبت کنید تا پس از بررسی کارشناس، پنل شرکت فعال شود.</p>
             </div>
-
-            <div>
-                {% if verification_status == "verified" %}
-                    <span class="status-badge status-verified">
-                        <i class="fas fa-check-circle"></i>
-                        تایید شده
-                    </span>
-                {% elif verification_status == "pending" %}
-                    <span class="status-badge status-pending">
-                        <i class="fas fa-clock"></i>
-                        در انتظار بررسی کارشناس
-                    </span>
-                {% else %}
-                    <span class="status-badge status-no-company">
-                        <i class="fas fa-exclamation-circle"></i>
-                        تکمیل نشده
-                    </span>
-                {% endif %}
-            </div>
+            <span class="status-badge status-{{ verification_status }}">
+                {% if verification_status == "verified" %}<i class="fas fa-check-circle"></i> تایید شده
+                {% elif verification_status == "pending" %}<i class="fas fa-clock"></i> در انتظار بررسی کارشناس
+                {% elif verification_status == "rejected" %}<i class="fas fa-exclamation-triangle"></i> نیازمند اصلاح مدارک
+                {% elif verification_status == "inactive" %}<i class="fas fa-ban"></i> غیرفعال‌شده توسط مدیریت
+                {% else %}<i class="fas fa-exclamation-circle"></i> تکمیل نشده{% endif %}
+            </span>
+        </div>
+        <div class="onboard-steps" aria-label="مراحل ثبت‌نام">
+            <span class="done">۱. ایجاد حساب</span>
+            <span class="{% if company %}done{% else %}current{% endif %}">۲. اطلاعات، خدمات و مدارک</span>
+            <span class="{% if verification_status == 'verified' %}done{% elif company %}current{% endif %}">۳. بررسی کارشناس</span>
+            <span class="{% if verification_status == 'verified' %}done{% endif %}">۴. فعال‌سازی پنل</span>
         </div>
     </div>
 
     <div class="page-card">
         <h3 class="section-title">اطلاعات ثبت‌نام‌کننده</h3>
-
-        <div class="readonly-box">
+        <div class="readonly-box mt-2">
             <div class="row">
-                <div class="col-md-4 mb-2">
-                    <strong>نام:</strong>
-                    {{ registered_user.first_name }}
-                </div>
-                <div class="col-md-4 mb-2">
-                    <strong>نام خانوادگی:</strong>
-                    {{ registered_user.last_name }}
-                </div>
-                <div class="col-md-4 mb-2">
-                    <strong>شماره موبایل:</strong>
-                    {{ registered_user.mobile }}
-                </div>
+                <div class="col-md-4 mb-2"><strong>نام:</strong> {{ registered_user.first_name }}</div>
+                <div class="col-md-4 mb-2"><strong>نام خانوادگی:</strong> {{ registered_user.last_name }}</div>
+                <div class="col-md-4 mb-2"><strong>شماره موبایل:</strong> {{ registered_user.mobile }}</div>
             </div>
         </div>
     </div>
 
     {% if verification_status == "verified" %}
         <div class="page-card">
-            <div class="alert alert-success mb-0">
-                حساب فورواردر شما تایید شده و امکان استفاده از قابلیت‌های پلتفرم فعال است.
+            <div class="alert alert-success mb-3">
+                حساب شرکت شما تایید شده و قابلیت‌های پنل متناسب با دسته‌های خدمات شما فعال است:
+                <b>{{ company.service_labels|join:"، " }}</b>
+            </div>
+            {% if company.offers_land %}
+            <a href="{% url 'forwarder_panel:land_service_area' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-map-marked-alt"></i> ویرایش حوزه‌ی فعالیت و ناوگان زمینی</a>
+            {% endif %}
+            <p class="help-text mb-0">برای افزودن دسته‌ی خدمات جدید با پشتیبانی تماس بگیرید؛ تغییر دسته‌ها نیازمند بررسی دوباره‌ی مدارک است.</p>
+        </div>
+    {% elif verification_status == "inactive" %}
+        <div class="page-card">
+            <div class="alert alert-danger mb-0">
+                حساب «{{ company.company_name }}» تایید شده اما توسط مدیریت سامانه غیرفعال شده است؛ تا فعال‌سازی دوباره،
+                بخش‌های عملیاتی پنل در دسترس نیستند. برای پیگیری از بخش پشتیبانی تیکت ثبت کنید.
             </div>
         </div>
     {% else %}
-
         {% if verification_status == "pending" %}
-            <div class="page-card">
-                <div class="alert alert-warning mb-0">
-                    مدارک شما ثبت شده و در انتظار بررسی کارشناس است.
-                    در صورت نیاز می‌توانید اطلاعات یا فایل‌ها را مجدداً ارسال کنید.
-                </div>
-            </div>
+            <div class="alert alert-warning">مدارک شما ثبت شده و در انتظار بررسی کارشناس است. در صورت نیاز می‌توانید اطلاعات یا فایل‌ها را اصلاح و دوباره ارسال کنید.</div>
+        {% elif verification_status == "rejected" %}
+            <div class="alert alert-danger">کارشناس برخی مدارک را رد کرده است. یادداشت کارشناس را کنار هر مدرک ببینید، نسخه‌ی اصلاح‌شده را بارگذاری و دوباره ارسال کنید.</div>
         {% endif %}
 
-        <form method="post" enctype="multipart/form-data" novalidate>
+        <form method="post" enctype="multipart/form-data" novalidate id="onboarding-form">
             {% csrf_token %}
 
             <div class="page-card">
-                <h3 class="section-title">نقش فرد ثبت‌نام‌کننده</h3>
-
+                <h3 class="section-title">اطلاعات شرکت</h3>
+                <p class="section-sub">اطلاعات حقوقی شرکت مطابق روزنامه‌ی رسمی.</p>
                 <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">
-                            {{ form.applicant_role.label }}
-                            <span class="required-mark">*</span>
-                        </label>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="id_applicant_role">{{ form.applicant_role.label }} <span class="required-mark">*</span></label>
                         {{ form.applicant_role }}
+                        {% for error in form.applicant_role.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                        <div class="help-text">اگر خودتان مدیرعامل هستید «مدیرعامل» را انتخاب کنید؛ در غیر این صورت اطلاعات مدیرعامل را جداگانه وارد کنید.</div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="id_company_name">{{ form.company_name.label }} <span class="required-mark">*</span></label>
+                        {{ form.company_name }}
+                        {% for error in form.company_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="id_company_type">{{ form.company_type.label }} <span class="required-mark">*</span></label>
+                        {{ form.company_type }}
+                        {% for error in form.company_type.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="id_national_id">{{ form.national_id.label }} <span class="required-mark">*</span></label>
+                        {{ form.national_id }}
+                        {% for error in form.national_id.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="id_registration_number">{{ form.registration_number.label }} <span class="required-mark">*</span></label>
+                        {{ form.registration_number }}
+                        {% for error in form.registration_number.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="id_phone">{{ form.phone.label }} <span class="required-mark">*</span></label>
+                        {{ form.phone }}
+                        {% for error in form.phone.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="id_email">{{ form.email.label }} <span class="required-mark">*</span></label>
+                        {{ form.email }}
+                        {% for error in form.email.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="id_postal_code">{{ form.postal_code.label }} <span class="required-mark">*</span></label>
+                        {{ form.postal_code }}
+                        {% for error in form.postal_code.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label" for="id_address">{{ form.address.label }} <span class="required-mark">*</span></label>
+                        {{ form.address }}
+                        {% for error in form.address.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
 
-                        {% for error in form.applicant_role.errors %}
-                            <div class="field-error">{{ error }}</div>
-                        {% endfor %}
-
-                        <div class="help-text">
-                            اگر اطلاعات ثبت‌نام‌کننده متعلق به مدیرعامل است، گزینه مدیرعامل را انتخاب کنید.
-                            در غیر این صورت، اطلاعات مدیرعامل را جداگانه وارد کنید.
+                <div id="ceoInfoCard">
+                    <h4 class="h6 fw-bold mt-2">اطلاعات مدیرعامل</h4>
+                    <div class="alert alert-info" id="ceoIsApplicantMessage">نام و موبایل مدیرعامل از اطلاعات حساب شما استفاده می‌شود؛ فقط کد ملی را وارد کنید.</div>
+                    <div class="row" id="ceoFullFields">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label" for="id_ceo_first_name">{{ form.ceo_first_name.label }}</label>
+                            {{ form.ceo_first_name }}
+                            {% for error in form.ceo_first_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label" for="id_ceo_last_name">{{ form.ceo_last_name.label }}</label>
+                            {{ form.ceo_last_name }}
+                            {% for error in form.ceo_last_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label" for="id_ceo_mobile">{{ form.ceo_mobile.label }}</label>
+                            {{ form.ceo_mobile }}
+                            {% for error in form.ceo_mobile.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label" for="id_ceo_national_code">{{ form.ceo_national_code.label }} <span class="required-mark">*</span></label>
+                            {{ form.ceo_national_code }}
+                            {% for error in form.ceo_national_code.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="page-card">
-                <h3 class="section-title">اطلاعات شرکت</h3>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.company_name.label }} <span class="required-mark">*</span></label>
-                        {{ form.company_name }}
-                        {% for error in form.company_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.company_type.label }} <span class="required-mark">*</span></label>
-                        {{ form.company_type }}
-                        {% for error in form.company_type.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.national_id.label }} <span class="required-mark">*</span></label>
-                        {{ form.national_id }}
-                        {% for error in form.national_id.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.registration_number.label }} <span class="required-mark">*</span></label>
-                        {{ form.registration_number }}
-                        {% for error in form.registration_number.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.phone.label }} <span class="required-mark">*</span></label>
-                        {{ form.phone }}
-                        {% for error in form.phone.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.email.label }} <span class="required-mark">*</span></label>
-                        {{ form.email }}
-                        {% for error in form.email.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.postal_code.label }} <span class="required-mark">*</span></label>
-                        {{ form.postal_code }}
-                        {% for error in form.postal_code.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-
-                    <div class="col-12 mb-3">
-                        <label class="form-label">{{ form.address.label }} <span class="required-mark">*</span></label>
-                        {{ form.address }}
-                        {% for error in form.address.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="page-card">
                 <h3 class="section-title">{{ form.services.label }} <span class="required-mark">*</span></h3>
-                <p class="text-muted small mb-2">{{ form.services.help_text }} هوایی و دریایی با اعلام نرخ کار می‌کنند؛ دسته‌های زمینی درخواست‌های «اعلام بار» مشتریان را دریافت می‌کنند.</p>
-                <div class="d-flex flex-wrap gap-3">
+                <p class="section-sub">{{ form.services.help_text }} هوایی و دریایی با اعلام نرخ کار می‌کنند؛ دسته‌های زمینی درخواست‌های «اعلام بار» مشتریان را دریافت می‌کنند. مدارک لازم بر اساس دسته‌های انتخابی نمایش داده می‌شود.</p>
+                <div class="service-cards">
                     {% for checkbox in form.services %}
-                    <label class="d-flex align-items-center gap-2 border rounded-3 px-3 py-2" style="cursor:pointer;">
-                        {{ checkbox.tag }} {{ checkbox.choice_label }}
+                    <label class="service-card" for="{{ checkbox.id_for_label }}">
+                        {{ checkbox.tag }}
+                        {% if checkbox.data.value == 'service_air' %}<i class="fas fa-plane"></i>
+                        {% elif checkbox.data.value == 'service_sea' %}<i class="fas fa-ship"></i>
+                        {% elif checkbox.data.value == 'service_land_intracity' %}<i class="fas fa-city"></i>
+                        {% elif checkbox.data.value == 'service_land_domestic' %}<i class="fas fa-road"></i>
+                        {% else %}<i class="fas fa-globe-asia"></i>{% endif %}
+                        <span>
+                            <b>{{ checkbox.choice_label }}</b>
+                            <small>
+                                {% if checkbox.data.value == 'service_air' %}اعلام نرخ حمل هوایی
+                                {% elif checkbox.data.value == 'service_sea' %}اعلام نرخ FCL و LCL
+                                {% elif checkbox.data.value == 'service_land_intracity' %}اعلام بار داخل شهرهای منتخب
+                                {% elif checkbox.data.value == 'service_land_domestic' %}اعلام بار بین شهرهای ایران
+                                {% else %}اعلام بار ایران و کشورهای دیگر{% endif %}
+                            </small>
+                        </span>
                     </label>
                     {% endfor %}
                 </div>
                 {% for error in form.services.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-            </div>
 
-            <div class="page-card" id="ceoInfoCard">
-                <h3 class="section-title">اطلاعات مدیرعامل</h3>
+                <div class="land-area" id="land-area" hidden>
+                    <h4 class="h6 fw-bold">حوزه‌ی فعالیت حمل زمینی</h4>
+                    <p class="help-text mt-0">درخواست‌های اعلام بار فقط برای شرکت‌هایی ارسال می‌شود که ناوگان و حوزه‌ی آن‌ها با درخواست منطبق است.</p>
 
-                <div class="alert alert-info" id="ceoIsApplicantMessage">
-                    چون نقش ثبت‌نام‌کننده «مدیرعامل» انتخاب شده، نام، نام خانوادگی و موبایل مدیرعامل از اطلاعات ثبت‌نام اولیه شما استفاده می‌شود.
-                    فقط کد ملی مدیرعامل را وارد کنید.
-                </div>
-
-                <div class="row" id="ceoFullFields">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.ceo_first_name.label }}</label>
-                        {{ form.ceo_first_name }}
-                        {% for error in form.ceo_first_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                    <div class="mb-3 vehicle-list">
+                        <label class="form-label">{{ form.land_vehicle_types.label }} <span class="required-mark">*</span></label>
+                        {{ form.land_vehicle_types }}
+                        {% for error in form.land_vehicle_types.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.ceo_last_name.label }}</label>
-                        {{ form.ceo_last_name }}
-                        {% for error in form.ceo_last_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                    <div class="mb-3" id="land-cities-block" hidden>
+                        <label class="form-label" for="id_land_service_cities">{{ form.land_service_cities.label }} <span class="required-mark">*</span></label>
+                        <input type="search" class="form-control mb-2" placeholder="جستجوی شهر یا استان..." data-filter-for="id_land_service_cities">
+                        {{ form.land_service_cities }}
+                        <div class="help-text">برای انتخاب چند شهر، Ctrl (یا Cmd) را نگه دارید.</div>
+                        {% for error in form.land_service_cities.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.ceo_mobile.label }}</label>
-                        {{ form.ceo_mobile }}
-                        {% for error in form.ceo_mobile.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">
-                            {{ form.ceo_national_code.label }}
-                            <span class="required-mark">*</span>
-                        </label>
-                        {{ form.ceo_national_code }}
-                        {% for error in form.ceo_national_code.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                    <div class="mb-1" id="land-countries-block" hidden>
+                        <label class="form-label" for="id_land_service_countries">{{ form.land_service_countries.label }}</label>
+                        <input type="search" class="form-control mb-2" placeholder="جستجوی کشور..." data-filter-for="id_land_service_countries">
+                        {{ form.land_service_countries }}
+                        <div class="help-text">{{ form.land_service_countries.help_text }}</div>
                     </div>
                 </div>
             </div>
 
             <div class="page-card">
-                <h3 class="section-title">آپلود مدارک</h3>
-
-                {% if company %}
-                    <div class="alert alert-secondary">
-                        اگر فایل جدیدی انتخاب نکنید، مدارک قبلی باقی می‌مانند.
+                <h3 class="section-title">مدارک لازم</h3>
+                <p class="section-sub">فهرست مدارک متناسب با دسته‌های خدمات انتخابی شماست. مدارکی که قبلاً ارسال کرده‌اید تا زمانی که رد نشده‌اند نیازی به بارگذاری دوباره ندارند.</p>
+                {% for group in form.document_groups %}
+                    <div class="doc-row" data-services="{{ group.services_attr }}">
+                        <div>
+                            <div class="doc-title">
+                                {{ group.document_type.title }}
+                                {% if group.is_required %}<span class="required-mark">*</span>{% else %}<small class="text-muted">(اختیاری)</small>{% endif %}
+                            </div>
+                            <div class="doc-meta">
+                                {% if group.guidance %}{{ group.guidance }} — {% endif %}
+                                فرمت‌های مجاز: {{ group.document_type.allowed_extensions }} — حداکثر {{ group.document_type.max_file_size_mb }} مگابایت
+                            </div>
+                            {% with doc=group.existing %}
+                                {% if doc %}
+                                    <span class="doc-state {{ doc.status }}">{{ doc.get_status_display }} — ارسال {{ doc.created_at|jformat:"%Y/%m/%d" }}</span>
+                                    <a href="{% url 'documents:serve_identity_document' doc.id %}" target="_blank" rel="noopener" class="small me-2">مشاهده فایل</a>
+                                    {% if doc.status == 'rejected' and doc.admin_note %}<div class="reject-note"><i class="fas fa-comment-dots"></i> {{ doc.admin_note }}</div>{% endif %}
+                                {% else %}
+                                    <span class="doc-state missing">ارسال نشده</span>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        <div>
+                            {% for field in form %}{% if field.name == group.field_name %}
+                                {{ field }}
+                                {% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                            {% endif %}{% endfor %}
+                        </div>
                     </div>
-                {% endif %}
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.articles_of_association.label }}{% if not company %} <span class="required-mark">*</span>{% endif %}</label>
-                        {{ form.articles_of_association }}
-                        {% for error in form.articles_of_association.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.establishment_notice.label }}{% if not company %} <span class="required-mark">*</span>{% endif %}</label>
-                        {{ form.establishment_notice }}
-                        {% for error in form.establishment_notice.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.latest_changes.label }}{% if not company %} <span class="required-mark">*</span>{% endif %}</label>
-                        {{ form.latest_changes }}
-                        {% for error in form.latest_changes.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.ceo_national_card.label }}{% if not company %} <span class="required-mark">*</span>{% endif %}</label>
-                        {{ form.ceo_national_card }}
-                        {% for error in form.ceo_national_card.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                    </div>
-                </div>
+                {% empty %}
+                    <div class="alert alert-light border mb-0">مدیر پلتفرم هنوز مدرکی برای ثبت‌نام تعریف نکرده است.</div>
+                {% endfor %}
             </div>
 
             {% if form.non_field_errors %}
-                <div class="page-card">
-                    <div class="alert alert-danger">
-                        {% for error in form.non_field_errors %}
-                            <div>{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                </div>
+                <div class="alert alert-danger">{% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}</div>
             {% endif %}
 
             <div class="page-card text-start">
-                <button type="submit" class="btn btn-primary btn-lg">
-                    ثبت اطلاعات و ارسال برای بررسی
-                </button>
+                <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-paper-plane"></i> ثبت اطلاعات و ارسال برای بررسی</button>
             </div>
         </form>
     {% endif %}
 
+    {% if checklist %}
     <div class="page-card">
-        <h3 class="section-title">مدارک ارسال‌شده</h3>
-
-        {% if documents %}
-            <div class="table-responsive">
-                <table class="documents-table">
-                    <thead>
+        <h3 class="section-title">وضعیت مدارک</h3>
+        <p class="section-sub">آخرین وضعیت بررسی هر مدرکِ لازم برای دسته‌های فعلی شرکت.</p>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>مدرک</th><th>اجباری</th><th>وضعیت</th><th>یادداشت کارشناس</th></tr></thead>
+                <tbody>
+                {% for item in checklist %}
                     <tr>
-                        <th>نوع مدرک</th>
-                        <th>وضعیت</th>
-                        <th>تاریخ ارسال</th>
-                        <th>فایل</th>
-                        <th>یادداشت کارشناس</th>
+                        <td>{{ item.document_type.title }}</td>
+                        <td>{{ item.is_required|yesno:"بله,خیر" }}</td>
+                        <td>
+                            {% if item.document %}<span class="doc-state {{ item.status }}">{{ item.document.get_status_display }}</span>
+                            {% else %}<span class="doc-state missing">ارسال نشده</span>{% endif %}
+                        </td>
+                        <td>{{ item.document.admin_note|default:"-" }}</td>
                     </tr>
-                    </thead>
-                    <tbody>
-                    {% for doc in documents %}
-                        <tr>
-                            <td>{{ doc.get_doc_type_display }}</td>
-                            <td>{{ doc.get_status_display }}</td>
-                            <td>{{ doc.created_at|date:"Y/m/d H:i" }}</td>
-                            <td>
-                                {% if doc.file %}
-                                    <a href="{% url 'documents:serve_identity_document' doc.id %}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                        مشاهده فایل
-                                    </a>
-                                {% endif %}
-                            </td>
-                            <td>{{ doc.admin_note|default:"-" }}</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="alert alert-light border mb-0">
-                هنوز مدرکی ارسال نشده است.
-            </div>
-        {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    function updateCeoFields() {
-        const roleSelect = document.getElementById("id_applicant_role");
-        const ceoFullFields = document.getElementById("ceoFullFields");
-        const ceoIsApplicantMessage = document.getElementById("ceoIsApplicantMessage");
-
-        if (!roleSelect || !ceoFullFields || !ceoIsApplicantMessage) {
-            return;
-        }
-
-        const role = roleSelect.value;
-
-        if (role === "representative") {
-            ceoFullFields.style.display = "flex";
-            ceoIsApplicantMessage.style.display = "none";
-
-            document.getElementById("id_ceo_first_name")?.setAttribute("required", "required");
-            document.getElementById("id_ceo_last_name")?.setAttribute("required", "required");
-            document.getElementById("id_ceo_mobile")?.setAttribute("required", "required");
-        } else {
-            ceoFullFields.style.display = "none";
-            ceoIsApplicantMessage.style.display = "block";
-
-            document.getElementById("id_ceo_first_name")?.removeAttribute("required");
-            document.getElementById("id_ceo_last_name")?.removeAttribute("required");
-            document.getElementById("id_ceo_mobile")?.removeAttribute("required");
-        }
-    }
-
     panelReady(function () {
-        const roleSelect = document.getElementById("id_applicant_role");
+        const form = document.getElementById('onboarding-form');
+        if (!form) return;
 
-        if (roleSelect) {
-            roleSelect.addEventListener("change", updateCeoFields);
-            updateCeoFields();
+        // ─── اطلاعات مدیرعامل بسته به نقش ثبت‌نام‌کننده ───
+        const roleSelect = document.getElementById('id_applicant_role');
+        function updateCeoFields() {
+            const isRep = roleSelect && roleSelect.value === 'representative';
+            document.getElementById('ceoFullFields').style.display = isRep ? 'flex' : 'none';
+            document.getElementById('ceoIsApplicantMessage').style.display = isRep ? 'none' : 'block';
         }
+        if (roleSelect) { roleSelect.addEventListener('change', updateCeoFields); updateCeoFields(); }
+
+        // ─── دسته‌ها ← حوزه‌ی زمینی و فهرست مدارک ───
+        const serviceInputs = form.querySelectorAll('input[name="services"]');
+        function selectedCategories() {
+            return Array.from(serviceInputs).filter((i) => i.checked).map((i) => i.value.replace(/^service_/, ''));
+        }
+        function refresh() {
+            const cats = selectedCategories();
+            const anyLand = cats.some((c) => c.startsWith('land_'));
+            document.getElementById('land-area').hidden = !anyLand;
+            document.getElementById('land-cities-block').hidden = !cats.includes('land_intracity');
+            document.getElementById('land-countries-block').hidden = !cats.includes('land_international');
+            form.querySelectorAll('.doc-row[data-services]').forEach((row) => {
+                const services = row.dataset.services.split(' ');
+                row.hidden = !(services.includes('all') || services.some((s) => cats.includes(s)));
+            });
+        }
+        serviceInputs.forEach((i) => i.addEventListener('change', refresh));
+        refresh();
+
+        // ─── جستجو در فهرست‌های چندانتخابی ───
+        document.querySelectorAll('[data-filter-for]').forEach(function (input) {
+            const select = document.getElementById(input.dataset.filterFor);
+            if (!select) return;
+            input.addEventListener('input', function () {
+                const term = input.value.trim();
+                Array.from(select.options).forEach(function (opt) {
+                    opt.hidden = term !== '' && !opt.text.includes(term) && !opt.selected;
+                });
+            });
+        });
     });
 </script>
 {% endblock %}

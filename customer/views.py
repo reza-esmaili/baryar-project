@@ -12,7 +12,11 @@ from locations.models import City, DestinationCity
 
 from accounts.models import User, CustomerProfile, OTPCode
 from accounts.services import request_otp, verify_otp, SMSIRException
+from core.services.notifications.events import CUSTOMER_WELCOME, ORDER_MESSAGE_TO_FORWARDER
+from core.services.notifications.tasks import notify_task
+from core.services.notifications.utils import display_name
 from core.utils import get_client_ip
+from orders.services import get_forwarder_notification_target
 
 from orders.models import CargoRequest, OrderMessage, CustomerNotification, ForwarderNotification
 
@@ -388,6 +392,9 @@ def web_register_verify_otp(request):
 
     login(request, user)
 
+    if user.role == User.Role.CUSTOMER:
+        notify_task.delay(CUSTOMER_WELCOME, user.mobile, {"customer_name": display_name(user)})
+
     # اگر از فرآیند cross-site آمده، به ادامه پروسه ثبت سفارش هدایت کن
     if request.session.get('crosssite_token'):
         redirect_url = "/orders/crosssite-login/"
@@ -604,6 +611,14 @@ def send_order_message_reply(request, order_id):
             url=f"/panel/orders/{order.id}/",
             order=order,
         )
+
+    if order.selected_rate_id:
+        forwarder_mobile, company_name = get_forwarder_notification_target(order.selected_rate)
+        notify_task.delay(ORDER_MESSAGE_TO_FORWARDER, forwarder_mobile, {
+            "company_name": company_name or "",
+            "order_id": order.id,
+            "customer_name": display_name(request.user),
+        })
 
     return JsonResponse({
         "success": True,

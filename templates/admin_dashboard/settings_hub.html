@@ -66,8 +66,10 @@
     </div>
 
     <div class="settings-group">
-        <h3>فورواردرها</h3>
+        <h3>شرکت‌های حمل</h3>
         <div class="settings-cards">
+            <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'company-document-requirements' %}"><i class="fas fa-id-card"></i><span class="title">مدارک ثبت‌نام بر اساس دسته‌ی خدمات</span></a>
+            <a class="settings-card" href="{% url 'staff_dashboard:registration_queue' %}"><i class="fas fa-user-check"></i><span class="title">درخواست‌های ثبت‌نام</span></a>
             <a class="settings-card" href="{% url 'staff_dashboard:lookup_list' 'forwarder-roles' %}"><i class="fas fa-user-shield"></i><span class="title">نقش‌های فورواردر</span></a>
         </div>
     </div>

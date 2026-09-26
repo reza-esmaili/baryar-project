@@ -21,7 +21,13 @@ from accounts.models import User
 from locations.models import City, Country, DestinationCity, Port, Province
 from rates.models import CargoType, ContainerSize, ContainerType, PricingUnit, Rate, RateTier, TransportMode
 
-from .decorators import forwarder_required, get_company_for_user, staff_perm, staff_permission_required
+from .decorators import (
+    forwarder_required,
+    get_company_for_user,
+    rate_carrier_required,
+    staff_perm,
+    staff_permission_required,
+)
 from .forms import RateForm, RateTierFormSet
 
 logger = logging.getLogger(__name__)
@@ -29,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_create_rates')
 def rate_create_view(request):
     # دریافت لیست پورت‌ها برای فیلتر داینامیک در فرانت‌اند
@@ -73,6 +80,7 @@ def rate_create_view(request):
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_view_rates')
 def rate_list_view(request):
     forwarder_company = get_company_for_user(request.user)
@@ -139,6 +147,7 @@ def rate_list_view(request):
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_edit_rates')
 @require_POST
 def toggle_rate_status(request, rate_id):
@@ -159,6 +168,7 @@ def toggle_rate_status(request, rate_id):
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_delete_rates')
 @require_POST
 def delete_rate(request, rate_id):
@@ -192,7 +202,7 @@ class RateDetailUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         company = get_company_for_user(user)
         if not company:
             return False
-        return company.is_verified and company.is_active
+        return company.is_operational and company.offers_rates
 
 
     def handle_no_permission(self):
@@ -245,6 +255,7 @@ class RateDetailUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_delete_rates')
 @require_POST
 def rate_bulk_delete(request):
@@ -270,6 +281,7 @@ def rate_bulk_delete(request):
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_bulk_upload_rates')
 def download_rate_template_excel(request):
     output = io.BytesIO()
@@ -480,6 +492,7 @@ def _build_rate_from_excel_row(row, forwarder_company):
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_bulk_upload_rates')
 def upload_rate_excel(request):
     if request.method != 'POST':

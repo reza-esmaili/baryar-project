@@ -33,7 +33,14 @@ def forwarder_permissions(request):
     from panel.decorators import get_company_for_user
 
     company = get_company_for_user(user)
-    context = {'fw_offers_land': bool(company and company.offers_land)}
+    # منوی پنل بر اساس دسته‌های خدمات شرکت و وضعیت تایید/فعال بودن آن ساخته می‌شود:
+    # تا شرکت تایید و فعال نشده، فقط بخش مدارک و ثبت‌نام در دسترس است.
+    context = {
+        'fw_company': company,
+        'fw_company_ready': bool(company and company.is_operational),
+        'fw_offers_land': bool(company and company.offers_land),
+        'fw_offers_rates': bool(company and company.offers_rates),
+    }
 
     if user.role == User.Role.FORWARDER_ADMIN:
         context['fw_perms'] = {f: True for f in _PERM_FIELDS}

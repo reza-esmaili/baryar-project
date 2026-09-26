@@ -4,20 +4,132 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'forwarder_panel/css/dashboard.css' %}">
-{% endblock %} 
+{% endblock %}
 
 {% block content %}
 <div class="dashboard-container p-6 sm:p-8">
-    
+
     <!-- هدر -->
     <div class="text-right mb-8">
         <h1 class="text-2xl font-black text-slate-800 mb-1">داشبورد</h1>
-        <p class="text-sm text-slate-500 font-medium">اطلاعات سامانه در ۷ روز گذشته</p>
+        <p class="text-sm text-slate-500 font-medium">
+            {% if company %}{{ company.company_name }} — {% endif %}اطلاعات سامانه در ۷ روز گذشته
+        </p>
+        {% if company %}
+        <div class="flex flex-wrap gap-2 mt-3">
+            {% for category in company.active_service_categories %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">{{ category.label }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
+    {% if land_stats %}
+    <!-- حمل زمینی: صندوق اعلام بار -->
+    <div class="text-right mb-8">
+        <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+            <h2 class="text-lg font-black text-slate-800">اعلام بار زمینی</h2>
+            <a href="{% url 'forwarder_panel:land_request_list' %}" class="text-sm font-bold text-blue-600 hover:text-blue-700">مشاهده‌ی صندوق درخواست‌ها ←</a>
+        </div>
+
+        <div class="stats-grid">
+            <a href="{% url 'forwarder_panel:land_request_list' %}?tab=open" class="stat-card">
+                <div class="stat-card-inner">
+                    <div class="stat-info">
+                        <span class="stat-title">درخواست‌های باز</span>
+                        <h3 class="stat-value">{{ land_stats.open_count }}</h3>
+                        {% if land_stats.unseen_count %}
+                            <span class="text-xs font-bold text-blue-600">{{ land_stats.unseen_count }} مورد دیده نشده</span>
+                        {% endif %}
+                    </div>
+                    <div class="icon-box icon-blue">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'forwarder_panel:land_request_list' %}?tab=mine" class="stat-card">
+                <div class="stat-card-inner">
+                    <div class="stat-info">
+                        <span class="stat-title">پذیرفته‌شده / در حال حمل</span>
+                        <h3 class="stat-value">{{ land_stats.assigned_count }} / {{ land_stats.in_transit_count }}</h3>
+                    </div>
+                    <div class="icon-box icon-orange">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path></svg>
+                    </div>
+                </div>
+            </a>
+
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <div class="stat-info">
+                        <span class="stat-title">تحویل‌شده در ۷ روز اخیر</span>
+                        <h3 class="stat-value">{{ land_stats.delivered_week_count }}</h3>
+                    </div>
+                    <div class="icon-box icon-green">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-inner">
+                    <div class="stat-info">
+                        <span class="stat-title">مدارک منتظر بررسی</span>
+                        <h3 class="stat-value">{{ land_stats.pending_documents_count }}</h3>
+                    </div>
+                    <div class="icon-box icon-purple">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-grid mt-6" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            <div class="summary-card">
+                <div class="summary-card-header">
+                    <div class="icon-box" style="background: #dcfce7; color: #16a34a;">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="summary-card-title">جمع کرایه‌های توافق‌شده</h3>
+                </div>
+                <p class="summary-card-value format-large-number" data-value="{{ land_stats.agreed_total }}">{{ land_stats.agreed_total|intcomma }}</p>
+                <p class="summary-card-desc">بارهای پذیرفته، در حال حمل و تحویل‌شده</p>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-card-header">
+                    <div class="icon-box" style="background: #fee2e2; color: #dc2626;">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="summary-card-title">مهلت پذیرش رو به پایان</h3>
+                </div>
+                {% if land_stats.expiring_soon %}
+                    <ul class="space-y-2 mt-2">
+                        {% for req in land_stats.expiring_soon %}
+                        <li>
+                            <a href="{% url 'forwarder_panel:land_request_detail' req.pk %}" class="flex items-center justify-between gap-2 text-sm hover:text-blue-600">
+                                <span class="font-bold text-slate-700">{{ req.reference }} · {{ req.origin_display }} ← {{ req.destination_display|default:req.origin_display }}</span>
+                                <span class="text-xs text-red-600 font-bold whitespace-nowrap">{{ req.expires_at|timeuntil }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="summary-card-desc">درخواستی با مهلت کمتر از ۳ ساعت ندارید.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if offers_rates %}
+    {% if offers_land %}
+        <h2 class="text-lg font-black text-slate-800 mb-4 text-right">سفارش‌های هوایی و دریایی</h2>
+    {% endif %}
     <!-- 4 کارت آماری بالا (ردیف اول) -->
     <div class="stats-grid">
-        
+
         <!-- کارت 1: سفارشات ثبت شده -->
         <div class="stat-card">
             <div class="stat-card-inner">
@@ -75,9 +187,9 @@
     <!-- بخش خلاصه عملکرد هفته اخیر (طراحی جدید) -->
     <div class="mt-8 text-right direction-rtl">
         <h2 class="text-lg font-black text-slate-800 mb-4">خلاصه عملکرد هفته اخیر</h2>
-        
+
         <div class="summary-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
-            
+
             <!-- باکس 1: میانگین مبلغ هر سفارش -->
             <div class="summary-card">
                 <div class="summary-card-header">
@@ -98,7 +210,7 @@
                     </div>
                     <h3 class="summary-card-title">بیشترین مقصد</h3>
                 </div>
-                <p class="summary-card-value">{{ top_destination.destination_port__city__name|default:"آلمان - هامبورگ" }}</p>
+                <p class="summary-card-value">{{ top_destination.destination_port__city__name|default:"—" }}</p>
                 <p class="summary-card-desc">پرترددترین در ۷ روز گذشته</p>
             </div>
 
@@ -110,7 +222,7 @@
                     </div>
                     <h3 class="summary-card-title">محبوب‌ترین روش حمل</h3>
                 </div>
-                <p class="summary-card-value">{{ top_transport_mode.display_name|default:"هوایی" }}</p>
+                <p class="summary-card-value">{{ top_transport_mode.display_name|default:"—" }}</p>
                 <p class="summary-card-desc">بیشترین درخواست ثبت شده</p>
             </div>
 
@@ -122,12 +234,20 @@
                     </div>
                     <h3 class="summary-card-title">نرخ‌های فعال (کریر)</h3>
                 </div>
-                <p class="summary-card-value">{{ total_active_rates|default:"12" }}</p>
+                <p class="summary-card-value">{{ total_active_rates|default:"0" }}</p>
                 <p class="summary-card-desc">نرخ ثبت شده در سیستم</p>
             </div>
 
         </div>
     </div>
+    {% endif %}
+
+    {% if not offers_rates and not land_stats %}
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 text-right">
+        <p class="font-bold text-slate-700 mb-1">بخشی برای نمایش در داشبورد شما وجود ندارد.</p>
+        <p class="text-sm text-slate-500">دسته‌های خدمات شرکت یا دسترسی نقش شما اجازه‌ی مشاهده‌ی آمار را نمی‌دهد. برای تغییر، با ادمین شرکت تماس بگیرید.</p>
+    </div>
+    {% endif %}
 
 </div>
 {% endblock %}

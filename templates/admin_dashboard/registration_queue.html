@@ -1,0 +1,84 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}درخواست‌های ثبت‌نام شرکت حمل{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+            <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">درخواست‌های ثبت‌نام شرکت حمل</h1>
+            <p style="color:#64748b;font-size:0.85rem;">شرکت‌هایی که هنوز تایید نشده‌اند؛ مرتب بر اساس آخرین ارسال مدارک. مدارک لازم هر دسته از «تنظیمات پایه ← مدارک ثبت‌نام شرکت‌ها» تعیین می‌شود.</p>
+        </div>
+        <a href="{% url 'staff_dashboard:forwarder_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-building"></i> همه‌ی شرکت‌ها</a>
+    </div>
+
+    <nav class="filter-tabs" aria-label="دسته‌ی خدمات">
+        <a href="?state={{ state }}&q={{ q|urlencode }}" class="{% if not service %}active{% endif %}">همه‌ی دسته‌ها</a>
+        {% for value, label in service_choices %}
+            <a href="?service={{ value }}&state={{ state }}&q={{ q|urlencode }}" class="{% if service == value %}active{% endif %}">{{ label }}</a>
+        {% endfor %}
+    </nav>
+
+    <form method="get" class="data-toolbar">
+        <input type="hidden" name="service" value="{{ service }}">
+        <input type="text" name="q" value="{{ q }}" placeholder="نام شرکت، شناسه ملی، موبایل ادمین..." aria-label="جستجو">
+        <select name="state" aria-label="وضعیت بررسی">
+            <option value="">وضعیت بررسی: همه</option>
+            {% for value, label in state_choices %}
+                <option value="{{ value }}" {% if state == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit"><i class="fas fa-search"></i> فیلتر</button>
+    </form>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>شرکت</th>
+                    <th>دسته‌های درخواستی</th>
+                    <th>ادمین / تماس</th>
+                    <th>مدارک اجباری</th>
+                    <th>وضعیت</th>
+                    <th>آخرین ارسال</th>
+                    <th>اقدام</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in page_obj %}
+                {% with company=row.company %}
+                <tr>
+                    <td>
+                        <a class="row-link" href="{% url 'staff_dashboard:forwarder_detail' company.id %}">{{ company.company_name|default:"(بدون نام)" }}</a>
+                        <br><small style="color:#94a3b8;">شناسه ملی {{ company.national_id|default:"-" }} · ثبت {{ company.registration_number|default:"-" }}</small>
+                    </td>
+                    <td>
+                        <div class="service-badges">
+                            {% for label in company.service_labels %}<span class="badge-pill badge-blue">{{ label }}</span>{% empty %}<span class="badge-pill badge-gray">تعیین نشده</span>{% endfor %}
+                        </div>
+                    </td>
+                    <td>{{ company.admin_user.first_name }} {{ company.admin_user.last_name }}<br><small style="color:#94a3b8;">{{ company.admin_user.mobile }}{% if company.phone %} · {{ company.phone }}{% endif %}</small></td>
+                    <td style="white-space:nowrap;">
+                        {{ row.required_approved }} از {{ row.required_total }} تایید
+                        {% if company.pending_docs %}<br><small style="color:#1e3a8a;font-weight:700;">{{ company.pending_docs }} در انتظار بررسی</small>{% endif %}
+                        {% if row.required_missing %}<br><small style="color:#991b1b;font-weight:700;">{{ row.required_missing }} ارسال نشده</small>{% endif %}
+                    </td>
+                    <td>
+                        <span class="badge-pill {% if row.state == 'pending' %}badge-amber{% elif row.state == 'rejected' %}badge-red{% elif row.state == 'inactive' %}badge-gray{% else %}badge-gray{% endif %}">{{ row.state_label }}</span>
+                    </td>
+                    <td style="white-space:nowrap;">{% if company.last_submitted %}{{ company.last_submitted|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
+                    <td style="white-space:nowrap;">
+                        <a href="{% url 'staff_dashboard:forwarder_detail' company.id %}#registration" class="btn-soft btn-soft-blue"><i class="fas fa-search"></i> بررسی</a>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px;">درخواست ثبت‌نامی در انتظار نیست.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'admin_dashboard/partials/pagination.html' %}
+</div>
+{% endblock %}

@@ -7,6 +7,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from documents.models import DocumentRule, AdditionalDocumentRequest
+from rates.models import TransportMode
 
 from .decorators import platform_staff_required
 from .forms import DocumentRuleAdminForm
@@ -21,6 +22,10 @@ def document_rule_list(request):
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(document_type__title__icontains=q))
 
+    mode = request.GET.get("mode", "").strip()
+    if mode in TransportMode.values:
+        qs = qs.filter(transport_mode=mode)
+
     paginator = Paginator(qs, 25)
     page_obj = paginator.get_page(request.GET.get("page"))
 
@@ -28,7 +33,13 @@ def document_rule_list(request):
     params.pop("page", None)
     qs_string = params.urlencode()
 
-    context = {"page_obj": page_obj, "q": q, "querystring": qs_string + "&" if qs_string else ""}
+    context = {
+        "page_obj": page_obj,
+        "q": q,
+        "mode": mode,
+        "modes": TransportMode.choices,
+        "querystring": qs_string + "&" if qs_string else "",
+    }
     return render(request, "admin_dashboard/document_rule_list.html", context)
 
 

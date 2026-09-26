@@ -1,0 +1,26 @@
+{% extends 'forwarder_panel/base.html' %}
+
+{% block title %}وضعیت شرکت{% endblock %}
+
+{% block content %}
+<div class="p-6 sm:p-8 text-right">
+    <div class="bg-white border border-slate-200 rounded-2xl p-6" style="max-width:640px;">
+        <div class="flex items-center gap-3 mb-3">
+            <i class="fas fa-hourglass-half" style="color:#d97706;font-size:22px;"></i>
+            <h1 class="text-xl font-black text-slate-800">حساب شرکت هنوز فعال نشده است</h1>
+        </div>
+        <p class="text-sm text-slate-600 leading-7">
+            حساب <strong>{{ company.company_name }}</strong>
+            {% if company.is_verified %}
+                توسط مدیریت سامانه غیرفعال شده است.
+            {% else %}
+                در حال بررسی توسط کارشناسان باریار است.
+            {% endif %}
+            تا زمان فعال شدن شرکت، بخش‌های عملیاتی پنل (سفارش‌ها، نرخ‌ها و اعلام بار) در دسترس نیستند.
+        </p>
+        <p class="text-sm text-slate-500 leading-7 mt-2">
+            تکمیل مدارک شرکت فقط توسط ادمین شرکت انجام می‌شود. در صورت نیاز با ادمین شرکت یا پشتیبانی تماس بگیرید.
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -45,6 +45,10 @@
             <div class="drf-grid">
                 <div class="drf-field field-shipping_procedure"><label>{{ form.shipping_procedure.label }}</label>{{ form.shipping_procedure }}</div>
                 <div class="drf-field field-transport_mode"><label>{{ form.transport_mode.label }}</label>{{ form.transport_mode }}</div>
+                <div class="drf-field field-land_scope" id="land-scope-field">
+                    <label for="{{ form.land_scope.id_for_label }}">{{ form.land_scope.label }}</label>{{ form.land_scope }}
+                    <small style="color:#94a3b8;font-size:0.72rem;">فقط برای روش حمل «زمینی»؛ خالی یعنی همه‌ی انواع حمل زمینی.</small>
+                </div>
                 <div class="drf-field field-origin_province"><label>{{ form.origin_province.label }}</label>{{ form.origin_province }}</div>
                 <div class="drf-field field-origin_city"><label>{{ form.origin_city.label }}</label>{{ form.origin_city }}</div>
                 <div class="drf-field field-destination_country"><label>{{ form.destination_country.label }}</label>{{ form.destination_country }}</div>
@@ -53,6 +57,7 @@
                 <div class="drf-field field-cargo_type"><label>{{ form.cargo_type.label }}</label>{{ form.cargo_type }}</div>
                 <div class="drf-field field-cargo_subcategory"><label>{{ form.cargo_subcategory.label }}</label>{{ form.cargo_subcategory }}</div>
             </div>
+            {{ form.transport_mode.errors }}{{ form.land_scope.errors }}
             {{ form.origin_province.errors }}{{ form.origin_city.errors }}{{ form.destination_country.errors }}
             {{ form.destination_city.errors }}{{ form.destination_port.errors }}{{ form.cargo_type.errors }}{{ form.cargo_subcategory.errors }}
         </div>

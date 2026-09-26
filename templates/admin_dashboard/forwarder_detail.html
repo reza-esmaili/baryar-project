@@ -29,12 +29,10 @@
                 {% endfor %}
             </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-            {% if company.is_verified %}
-                <span class="badge-pill badge-green">تایید شده</span>
-            {% else %}
-                <span class="badge-pill badge-amber">در انتظار تایید</span>
-            {% endif %}
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span class="badge-pill {% if registration_state == 'verified' %}badge-green{% elif registration_state == 'rejected' %}badge-red{% elif registration_state == 'pending' %}badge-amber{% else %}badge-gray{% endif %}">
+                {% for key, label in registration_state_labels.items %}{% if key == registration_state %}{{ label }}{% endif %}{% endfor %}
+            </span>
             <a href="{% url 'staff_dashboard:forwarder_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت</a>
             <a href="{% url 'staff_dashboard:forwarder_edit' company.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-edit"></i> ویرایش اطلاعات</a>
             <form method="post" style="margin:0;">
@@ -49,29 +47,107 @@
         </div>
     </div>
 
-    <div class="detail-card">
-        <h3>اطلاعات شرکت</h3>
-        <div class="detail-row"><span class="label">مدیرعامل</span><span class="value">{{ company.ceo_first_name }} {{ company.ceo_last_name }}</span></div>
-        <div class="detail-row"><span class="label">کاربر ادمین</span><span class="value">
-            <a href="{% url 'staff_dashboard:user_detail' company.admin_user.id %}">{{ company.admin_user.mobile }}</a>
-        </span></div>
-        <div class="detail-row"><span class="label">تلفن</span><span class="value">{{ company.phone }}</span></div>
-        <div class="detail-row"><span class="label">ایمیل</span><span class="value">{{ company.email }}</span></div>
-        <div class="detail-row"><span class="label">آدرس</span><span class="value">{{ company.address }}</span></div>
+    {% if registration_state != 'verified' %}
+    <div class="detail-card" id="registration" style="border:2px solid {% if registration_state == 'pending' %}#fde68a{% else %}#e2e8f0{% endif %};">
+        <h3>بررسی درخواست ثبت‌نام</h3>
+        {% if missing_required %}
+        <div class="alert-box alert-warning" style="margin-bottom:12px;">
+            {{ missing_required|length }} مدرک اجباری هنوز تایید نشده است:
+            {% for item in missing_required %}«{{ item.document_type.title }}»{% if not forloop.last %}، {% endif %}{% endfor %}.
+            با «تایید ثبت‌نام» همه‌ی مدارک در انتظار تایید می‌شوند؛ مدارک ارسال‌نشده را پیش از تایید از شرکت بخواهید.
+        </div>
+        {% endif %}
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+            <form method="post" action="{% url 'staff_dashboard:registration_decision' company.id %}" style="margin:0;"
+                  onsubmit="return confirm('ثبت‌نام «{{ company.company_name|escapejs }}» تایید و شرکت فعال شود؟');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="approve">
+                <button type="submit" class="btn-soft btn-soft-green"><i class="fas fa-check-circle"></i> تایید ثبت‌نام و فعال‌سازی</button>
+            </form>
+            <form method="post" action="{% url 'staff_dashboard:registration_decision' company.id %}" class="doc-review-form" style="flex:1;min-width:260px;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reject">
+                <label for="reject-reason" style="font-size:0.78rem;color:#64748b;">دلیل رد (برای شرکت پیامک می‌شود)</label>
+                <input type="text" id="reject-reason" name="reason" required maxlength="500" style="flex:1;min-width:200px;"
+                       placeholder="مثلاً: تصویر روزنامه رسمی خوانا نیست">
+                <button type="submit" style="background:#dc2626;">رد ثبت‌نام</button>
+            </form>
+        </div>
     </div>
+    {% endif %}
 
     <div class="detail-card">
-        <h3>مدارک هویتی — تایید/رد</h3>
+        <h3>اطلاعات ثبت‌نام شرکت</h3>
+        <div class="detail-row"><span class="label">نوع شرکت</span><span class="value">{{ company.get_company_type_display|default:"-" }}</span></div>
+        <div class="detail-row"><span class="label">شماره ثبت</span><span class="value">{{ company.registration_number|default:"-" }}</span></div>
+        <div class="detail-row"><span class="label">مدیرعامل</span><span class="value">{{ company.ceo_first_name }} {{ company.ceo_last_name }}{% if company.ceo_national_code %} — کد ملی {{ company.ceo_national_code }}{% endif %}</span></div>
+        <div class="detail-row"><span class="label">کاربر ادمین</span><span class="value">
+            <a href="{% url 'staff_dashboard:user_detail' company.admin_user.id %}">{{ company.admin_user.first_name }} {{ company.admin_user.last_name }} — {{ company.admin_user.mobile }}</a>
+        </span></div>
+        <div class="detail-row"><span class="label">تلفن</span><span class="value">{{ company.phone }}</span></div>
+        <div class="detail-row"><span class="label">ایمیل</span><span class="value">{{ company.email|default:"-" }}</span></div>
+        <div class="detail-row"><span class="label">کد پستی</span><span class="value">{{ company.postal_code|default:"-" }}</span></div>
+        <div class="detail-row"><span class="label">آدرس</span><span class="value">{{ company.address }}</span></div>
+        <div class="detail-row"><span class="label">تاریخ ثبت</span><span class="value">{{ company.created_at|date:"Y/m/d H:i" }}</span></div>
+    </div>
+
+    {% if land_profile %}
+    <div class="detail-card">
+        <h3>حوزه‌ی فعالیت حمل زمینی</h3>
+        <div class="detail-row"><span class="label">ناوگان</span><span class="value">{% for v in land_profile.vehicle_types.all %}{{ v.name }}{% if not forloop.last %}، {% endif %}{% empty %}<span style="color:#991b1b;">تعیین نشده</span>{% endfor %}</span></div>
+        {% if company.service_land_intracity %}
+        <div class="detail-row"><span class="label">شهرهای درون‌شهری</span><span class="value">{% for c in land_profile.service_cities.all %}{{ c.name }}{% if not forloop.last %}، {% endif %}{% empty %}<span style="color:#991b1b;">تعیین نشده</span>{% endfor %}</span></div>
+        {% endif %}
+        {% if company.service_land_domestic %}
+        <div class="detail-row"><span class="label">برون‌شهری</span><span class="value">سراسر ایران</span></div>
+        {% endif %}
+        {% if company.service_land_international %}
+        <div class="detail-row"><span class="label">کشورهای بین‌المللی</span><span class="value">{% for c in land_profile.service_countries.all %}{{ c.name }}{% if not forloop.last %}، {% endif %}{% empty %}همه‌ی کشورها{% endfor %}</span></div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if checklist %}
+    <div class="detail-card">
+        <h3>چک‌لیست مدارک لازم بر اساس دسته‌های شرکت</h3>
+        <table class="data-table">
+            <thead><tr><th>مدرک</th><th>برای دسته</th><th>الزام</th><th>آخرین نسخه</th></tr></thead>
+            <tbody>
+                {% for item in checklist %}
+                <tr>
+                    <td>{{ item.document_type.title }}</td>
+                    <td>
+                        <div class="service-badges">
+                        {% for service in item.services %}<span class="badge-pill badge-gray">{% if service == 'all' %}همه‌ی دسته‌ها{% else %}{% for value, label in service_choices %}{% if value == service %}{{ label }}{% endif %}{% endfor %}{% endif %}</span>{% endfor %}
+                        </div>
+                    </td>
+                    <td>{% if item.is_required %}<span class="badge-pill badge-red">اجباری</span>{% else %}<span class="badge-pill badge-gray">اختیاری</span>{% endif %}</td>
+                    <td>
+                        {% if not item.document %}<span class="badge-pill badge-gray">ارسال نشده</span>
+                        {% elif item.status == 'approved' %}<span class="badge-pill badge-green">تایید شده</span>
+                        {% elif item.status == 'rejected' %}<span class="badge-pill badge-red">رد شده</span>
+                        {% else %}<span class="badge-pill badge-amber">در انتظار بررسی</span>{% endif %}
+                        {% if item.document and item.document.file %} · <a href="{% url 'documents:serve_identity_document' item.document.id %}" target="_blank" rel="noopener" data-no-ajax>مشاهده</a>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="detail-card">
+        <h3>همه‌ی نسخه‌های مدارک ارسالی — تایید/رد</h3>
         <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:12px;">
-            وقتی همه‌ی مدارک زیر «تایید شده» باشند، شرکت خودکار تایید می‌شود.
+            وقتی آخرین نسخه‌ی همه‌ی مدارک اجباریِ دسته‌های شرکت «تایید شده» باشد، شرکت خودکار تایید و فعال می‌شود.
         </p>
         <table class="data-table">
             <thead><tr><th>نوع مدرک</th><th>فایل</th><th>وضعیت فعلی</th><th>یادداشت ادمین</th><th>تغییر وضعیت</th></tr></thead>
             <tbody>
                 {% for doc in identity_documents %}
                 <tr>
-                    <td>{{ doc.get_doc_type_display }}</td>
-                    <td>{% if doc.file %}<a href="{% url 'documents:serve_identity_document' doc.id %}" target="_blank">مشاهده فایل</a>{% else %}-{% endif %}</td>
+                    <td>{{ doc.title }}<br><small style="color:#94a3b8;">{{ doc.created_at|date:"Y/m/d H:i" }}</small></td>
+                    <td>{% if doc.file %}<a href="{% url 'documents:serve_identity_document' doc.id %}" target="_blank" rel="noopener" data-no-ajax>مشاهده فایل</a>{% else %}-{% endif %}</td>
                     <td>
                         {% if doc.status == 'approved' %}<span class="badge-pill badge-green">{{ doc.get_status_display }}</span>
                         {% elif doc.status == 'rejected' %}<span class="badge-pill badge-red">{{ doc.get_status_display }}</span>

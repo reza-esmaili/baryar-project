@@ -22,11 +22,29 @@ from orders.models import (
     OrderStatus,
 )
 
-from .decorators import forwarder_required, get_company_for_user, staff_perm, staff_permission_required
+from core.services.notifications.events import (
+    ORDER_DOCUMENT_REVIEWED,
+    ORDER_MESSAGE_TO_CUSTOMER,
+    ORDER_STATUS_CHANGED,
+)
+from core.services.notifications.tasks import notify_task
+from core.services.notifications.utils import display_name
+
+from .decorators import forwarder_required, get_company_for_user, staff_perm, staff_permission_required, rate_carrier_required
+
+
+def _notify_customer(event_code, order, **extra):
+    """پیامک رویداد سفارش به مشتری، پس از commit تراکنش جاری."""
+    customer = order.customer
+    if not customer.mobile:
+        return
+    context = {"customer_name": display_name(customer), "order_id": order.id, **extra}
+    transaction.on_commit(lambda: notify_task.delay(event_code, customer.mobile, context))
 
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_manage_orders')
 def order_list_view(request):
     """
@@ -68,6 +86,11 @@ def order_list_view(request):
                                 old_value=old_status,
                                 new_value=new_status,
                                 note="تغییر وضعیت گروهی از لیست سفارشات"
+                            )
+                            _notify_customer(
+                                ORDER_STATUS_CHANGED, order,
+                                status=dict(OrderStatus.choices).get(new_status, new_status),
+                                forwarder_name=forwarder_company.company_name,
                             )
                             updated_count += 1
 
@@ -155,6 +178,7 @@ def order_list_view(request):
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_view_orders')
 def order_detail_view(request, order_id):
     """
@@ -231,6 +255,11 @@ def order_detail_view(request, order_id):
                         url=f"/auth/profile/orders/{order.id}/",
                         order=order,
                     )
+                    _notify_customer(
+                        ORDER_STATUS_CHANGED, order,
+                        status=dict(OrderStatus.choices).get(new_status, new_status),
+                        forwarder_name=forwarder_company.company_name,
+                    )
 
                 messages.success(request, "وضعیت سفارش با موفقیت بروزرسانی شد.")
             else:
@@ -285,6 +314,7 @@ def order_detail_view(request, order_id):
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_request_documents')
 @require_POST
 def request_additional_document(request, order_id):
@@ -364,6 +394,7 @@ def _send_doc_request_sms(request, order, doc_request):
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_manage_documents')
 @require_POST
 def update_document_status(request, doc_id):
@@ -397,6 +428,8 @@ def update_document_status(request, doc_id):
             url=f"/auth/profile/orders/{doc.order_id}/",
             order=doc.order,
         )
+        _notify_customer(ORDER_DOCUMENT_REVIEWED, doc.order,
+                         doc_title=doc.document_type.title, result="تایید شد", reason="-")
         if is_ajax:
             return JsonResponse({"success": True, "new_status": "approved", "status_label": "تایید شده"})
         messages.success(request, "مدرک با موفقیت تأیید شد.")
@@ -416,6 +449,8 @@ def update_document_status(request, doc_id):
             url=f"/auth/profile/orders/{doc.order_id}/",
             order=doc.order,
         )
+        _notify_customer(ORDER_DOCUMENT_REVIEWED, doc.order,
+                         doc_title=doc.document_type.title, result="رد شد", reason=reason)
         if is_ajax:
             return JsonResponse({"success": True, "new_status": "rejected", "status_label": "رد شده"})
         messages.success(request, "مدرک با موفقیت رد شد.")
@@ -430,6 +465,7 @@ def update_document_status(request, doc_id):
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_send_order_message')
 @require_POST
 def send_order_message(request, order_id):
@@ -463,6 +499,7 @@ def send_order_message(request, order_id):
         url=f"/auth/profile/orders/{order.id}/",
         order=order,
     )
+    _notify_customer(ORDER_MESSAGE_TO_CUSTOMER, order, forwarder_name=forwarder_company.company_name)
 
     return JsonResponse({
         "success": True,

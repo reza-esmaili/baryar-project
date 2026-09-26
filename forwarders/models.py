@@ -4,6 +4,26 @@ from locations.models import Province, City
 from core.models import TimeStampedModel
 
 
+class ServiceCategory(models.TextChoices):
+    """دسته‌های خدمات شرکت حمل؛ ALL برای مدارک مشترک همه‌ی شرکت‌ها."""
+    ALL = "all", "همه‌ی شرکت‌ها"
+    AIR = "air", "حمل هوایی"
+    SEA = "sea", "حمل دریایی"
+    LAND_INTRACITY = "land_intracity", "حمل زمینی درون‌شهری"
+    LAND_DOMESTIC = "land_domestic", "حمل زمینی برون‌شهری (داخلی)"
+    LAND_INTERNATIONAL = "land_international", "حمل زمینی بین‌المللی"
+
+
+# فیلد دسته روی ForwarderCompany برای هر ServiceCategory (به‌جز ALL)
+SERVICE_FIELD = {
+    ServiceCategory.AIR: "service_air",
+    ServiceCategory.SEA: "service_sea",
+    ServiceCategory.LAND_INTRACITY: "service_land_intracity",
+    ServiceCategory.LAND_DOMESTIC: "service_land_domestic",
+    ServiceCategory.LAND_INTERNATIONAL: "service_land_international",
+}
+
+
 class ForwarderCompany(TimeStampedModel):
     """شرکت فورواردر مادر"""
     admin_user = models.OneToOneField(
@@ -41,6 +61,22 @@ class ForwarderCompany(TimeStampedModel):
     @property
     def offers_land(self):
         return self.service_land_intracity or self.service_land_domestic or self.service_land_international
+
+    @property
+    def offers_rates(self):
+        """هوایی/دریایی؛ یعنی نرخ‌گذاری و سفارش‌های نرخ‌محور."""
+        return self.service_air or self.service_sea
+
+    @property
+    def is_operational(self):
+        return self.is_verified and self.is_active
+
+    def active_service_categories(self):
+        return [category for category, field in SERVICE_FIELD.items() if getattr(self, field)]
+
+    def document_requirements(self):
+        """مدارک ثبت‌نامِ لازم برای دسته‌های فعلی شرکت (مشترک + هر دسته)."""
+        return CompanyDocumentRequirement.for_categories(self.active_service_categories())
 
     def allowed_rate_transport_modes(self):
         from rates.models import TransportMode
@@ -168,3 +204,47 @@ class ForwarderRole(TimeStampedModel):
         verbose_name = "نقش فورواردر"
         verbose_name_plural = "نقش‌های فورواردر"
         unique_together = [("company", "name")]
+
+
+class CompanyDocumentRequirement(TimeStampedModel):
+    """
+    مدرکی که شرکت حمل هنگام ثبت‌نام باید بارگذاری کند. مدیر پلتفرم تعیین
+    می‌کند هر مدرک برای کدام دسته‌ی خدمات لازم است (یا برای همه).
+    """
+
+    document_type = models.ForeignKey(
+        "documents.DocumentType",
+        on_delete=models.PROTECT,
+        related_name="company_requirements",
+        verbose_name="نوع مدرک",
+    )
+    service = models.CharField(
+        max_length=30, choices=ServiceCategory.choices, default=ServiceCategory.ALL,
+        verbose_name="برای دسته‌ی خدمات",
+    )
+    is_required = models.BooleanField(default=True, verbose_name="اجباری")
+    guidance = models.CharField(
+        max_length=255, blank=True, verbose_name="راهنما برای شرکت",
+        help_text="توضیح کوتاهی که کنار فیلد بارگذاری به شرکت نمایش داده می‌شود.",
+    )
+    sort_order = models.PositiveSmallIntegerField(default=0, verbose_name="ترتیب نمایش")
+    is_active = models.BooleanField(default=True, verbose_name="فعال")
+
+    class Meta:
+        verbose_name = "مدرک ثبت‌نام شرکت حمل"
+        verbose_name_plural = "مدارک ثبت‌نام شرکت‌های حمل"
+        ordering = ["sort_order", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["document_type", "service"], name="uniq_company_doc_req_type_service"),
+        ]
+
+    def __str__(self):
+        return f"{self.document_type.title} — {self.get_service_display()}"
+
+    @classmethod
+    def for_categories(cls, categories):
+        return cls.objects.filter(
+            is_active=True,
+            document_type__is_active=True,
+            service__in=[ServiceCategory.ALL, *categories],
+        ).select_related("document_type")

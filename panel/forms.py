@@ -411,6 +411,19 @@ class StaffForm(forms.Form):
         staff.role = self.cleaned_data.get('role')
         staff.is_active = is_active
         staff.save()
+
+        if instance is None:
+            from core.services.notifications.events import FORWARDER_STAFF_CREATED
+            from core.services.notifications.tasks import notify_task
+            from core.services.notifications.utils import display_name
+
+            context = {
+                "staff_name": display_name(staff.user),
+                "company_name": forwarder_company.company_name,
+                "mobile": staff.user.mobile,
+            }
+            mobile = staff.user.mobile
+            transaction.on_commit(lambda: notify_task.delay(FORWARDER_STAFF_CREATED, mobile, context))
         return staff
 
 
@@ -499,26 +512,6 @@ class ForwarderDocumentsForm(forms.Form):
         widget=forms.TextInput(attrs={"class": "form-control"}),
     )
 
-    articles_of_association = forms.FileField(
-        label="اساسنامه",
-        widget=forms.ClearableFileInput(attrs={"class": "form-control"}),
-    )
-
-    establishment_notice = forms.FileField(
-        label="آگهی تاسیس",
-        widget=forms.ClearableFileInput(attrs={"class": "form-control"}),
-    )
-
-    latest_changes = forms.FileField(
-        label="آخرین تغییرات",
-        widget=forms.ClearableFileInput(attrs={"class": "form-control"}),
-    )
-
-    ceo_national_card = forms.FileField(
-        label="کارت ملی مدیرعامل",
-        widget=forms.ClearableFileInput(attrs={"class": "form-control"}),
-    )
-
     SERVICE_FIELDS = [
         ("service_air", "حمل هوایی"),
         ("service_sea", "حمل دریایی"),
@@ -534,13 +527,67 @@ class ForwarderDocumentsForm(forms.Form):
         help_text="دسته‌های انتخابی پس از بررسی کارشناس برای شرکت فعال می‌شود.",
     )
 
+    # حوزه‌ی فعالیت حمل زمینی — فقط وقتی دسته‌ی زمینی انتخاب شود نمایش/اعتبارسنجی می‌شود
+    land_service_cities = forms.ModelMultipleChoiceField(
+        queryset=City.objects.none(), required=False, label="شهرهای تحت پوشش (حمل درون‌شهری)",
+        widget=forms.SelectMultiple(attrs={"class": "form-select", "size": 8}),
+    )
+    land_service_countries = forms.ModelMultipleChoiceField(
+        queryset=Country.objects.none(), required=False, label="کشورهای تحت پوشش (حمل بین‌المللی)",
+        help_text="اگر کشوری انتخاب نشود، درخواست‌های همه‌ی کشورها برای شما ارسال می‌شود.",
+        widget=forms.SelectMultiple(attrs={"class": "form-select", "size": 6}),
+    )
+    land_vehicle_types = forms.ModelMultipleChoiceField(
+        queryset=None, required=False, label="ناوگان در اختیار",
+        widget=forms.CheckboxSelectMultiple(),
+    )
+
     def __init__(self, *args, user=None, company=None, **kwargs):
+        from land_freight.models import LandCarrierProfile, VehicleType
+        from forwarders.services import all_requirement_groups, latest_documents_by_type
+
         super().__init__(*args, **kwargs)
 
         self.user = user
         self.company = company
 
+        self.fields["land_service_cities"].queryset = (
+            City.objects.filter(is_active=True, province__country__code="IRN")
+            .select_related("province").order_by("province__name", "name")
+        )
+        self.fields["land_service_cities"].label_from_instance = lambda c: f"{c.name} ({c.province.name})"
+        self.fields["land_service_countries"].queryset = (
+            Country.objects.filter(is_active=True).exclude(code="IRN").order_by("name")
+        )
+        self.fields["land_vehicle_types"].queryset = VehicleType.objects.filter(is_active=True)
+
+        # فیلد بارگذاری برای هر مدرکی که مدیر تعریف کرده؛ نمایش فیلدِ هر مدرک
+        # بسته به دسته‌های انتخابی با JS و الزامی‌بودنش در clean() بررسی می‌شود.
+        existing = latest_documents_by_type(company) if company else {}
+        self.document_groups = []
+        for group in all_requirement_groups():
+            doc_type = group["document_type"]
+            field_name = f"doc_{doc_type.id}"
+            self.fields[field_name] = forms.FileField(
+                label=doc_type.title, required=False,
+                widget=forms.ClearableFileInput(attrs={
+                    "class": "form-control",
+                    "accept": ",".join(f".{ext}" for ext in doc_type.get_allowed_extensions_list()),
+                }),
+            )
+            self.document_groups.append({
+                **group,
+                "field_name": field_name,
+                "existing": existing.get(doc_type.id),
+                "services_attr": " ".join(group["services"]),
+            })
+
         if company:
+            profile = LandCarrierProfile.objects.filter(company=company).first()
+            if profile:
+                self.fields["land_service_cities"].initial = list(profile.service_cities.values_list("pk", flat=True))
+                self.fields["land_service_countries"].initial = list(profile.service_countries.values_list("pk", flat=True))
+                self.fields["land_vehicle_types"].initial = list(profile.vehicle_types.values_list("pk", flat=True))
             self.fields["services"].initial = [
                 field for field, _ in self.SERVICE_FIELDS if getattr(company, field)
             ]
@@ -559,10 +606,58 @@ class ForwarderDocumentsForm(forms.Form):
 
             self.fields["ceo_national_code"].initial = company.ceo_national_code
 
-            self.fields["articles_of_association"].required = False
-            self.fields["establishment_notice"].required = False
-            self.fields["latest_changes"].required = False
-            self.fields["ceo_national_card"].required = False
+    def selected_categories(self):
+        from forwarders.models import SERVICE_FIELD
+
+        field_to_category = {field: category for category, field in SERVICE_FIELD.items()}
+        return [field_to_category[f] for f in self.cleaned_data.get("services", []) if f in field_to_category]
+
+    def uploaded_documents(self):
+        """(document_type, file) برای هر مدرکی که در این ارسال بارگذاری شده است."""
+        uploads = []
+        for group in self.document_groups:
+            uploaded = self.cleaned_data.get(group["field_name"])
+            if uploaded:
+                uploads.append((group["document_type"], uploaded))
+        return uploads
+
+    def _validate_document_files(self, cleaned_data):
+        from accounts.models import IdentityDocument
+
+        categories = set(self.selected_categories())
+        for group in self.document_groups:
+            doc_type = group["document_type"]
+            uploaded = cleaned_data.get(group["field_name"])
+            applies = "all" in group["services"] or categories.intersection(group["services"])
+
+            if uploaded:
+                ext = uploaded.name.rsplit(".", 1)[-1].lower() if "." in uploaded.name else ""
+                allowed = doc_type.get_allowed_extensions_list()
+                if allowed and ext not in allowed:
+                    self.add_error(group["field_name"], f"فرمت فایل مجاز نیست. فرمت‌های مجاز: {', '.join(allowed)}")
+                elif uploaded.size > doc_type.max_file_size_mb * 1024 * 1024:
+                    self.add_error(group["field_name"], f"حجم فایل نباید بیشتر از {doc_type.max_file_size_mb} مگابایت باشد.")
+                continue
+
+            if not (applies and group["is_required"]):
+                continue
+            existing = group["existing"]
+            if existing and existing.status in (IdentityDocument.Status.PENDING, IdentityDocument.Status.APPROVED):
+                continue
+            message = "این مدرک برای دسته‌های انتخابی الزامی است."
+            if existing and existing.status == IdentityDocument.Status.REJECTED:
+                message = "نسخه‌ی قبلی این مدرک رد شده است؛ لطفاً نسخه‌ی اصلاح‌شده را بارگذاری کنید."
+            self.add_error(group["field_name"], message)
+
+    def _validate_land_area(self, cleaned_data):
+        services = set(cleaned_data.get("services", []))
+        land_selected = services.intersection({
+            "service_land_intracity", "service_land_domestic", "service_land_international",
+        })
+        if "service_land_intracity" in services and not cleaned_data.get("land_service_cities"):
+            self.add_error("land_service_cities", "برای حمل درون‌شهری، حداقل یک شهر تحت پوشش انتخاب کنید.")
+        if land_selected and not cleaned_data.get("land_vehicle_types"):
+            self.add_error("land_vehicle_types", "برای حمل زمینی، حداقل یک نوع ناوگان در اختیار انتخاب کنید.")
 
     def clean_national_id(self):
         national_id = self.cleaned_data.get("national_id")
@@ -615,6 +710,9 @@ class ForwarderDocumentsForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
         role = cleaned_data.get("applicant_role")
+
+        self._validate_document_files(cleaned_data)
+        self._validate_land_area(cleaned_data)
 
         if role == self.ApplicantRole.REPRESENTATIVE:
             required_fields = [

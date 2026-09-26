@@ -15,6 +15,7 @@ from .models import (
     SupportDepartment,
 )
 from .forms import TicketCreateForm, TicketReplyForm, TicketTransferForm
+from .services import notify_ticket_answered
 
 
 def is_forwarder_user(user):
@@ -355,6 +356,8 @@ def ticket_detail(request, pk):
                 activity_text = "کارشناس پاسخ جدید ثبت کرد"
 
             ticket.save(update_fields=["unread_for_agent", "unread_for_user", "status", "updated_at"])
+            if ticket.user != request.user:
+                notify_ticket_answered(ticket)
 
             TicketActivity.objects.create(
                 ticket=ticket,

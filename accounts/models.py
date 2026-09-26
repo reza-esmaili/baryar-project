@@ -275,16 +275,18 @@ class CustomerBusinessInfo(TimeStampedModel):
 
 def identity_document_upload_to(instance, filename):
     ext = os.path.splitext(filename)[1]
+    # مدارک پیکربندی‌شده (DocumentType) نوع ثابت doc_type ندارند
+    name = instance.document_type.code if instance.document_type_id else instance.doc_type
 
     if instance.company:
         company_name = instance.company.company_name.strip()
         safe_company_name = re.sub(r'[\\/:*?"<>|]+', "_", company_name)
         safe_company_name = re.sub(r"\s+", "_", safe_company_name)
-        return f"identity_docs/{safe_company_name}/{instance.doc_type}{ext}"
+        return f"identity_docs/{safe_company_name}/{name}{ext}"
 
     mobile = instance.user.mobile if instance.user_id else "unknown"
     safe_mobile = re.sub(r'[\\/:*?"<>|]+', "_", mobile)
-    return f"identity_docs/{safe_mobile}/{instance.doc_type}{ext}"
+    return f"identity_docs/{safe_mobile}/{name}{ext}"
 
 
 class IdentityDocument(TimeStampedModel):
@@ -311,7 +313,17 @@ class IdentityDocument(TimeStampedModel):
         REJECTED = "rejected", "رد شده"
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="documents")
-    doc_type = models.CharField(max_length=30, choices=DocType.choices)
+    # doc_type برای مدارک هویتی ثابت مشتریان؛ مدارک ثبت‌نام شرکت‌ها از
+    # document_type (قابل تعریف در داشبورد مدیریت) استفاده می‌کنند.
+    doc_type = models.CharField(max_length=30, choices=DocType.choices, blank=True)
+    document_type = models.ForeignKey(
+        "documents.DocumentType",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="identity_documents",
+        verbose_name="نوع مدرک",
+    )
     file = models.FileField(upload_to=identity_document_upload_to, storage=protected_storage)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     admin_note = models.TextField(blank=True)
@@ -319,3 +331,9 @@ class IdentityDocument(TimeStampedModel):
     class Meta:
         verbose_name = "مدرک هویتی"
         verbose_name_plural = "مدارک هویتی"
+
+    @property
+    def title(self):
+        if self.document_type_id:
+            return self.document_type.title
+        return self.get_doc_type_display()

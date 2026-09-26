@@ -4,10 +4,29 @@
 
 {% block content %}
 <div class="p-6">
-    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">لاگ پیامک‌های ارسالی</h1>
-        <a href="{% url 'staff_dashboard:sms_provider_settings' %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right"></i> بازگشت به تنظیمات سامانه پیامکی</a>
+    <div class="mb-4">
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">پیامک</h1>
     </div>
+
+    {% with sms_tab='logs' %}{% include 'admin_dashboard/partials/sms_tabs.html' %}{% endwith %}
+
+    <form method="get" class="data-toolbar">
+        <input type="text" name="q" value="{{ q }}" placeholder="شماره موبایل..." aria-label="شماره موبایل">
+        <select name="event" aria-label="رویداد">
+            <option value="">همه‌ی رویدادها</option>
+            {% for code, label in event_choices %}
+                <option value="{{ code }}" {% if event == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+            <option value="provider_test" {% if event == 'provider_test' %}selected{% endif %}>ارسال آزمایشی سامانه</option>
+        </select>
+        <select name="status" aria-label="وضعیت">
+            <option value="">همه‌ی وضعیت‌ها</option>
+            <option value="sent" {% if status == 'sent' %}selected{% endif %}>ارسال شد</option>
+            <option value="failed" {% if status == 'failed' %}selected{% endif %}>ناموفق</option>
+            <option value="pending" {% if status == 'pending' %}selected{% endif %}>در صف</option>
+        </select>
+        <button type="submit"><i class="fas fa-filter"></i> فیلتر</button>
+    </form>
 
     <div class="data-table-wrap">
         <table class="data-table">
@@ -23,8 +42,8 @@
             <tbody>
                 {% for log in page_obj %}
                 <tr>
-                    <td>{{ log.mobile }}</td>
-                    <td>{{ log.template_key }}</td>
+                    <td style="direction:ltr;text-align:right;">{{ log.mobile }}</td>
+                    <td>{% for code, label in event_choices %}{% if code == log.template_key %}{{ label }}{% endif %}{% endfor %}<br><small style="color:#94a3b8;">{{ log.template_key }}</small></td>
                     <td>
                         {% if log.status == 'sent' %}
                             <span class="badge-pill badge-green">ارسال شد</span>

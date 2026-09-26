@@ -6,6 +6,20 @@ from core.models import SmsEvent, SmsLog, SmsProviderConfig
 
 logger = logging.getLogger(__name__)
 
+# پیاده‌سازی هر نوع سامانه‌ی پیامکی؛ افزودن سامانه‌ی جدید = یک کلاس با متدهای
+# send_text / send_verify / get_credit + یک گزینه در SmsProviderConfig.ProviderType.
+PROVIDER_CLASSES = {
+    SmsProviderConfig.ProviderType.SMSIR: SMSIRProvider,
+}
+
+
+def build_provider(config):
+    """سرویس‌گیرنده‌ی سامانه‌ی پیامکی را از روی تنظیمات ذخیره‌شده در داشبورد می‌سازد."""
+    provider_class = PROVIDER_CLASSES.get(config.provider_type)
+    if provider_class is None:
+        raise SMSIRException(f"سامانه‌ی پیامکی «{config.get_provider_type_display()}» پیاده‌سازی نشده است.")
+    return provider_class(api_key=config.api_key, line_number=config.default_line_number)
+
 
 class SmsNotificationService:
     """
@@ -88,7 +102,7 @@ class SmsNotificationService:
         if not config:
             raise SMSIRException("هیچ سامانه پیامکی فعالی تنظیم نشده است.")
 
-        return SMSIRProvider(api_key=config.api_key, line_number=config.default_line_number)
+        return build_provider(config)
 
     def send_otp(self, mobile, code):
         """

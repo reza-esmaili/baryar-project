@@ -9,16 +9,87 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 
+from land_freight.models import (
+    ACTIVE_ASSIGNED_STATUSES,
+    OPEN_DISPATCH_STATUSES,
+    DispatchStatus,
+    LandDocumentStatus,
+    LandFreightRequest,
+    LandRequestDocument,
+    LandRequestStatus,
+)
 from orders.models import CargoRequest, OrderStatus
 from rates.models import Rate, TransportMode
 
-from .decorators import forwarder_required, get_company_for_user, staff_permission_required
+from .decorators import (
+    forwarder_required,
+    get_company_for_user,
+    rate_carrier_required,
+    staff_perm,
+    staff_permission_required,
+)
+
+
+def land_dashboard_stats(company):
+    """
+    آمار صندوق اعلام بار زمینی. بیرون از کش محاسبه می‌شود چون درخواست‌های باز
+    چند ساعته منقضی می‌شوند و شرکت باید تعداد لحظه‌ای را ببیند.
+    """
+    now = timezone.now()
+
+    def open_requests(dispatch_statuses):
+        # شرط شرکت و وضعیت ارسال در یک filter تا هر دو روی همان ردیف ارسال اعمال شوند.
+        return LandFreightRequest.objects.filter(
+            dispatches__company=company,
+            dispatches__status__in=dispatch_statuses,
+            status=LandRequestStatus.OPEN,
+            expires_at__gt=now,
+        )
+
+    open_qs = open_requests(OPEN_DISPATCH_STATUSES)
+    assigned = LandFreightRequest.objects.filter(assigned_company=company)
+    week_ago = now - timedelta(days=7)
+    return {
+        'open_count': open_qs.distinct().count(),
+        'unseen_count': open_requests([DispatchStatus.SENT]).distinct().count(),
+        'assigned_count': assigned.filter(status=LandRequestStatus.ASSIGNED).count(),
+        'in_transit_count': assigned.filter(status=LandRequestStatus.IN_TRANSIT).count(),
+        'delivered_week_count': assigned.filter(
+            status=LandRequestStatus.DELIVERED, updated_at__gte=week_ago,
+        ).count(),
+        'agreed_total': assigned.filter(
+            status__in=[*ACTIVE_ASSIGNED_STATUSES, LandRequestStatus.DELIVERED],
+        ).aggregate(total=Sum('agreed_price'))['total'] or 0,
+        'pending_documents_count': LandRequestDocument.objects.filter(
+            request__assigned_company=company, status=LandDocumentStatus.UPLOADED,
+        ).count(),
+        'expiring_soon': list(
+            open_qs.filter(expires_at__lte=now + timedelta(hours=3))
+            .select_related('origin_city', 'destination_city', 'foreign_country', 'foreign_city')
+            .distinct().order_by('expires_at')[:5]
+        ),
+    }
 
 
 @login_required
 @forwarder_required
 def dashboard_view(request):
     forwarder_company = get_company_for_user(request.user)
+    offers_rates = bool(forwarder_company and forwarder_company.offers_rates)
+    offers_land = bool(forwarder_company and forwarder_company.offers_land)
+
+    land_stats = None
+    if offers_land and staff_perm(request.user, 'can_view_land_requests'):
+        land_stats = land_dashboard_stats(forwarder_company)
+
+    base_context = {
+        'company': forwarder_company,
+        'offers_rates': offers_rates,
+        'offers_land': offers_land,
+        'land_stats': land_stats,
+    }
+    if not offers_rates:
+        return render(request, 'forwarder_panel/dashboard.html', base_context)
 
     context = cache.get(f'panel_dashboard:{forwarder_company.id}') if forwarder_company else None
 
@@ -94,11 +165,12 @@ def dashboard_view(request):
         if forwarder_company:
             cache.set(f'panel_dashboard:{forwarder_company.id}', context, 300)
 
-    return render(request, 'forwarder_panel/dashboard.html', context)
+    return render(request, 'forwarder_panel/dashboard.html', {**context, **base_context})
 
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_view_reports')
 def get_sales_chart_data(request):
     """
@@ -168,6 +240,7 @@ def get_sales_chart_data(request):
 
 @login_required
 @forwarder_required
+@rate_carrier_required
 @staff_permission_required('can_view_reports')
 def report_view(request):
     """

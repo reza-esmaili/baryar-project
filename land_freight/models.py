@@ -1,3 +1,5 @@
+import os
+import uuid
 from datetime import timedelta
 
 from django.conf import settings
@@ -6,6 +8,7 @@ from django.db import models
 from django.utils import timezone
 
 from core.models import TimeStampedModel
+from core.storage import protected_storage
 
 
 def local_today():
@@ -331,8 +334,13 @@ class DispatchStatus(models.TextChoices):
     SENT = "sent", "ارسال شده"
     SEEN = "seen", "مشاهده شده"
     ACCEPTED = "accepted", "پذیرفته"
+    DECLINED = "declined", "رد شده توسط شرکت"
     MISSED = "missed", "توسط شرکت دیگری پذیرفته شد"
     CLOSED = "closed", "بسته شد (لغو یا انقضا)"
+
+
+# ارسال‌هایی که هنوز در صندوق «باز» شرکت‌اند (رد نکرده و پاسخ نداده)
+OPEN_DISPATCH_STATUSES = (DispatchStatus.SENT, DispatchStatus.SEEN)
 
 
 class LandRequestDispatch(models.Model):
@@ -346,6 +354,7 @@ class LandRequestDispatch(models.Model):
     sent_at = models.DateTimeField(default=timezone.now)
     seen_at = models.DateTimeField(null=True, blank=True)
     responded_at = models.DateTimeField(null=True, blank=True)
+    decline_reason = models.CharField(max_length=255, blank=True, verbose_name="دلیل رد")
 
     class Meta:
         verbose_name = "ارسال درخواست به شرکت"
@@ -358,6 +367,59 @@ class LandRequestDispatch(models.Model):
         return f"{self.request.reference} → {self.company.company_name} ({self.status})"
 
 
+class LandDocumentStatus(models.TextChoices):
+    PENDING_UPLOAD = "pending_upload", "در انتظار بارگذاری"
+    UPLOADED = "uploaded", "بارگذاری شده"
+    APPROVED = "approved", "تایید شده"
+    REJECTED = "rejected", "رد شده"
+
+
+def land_document_upload_to(instance, filename):
+    ext = os.path.splitext(filename)[1].lower()
+    code = instance.document_type.code if instance.document_type_id else "document"
+    return f"land_documents/request_{instance.request_id}/{code}/{uuid.uuid4()}{ext}"
+
+
+class LandRequestDocument(TimeStampedModel):
+    """مدرک محموله‌ی یک درخواست حمل زمینی، بر اساس قوانین مدارک (DocumentRule)."""
+
+    request = models.ForeignKey(LandFreightRequest, on_delete=models.CASCADE, related_name="documents")
+    document_type = models.ForeignKey(
+        "documents.DocumentType", on_delete=models.PROTECT, related_name="land_request_documents",
+        verbose_name="نوع مدرک",
+    )
+    source_rule = models.ForeignKey(
+        "documents.DocumentRule", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="land_request_documents",
+    )
+    is_required = models.BooleanField(default=True, verbose_name="اجباری")
+    file = models.FileField(upload_to=land_document_upload_to, storage=protected_storage, blank=True)
+    status = models.CharField(
+        max_length=20, choices=LandDocumentStatus.choices, default=LandDocumentStatus.PENDING_UPLOAD,
+        db_index=True, verbose_name="وضعیت",
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+    uploaded_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.CharField(max_length=255, blank=True, verbose_name="دلیل رد")
+
+    class Meta:
+        verbose_name = "مدرک درخواست حمل زمینی"
+        verbose_name_plural = "مدارک درخواست‌های حمل زمینی"
+        ordering = ["document_type__title"]
+        constraints = [
+            models.UniqueConstraint(fields=["request", "document_type"], name="uniq_land_doc_request_type"),
+        ]
+
+    def __str__(self):
+        return f"{self.request.reference} — {self.document_type.title}"
+
+
 class LandRequestEvent(models.Model):
     class EventType(models.TextChoices):
         CREATED = "created", "ثبت درخواست"
@@ -367,6 +429,8 @@ class LandRequestEvent(models.Model):
         CANCELLED = "cancelled", "لغو"
         EXPIRED = "expired", "انقضا"
         REPUBLISHED = "republished", "انتشار مجدد"
+        DOCUMENT_UPLOADED = "document_uploaded", "بارگذاری مدرک"
+        DOCUMENT_REVIEWED = "document_reviewed", "بررسی مدرک"
 
     request = models.ForeignKey(LandFreightRequest, on_delete=models.CASCADE, related_name="events")
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)

@@ -94,6 +94,19 @@ table.data-table a.row-link:hover { color: #3498db; }
 .badge-blue   { background: #dbeafe; color: #1e3a8a; }
 .badge-gray   { background: #f1f5f9; color: #475569; }
 
+/* تب‌های فیلتر (دسته‌ی خدمات شرکت‌ها و ...) */
+.filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+.filter-tabs a {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px;
+    border: 1px solid #e2e8f0; background: #fff; color: #334155; font-size: 0.8rem; font-weight: 700; text-decoration: none;
+}
+.filter-tabs a:hover { border-color: #3498db; color: #3498db; }
+.filter-tabs a.active { background: #1e293b; border-color: #1e293b; color: #fff; }
+.filter-tabs .tab-count { font-size: 0.7rem; padding: 0 6px; border-radius: 999px; background: #f1f5f9; color: #475569; }
+.filter-tabs a.active .tab-count { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.service-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+.service-badges .badge-pill { font-size: 0.7rem; }
+
 .pagination-bar { display: flex; justify-content: center; gap: 6px; margin-top: 1.25rem; }
 .pagination-bar a, .pagination-bar span {
     display: inline-flex; align-items: center; justify-content: center;

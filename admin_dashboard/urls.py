@@ -21,6 +21,12 @@ urlpatterns = [
     path("users/<int:user_id>/", views.user_detail, name="user_detail"),
 
     path("forwarders/", views.forwarder_list, name="forwarder_list"),
+    path("forwarders/registrations/", views.registration_queue, name="registration_queue"),
+    path(
+        "forwarders/<int:company_id>/registration-decision/",
+        views.registration_decision,
+        name="registration_decision",
+    ),
     path("forwarders/add/", views.forwarder_create, name="forwarder_create"),
     path("forwarders/<int:company_id>/edit/", views.forwarder_edit, name="forwarder_edit"),
     path(
@@ -103,8 +109,14 @@ urlpatterns = [
 
     # ─── Phase 3: تنظیمات سامانه پیامکی و رویدادها ──────────────────────────
     path("settings/sms/", views_sms.sms_provider_settings, name="sms_provider_settings"),
+    path("settings/sms/providers/add/", views_sms.sms_provider_form, name="sms_provider_add"),
+    path("settings/sms/providers/<int:pk>/edit/", views_sms.sms_provider_form, name="sms_provider_edit"),
+    path("settings/sms/providers/<int:pk>/activate/", views_sms.sms_provider_activate, name="sms_provider_activate"),
+    path("settings/sms/providers/<int:pk>/delete/", views_sms.sms_provider_delete, name="sms_provider_delete"),
+    path("settings/sms/providers/<int:pk>/test/", views_sms.sms_provider_test, name="sms_provider_test"),
     path("settings/sms/events/", views_sms.sms_event_list, name="sms_event_list"),
     path("settings/sms/events/<str:code>/edit/", views_sms.sms_event_form, name="sms_event_edit"),
+    path("settings/sms/events/<str:code>/toggle/", views_sms.sms_event_toggle, name="sms_event_toggle"),
     path("settings/sms/logs/", views_sms.sms_log_list, name="sms_log_list"),
 
     # ─── ajax cascading dropdowns ────────────────────────────────────────────

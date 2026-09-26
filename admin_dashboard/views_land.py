@@ -66,5 +66,6 @@ def land_request_detail(request, pk):
     return render(request, "admin_dashboard/land_request_detail.html", {
         "req": land_request,
         "dispatches": land_request.dispatches.select_related("company").order_by("sent_at"),
+        "documents": land_request.documents.select_related("document_type", "source_rule"),
         "events": land_request.events.select_related("actor").all(),
     })

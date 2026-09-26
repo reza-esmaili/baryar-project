@@ -1,20 +1,40 @@
 {% extends 'admin_dashboard/base.html' %}
 
-{% block title %}شرکت‌های فورواردر{% endblock %}
+{% block title %}شرکت‌های حمل{% endblock %}
 
 {% block content %}
 <div class="p-6">
     <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">شرکت‌های فورواردر</h1>
-        <a href="{% url 'staff_dashboard:forwarder_create' %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> شرکت جدید</a>
+        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">شرکت‌های حمل</h1>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="{% url 'staff_dashboard:registration_queue' %}" class="btn-soft btn-soft-gray"><i class="fas fa-user-check"></i> درخواست‌های ثبت‌نام</a>
+            <a href="{% url 'staff_dashboard:forwarder_create' %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> شرکت جدید</a>
+        </div>
     </div>
 
+    <nav class="filter-tabs" aria-label="دسته‌ی خدمات">
+        <a href="?q={{ q|urlencode }}&verified={{ verified }}&active={{ active }}" class="{% if not service %}active{% endif %}">
+            همه <span class="tab-count">{{ total_count }}</span>
+        </a>
+        {% for item in service_counts %}
+        <a href="?service={{ item.value }}&q={{ q|urlencode }}&verified={{ verified }}&active={{ active }}" class="{% if service == item.value %}active{% endif %}">
+            {{ item.label }} <span class="tab-count">{{ item.count }}</span>
+        </a>
+        {% endfor %}
+    </nav>
+
     <form method="get" class="data-toolbar">
-        <input type="text" name="q" value="{{ q }}" placeholder="نام شرکت، شناسه ملی...">
-        <select name="verified">
-            <option value="">همه</option>
+        <input type="hidden" name="service" value="{{ service }}">
+        <input type="text" name="q" value="{{ q }}" placeholder="نام شرکت، شناسه ملی..." aria-label="جستجو">
+        <select name="verified" aria-label="وضعیت تایید">
+            <option value="">وضعیت تایید: همه</option>
             <option value="1" {% if verified == "1" %}selected{% endif %}>تایید شده</option>
             <option value="0" {% if verified == "0" %}selected{% endif %}>تایید نشده</option>
+        </select>
+        <select name="active" aria-label="وضعیت فعالیت">
+            <option value="">وضعیت فعالیت: همه</option>
+            <option value="1" {% if active == "1" %}selected{% endif %}>فعال</option>
+            <option value="0" {% if active == "0" %}selected{% endif %}>غیرفعال</option>
         </select>
         <button type="submit"><i class="fas fa-search"></i> جستجو</button>
     </form>
@@ -24,8 +44,9 @@
             <thead>
                 <tr>
                     <th>نام شرکت</th>
+                    <th>دسته‌های خدمات</th>
                     <th>شناسه ملی</th>
-                    <th>مدیرعامل</th>
+                    <th>ادمین شرکت</th>
                     <th>وضعیت تایید</th>
                     <th>وضعیت فعالیت</th>
                     <th>تاریخ ثبت</th>
@@ -36,8 +57,17 @@
                 {% for company in page_obj %}
                 <tr>
                     <td><a class="row-link" href="{% url 'staff_dashboard:forwarder_detail' company.id %}">{{ company.company_name }}</a></td>
+                    <td>
+                        <div class="service-badges">
+                            {% for label in company.service_labels %}
+                                <span class="badge-pill badge-blue">{{ label }}</span>
+                            {% empty %}
+                                <span class="badge-pill badge-gray">تعیین نشده</span>
+                            {% endfor %}
+                        </div>
+                    </td>
                     <td>{{ company.national_id }}</td>
-                    <td>{{ company.admin_user.first_name }} {{ company.admin_user.last_name }}</td>
+                    <td>{{ company.admin_user.first_name }} {{ company.admin_user.last_name }}<br><small style="color:#94a3b8;">{{ company.admin_user.mobile }}</small></td>
                     <td>
                         {% if company.is_verified %}
                             <span class="badge-pill badge-green">تایید شده</span>
@@ -55,11 +85,11 @@
                     <td>{{ company.created_at|date:"Y/m/d" }}</td>
                     <td style="white-space:nowrap;display:flex;gap:6px;">
                         <a href="{% url 'staff_dashboard:forwarder_detail' company.id %}" class="btn-soft btn-soft-gray" title="مشاهده جزئیات"><i class="fas fa-eye"></i></a>
-                        <a href="{% url 'staff_dashboard:forwarder_edit' company.id %}" class="btn-soft btn-soft-blue" title="ویرایش"><i class="fas fa-edit"></i></a>
+                        <a href="{% url 'staff_dashboard:forwarder_edit' company.id %}" class="btn-soft btn-soft-blue" title="ویرایش دسترسی‌ها و اطلاعات"><i class="fas fa-edit"></i></a>
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px;">شرکتی یافت نشد.</td></tr>
+                <tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">شرکتی یافت نشد.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

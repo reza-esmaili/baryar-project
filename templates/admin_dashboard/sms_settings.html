@@ -1,50 +1,95 @@
 {% extends 'admin_dashboard/base.html' %}
 
-{% block title %}تنظیمات سامانه پیامکی{% endblock %}
+{% block title %}سامانه‌های پیامکی{% endblock %}
 
 {% block extra_css %}
 <style>
-    .fc-field { margin-bottom: 14px; }
-    .fc-field label { display:block;font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:5px; }
-    .fc-field select, .fc-field input:not([type=checkbox]), .fc-field textarea {
-        width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.85rem;font-family:inherit;
-    }
-    .fc-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:0 16px; }
-    @media (max-width:900px){ .fc-grid { grid-template-columns:1fr; } }
-    .fc-error { color:#dc2626;font-size:0.8rem;margin-top:4px; }
+    .provider-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+    .provider-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+    .provider-card.is-active { border: 2px solid #16a34a; }
+    .provider-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .provider-head h3 { font-size: 1rem; font-weight: 800; color: #1e293b; margin: 0; }
+    .provider-meta { font-size: 0.8rem; color: #64748b; display: grid; gap: 4px; }
+    .provider-meta code { direction: ltr; unicode-bidi: embed; background: #f8fafc; padding: 1px 6px; border-radius: 4px; }
+    .provider-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .provider-actions form { margin: 0; }
+    .provider-test { border-top: 1px dashed #e2e8f0; padding-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .provider-test input { border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; font-size: 0.8rem; font-family: inherit; }
+    .provider-test input[name=mobile] { width: 140px; direction: ltr; }
+    .provider-test input[name=message] { flex: 1; min-width: 160px; }
+    .sms-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .sms-summary .item { background: #fff; border-radius: 12px; padding: 12px 16px; font-size: 0.85rem; color: #475569; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+    .sms-summary .item b { color: #1e293b; font-size: 1rem; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="p-6">
     <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">تنظیمات سامانه پیامکی</h1>
-        <div style="display:flex;gap:8px;">
-            <a href="{% url 'staff_dashboard:sms_event_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-bell"></i> رویدادهای پیامکی</a>
-            <a href="{% url 'staff_dashboard:sms_log_list' %}" class="btn-soft btn-soft-gray"><i class="fas fa-list"></i> لاگ پیامک‌ها</a>
+        <div>
+            <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">پیامک</h1>
+            <p style="color:#64748b;font-size:0.85rem;">همه‌ی پیامک‌های سامانه از «سامانه‌ی فعال» و با تنظیمات همین صفحه ارسال می‌شوند؛ هیچ کلید یا شماره‌ای در کد ثابت نیست.</p>
         </div>
+        <a href="{% url 'staff_dashboard:sms_provider_add' %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> افزودن سامانه</a>
     </div>
 
-    {% if form.non_field_errors %}
-    <div class="alert-box alert-error">{{ form.non_field_errors }}</div>
-    {% endif %}
+    {% with sms_tab='providers' %}{% include 'admin_dashboard/partials/sms_tabs.html' %}{% endwith %}
 
-    <form method="post">
-        {% csrf_token %}
-        <div class="detail-card">
-            <h3>اتصال به سامانه پیامکی</h3>
-            <p style="color:#94a3b8;font-size:0.8rem;margin-bottom:12px;">
-                این پلتفرم از SDK رسمی sms.ir (پکیج smsir-python) برای ارسال پیامک استفاده می‌کند.
-            </p>
-            <div class="fc-grid">
-                <div class="fc-field"><label>{{ form.provider_type.label }}</label>{{ form.provider_type }}{{ form.provider_type.errors }}</div>
-                <div class="fc-field"><label>{{ form.default_line_number.label }}</label>{{ form.default_line_number }}{{ form.default_line_number.errors }}</div>
+    <div class="sms-summary">
+        <div class="item">سامانه‌ی فعال: <b>{% if active_provider %}{{ active_provider.name }}{% else %}<span style="color:#991b1b;">هیچ‌کدام — پیامکی ارسال نمی‌شود</span>{% endif %}</b></div>
+        <div class="item">رویدادهای فعال: <b>{{ enabled_events }}</b> از {{ total_events }} — <a href="{% url 'staff_dashboard:sms_event_list' %}">تنظیم رویدادها</a></div>
+    </div>
+
+    <div class="provider-grid">
+        {% for provider in providers %}
+        <div class="provider-card{% if provider.is_active %} is-active{% endif %}">
+            <div class="provider-head">
+                <div>
+                    <h3>{{ provider.name }}</h3>
+                    <small style="color:#94a3b8;">{{ provider.get_provider_type_display }}</small>
+                </div>
+                {% if provider.is_active %}<span class="badge-pill badge-green">فعال — در حال استفاده</span>{% else %}<span class="badge-pill badge-gray">غیرفعال</span>{% endif %}
             </div>
-            <div class="fc-field"><label>{{ form.api_key.label }}</label>{{ form.api_key }}{% if form.api_key.errors %}<div class="fc-error">{{ form.api_key.errors }}</div>{% endif %}</div>
-            <label style="display:flex;align-items:center;gap:8px;">{{ form.is_active }} {{ form.is_active.label }}</label>
+            <div class="provider-meta">
+                <div>کلید API: <code>{{ provider.masked_api_key }}</code></div>
+                <div>شماره خط: <code>{{ provider.default_line_number|default:"پیش‌فرض پنل" }}</code></div>
+                <div>آخرین ویرایش: {{ provider.updated_at|date:"Y/m/d H:i" }}</div>
+            </div>
+            <div class="provider-actions">
+                <a href="{% url 'staff_dashboard:sms_provider_edit' provider.pk %}" class="btn-soft btn-soft-blue"><i class="fas fa-edit"></i> ویرایش</a>
+                {% if not provider.is_active %}
+                <form method="post" action="{% url 'staff_dashboard:sms_provider_activate' provider.pk %}"
+                      onsubmit="return confirm('همه‌ی پیامک‌ها از این پس از «{{ provider.name|escapejs }}» ارسال شوند؟');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-soft btn-soft-green"><i class="fas fa-check"></i> فعال‌سازی</button>
+                </form>
+                <form method="post" action="{% url 'staff_dashboard:sms_provider_delete' provider.pk %}"
+                      onsubmit="return confirm('سامانه‌ی «{{ provider.name|escapejs }}» حذف شود؟');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-soft btn-soft-red"><i class="fas fa-trash"></i> حذف</button>
+                </form>
+                {% endif %}
+                <form method="post" action="{% url 'staff_dashboard:sms_provider_test' provider.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="credit">
+                    <button type="submit" class="btn-soft btn-soft-gray"><i class="fas fa-wallet"></i> بررسی اتصال و اعتبار</button>
+                </form>
+            </div>
+            <form method="post" action="{% url 'staff_dashboard:sms_provider_test' provider.pk %}" class="provider-test">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="send">
+                <label class="visually-hidden" for="test-mobile-{{ provider.pk }}">شماره موبایل آزمایشی</label>
+                <input type="tel" id="test-mobile-{{ provider.pk }}" name="mobile" placeholder="09xxxxxxxxx" required pattern="09[0-9]{9}">
+                <label class="visually-hidden" for="test-message-{{ provider.pk }}">متن آزمایشی</label>
+                <input type="text" id="test-message-{{ provider.pk }}" name="message" placeholder="متن آزمایشی (اختیاری)" maxlength="300">
+                <button type="submit" class="btn-soft btn-soft-gray"><i class="fas fa-paper-plane"></i> ارسال آزمایشی</button>
+            </form>
         </div>
-
-        <button type="submit" class="btn-soft btn-soft-blue" style="padding:10px 28px;font-size:0.9rem;"><i class="fas fa-save"></i> ذخیره</button>
-    </form>
+        {% empty %}
+        <div class="detail-card" style="grid-column:1/-1;text-align:center;color:#64748b;">
+            هنوز سامانه‌ی پیامکی تعریف نشده است. برای ارسال پیامک‌ها، <a href="{% url 'staff_dashboard:sms_provider_add' %}">یک سامانه اضافه کنید</a>.
+        </div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}
