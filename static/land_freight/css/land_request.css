@@ -80,6 +80,65 @@
   .form-group.span-2 { grid-column: auto; }
 }
 
+/* ─── فرم مرحله‌ای (هم‌سان با صفحه‌ی ثبت سفارش هوایی/دریایی) ─────────────── */
+
+.mode-switch-card { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; border: 1px dashed #93c5fd; }
+.mode-switch-card > i { font-size: 24px; color: #2563eb; }
+.mode-switch-card__desc { display: block; color: #64748b; font-size: 13px; }
+
+.land-steps { display: flex; gap: 10px; margin-bottom: 25px; }
+.land-step {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px; border: 0; border-radius: 6px; background: #eee; color: #475569;
+  font: inherit; font-size: 14px; cursor: default; text-align: center;
+}
+.land-step__num {
+  display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(15, 23, 42, 0.08); font-size: 12px; font-weight: 800; flex-shrink: 0;
+}
+.land-step.active { background: #0d6efd; color: #fff; }
+.land-step.active .land-step__num { background: rgba(255, 255, 255, 0.25); }
+.land-step.is-done { background: #dbeafe; color: #1e40af; cursor: pointer; }
+.land-step.is-done:hover { background: #bfdbfe; }
+.land-step.is-done .land-step__num { background: #2563eb; color: #fff; }
+.land-step:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+.land-request-page .step-section { display: none; }
+.land-request-page .step-section.active { display: block; }
+.land-request-page .step-section .panel-card__header h2:focus { outline: none; }
+.land-request-page .step-navigation { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 25px; }
+.land-request-page .step-navigation .quote-btn { width: auto; display: inline-flex; align-items: center; gap: 8px; }
+
+.land-request-page .is-invalid { border: 2px solid #dc3545 !important; background: #fff5f5; }
+.land-request-page .scope-cards.is-invalid,
+.land-request-page .direction-options.is-invalid { border-radius: 16px; padding: 6px; }
+.land-request-page .js-error { color: #dc2626; font-size: 12px; margin-top: 6px; font-weight: 600; }
+
+.route-placeholder { margin: 0; }
+.contact-pair + .contact-pair { margin-top: 16px; padding-top: 16px; border-top: 1px dashed #e2e8f0; }
+
+.review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.review-block { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; background: #f8fafc; }
+.review-block__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.review-block__head h3 { margin: 0; font-size: 14px; font-weight: 800; color: #0f172a; }
+.review-edit { border: 0; background: none; color: #2563eb; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; padding: 2px 4px; }
+.review-edit:hover { text-decoration: underline; }
+.review-row { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 13px; }
+.review-row span { color: #64748b; flex-shrink: 0; }
+.review-row b { color: #0f172a; text-align: left; font-weight: 700; overflow-wrap: anywhere; }
+
+@media (max-width: 760px) {
+  .land-steps { gap: 6px; }
+  .land-step { padding: 8px 4px; }
+  .land-step__label { display: none; }
+  .land-step.active .land-step__label { display: inline; font-size: 12px; }
+  .land-step.active { flex: 2.5; }
+}
+@media (max-width: 480px) {
+  .land-request-page .step-navigation { flex-wrap: wrap; }
+  .land-request-page .step-navigation .quote-btn { width: 100%; justify-content: center; }
+}
+
 /* ─── پیگیری درخواست (پنل مشتری) ─────────────────────────────────────── */
 
 .lr-status-hero {
