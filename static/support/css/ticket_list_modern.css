@@ -14,7 +14,7 @@
 .support-wrapper {
     direction: rtl;
     text-align: right;
-    font-family: 'Vazirmatn', Tahoma, sans-serif !important; 
+    font-family: var(--app-font, 'Vazirmatn', Tahoma, sans-serif) !important; 
     padding: 20px;
     background: #fcfcfc;
 }
@@ -24,7 +24,7 @@
 .support-wrapper select,
 .support-wrapper button,
 .support-wrapper textarea {
-    font-family: 'Vazirmatn', Tahoma, sans-serif !important;
+    font-family: var(--app-font, 'Vazirmatn', Tahoma, sans-serif) !important;
 }
 
 /* کارت‌ها */

@@ -2,7 +2,7 @@
 
 .ticket-create-page {
     direction: rtl;
-    font-family: 'Vazirmatn', Tahoma, sans-serif !important;
+    font-family: var(--app-font, 'Vazirmatn', Tahoma, sans-serif) !important;
     padding: 10px 0 30px;
 }
 
@@ -132,7 +132,7 @@
 .ticket-textarea,
 .ticket-file-input {
     width: 100% !important;
-    font-family: 'Vazirmatn', Tahoma, sans-serif !important;
+    font-family: var(--app-font, 'Vazirmatn', Tahoma, sans-serif) !important;
     font-size: 14px !important;
     color: #0f172a !important;
     background: #ffffff !important;
@@ -207,7 +207,7 @@
     justify-content: center;
     gap: 8px;
     text-decoration: none !important;
-    font-family: 'Vazirmatn', Tahoma, sans-serif !important;
+    font-family: var(--app-font, 'Vazirmatn', Tahoma, sans-serif) !important;
     font-weight: 700;
     border-radius: 12px;
     transition: all 0.22s ease;
@@ -269,7 +269,7 @@
 #ticketCreateForm input,
 #ticketCreateForm select,
 #ticketCreateForm textarea {
-    font-family: 'Vazirmatn', Tahoma, sans-serif !important;
+    font-family: var(--app-font, 'Vazirmatn', Tahoma, sans-serif) !important;
 }
 
 /* responsive */

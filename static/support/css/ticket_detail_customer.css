@@ -2,7 +2,7 @@
 
 /* محفظه اصلی */
 .support-container {
-    font-family: 'Vazirmatn', Tahoma, sans-serif !important;
+    font-family: var(--app-font, 'Vazirmatn', Tahoma, sans-serif) !important;
     direction: rtl !important;
     text-align: right !important;
 }

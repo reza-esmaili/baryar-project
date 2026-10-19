@@ -1,0 +1,63 @@
+/* static/css/fonts.css
+ *
+ * فونت یکپارچه‌ی کل پلتفرم: ایران‌سنس (IRANSans).
+ *
+ * ایران‌سنس فونت تجاری است و فایل‌های آن همراه پروژه نیست. فایل‌های نسخه‌ی وب
+ * (لایسنس وب) را با همین نام‌ها در static/fonts/iransans/ قرار دهید:
+ *   IRANSansWeb_Light.woff2, IRANSansWeb.woff2, IRANSansWeb_Medium.woff2,
+ *   IRANSansWeb_Bold.woff2, IRANSansWeb_Black.woff2
+ * تا آن زمان، اگر روی سیستم بیننده نصب باشد از همان استفاده می‌شود و در غیر این
+ * صورت فونت قبلی هر بخش (وزیرمتن در سایت، بی‌یکان در پنل‌ها) نمایش داده می‌شود.
+ */
+
+@font-face {
+    font-family: 'IRANSans';
+    src: local('IRANSansWeb Light'), local('IRANSans Light'),
+         url('../fonts/iransans/IRANSansWeb_Light.woff2') format('woff2');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'IRANSans';
+    src: local('IRANSansWeb'), local('IRANSans'),
+         url('../fonts/iransans/IRANSansWeb.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'IRANSans';
+    src: local('IRANSansWeb Medium'), local('IRANSans Medium'),
+         url('../fonts/iransans/IRANSansWeb_Medium.woff2') format('woff2');
+    font-weight: 500 600;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'IRANSans';
+    src: local('IRANSansWeb Bold'), local('IRANSans Bold'),
+         url('../fonts/iransans/IRANSansWeb_Bold.woff2') format('woff2');
+    font-weight: 700 800;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'IRANSans';
+    src: local('IRANSansWeb Black'), local('IRANSans Black'),
+         url('../fonts/iransans/IRANSansWeb_Black.woff2') format('woff2');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --app-font: 'IRANSans', 'Vazirmatn', 'BYekan', Tahoma, 'Segoe UI', sans-serif;
+}
+
+/* همه‌ی متن‌های پلتفرم با یک فونت؛ آیکون‌ها (Font Awesome) و کد از این قاعده مستثنا هستند.
+ * !important لازم است چون ده‌ها فایل استایل قدیمی فونت را مستقیم روی عناصر تعریف کرده‌اند. */
+html body,
+html body :where(*:not(i):not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fa-solid):not(.fa-regular):not(.fa-brands):not(code):not(pre):not(kbd):not(samp)) {
+    font-family: var(--app-font) !important;
+}
