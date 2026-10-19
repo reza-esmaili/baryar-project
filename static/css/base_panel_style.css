@@ -323,3 +323,16 @@ body {
     pointer-events: none;
     transition: opacity 0.15s ease;
 }
+
+/* بوت‌استرپ نسخه‌ی چپ‌به‌راست بارگذاری می‌شود و فلش .form-select را سمت راست می‌گذارد؛
+   در صفحه‌ی راست‌به‌چپ متن هم سمت راست است و فلش روی آن می‌افتد. فلش به سمت چپ منتقل
+   و فضای آن از همان سمت رزرو می‌شود. (html[dir] تا بر padding اختصاصی صفحات غلبه کند) */
+html[dir="rtl"] .form-select {
+    background-position: left 0.75rem center;
+    padding-left: 2.25rem;
+    padding-right: 0.75rem;
+}
+html[dir="rtl"] .form-select[multiple],
+html[dir="rtl"] .form-select[size]:not([size="1"]) {
+    padding-left: 0.75rem;
+}

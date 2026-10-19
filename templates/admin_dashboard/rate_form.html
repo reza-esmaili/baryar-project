@@ -4,6 +4,7 @@
 {% block title %}{% if instance %}ویرایش نرخ{% else %}نرخ جدید{% endif %}{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
 <style>
     .rate-field { margin-bottom: 14px; }
     .rate-field label { display:block;font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:5px; }
@@ -116,6 +117,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+<script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+<script src="{% static 'admin_dashboard/js/jalali_date_input.js' %}"></script>
 <script src="{% static 'admin_dashboard/js/rate_cascading.js' %}"></script>
 <script src="{% static 'admin_dashboard/js/rate_tier_add.js' %}"></script>
 {% endblock %}

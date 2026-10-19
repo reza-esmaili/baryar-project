@@ -1,4 +1,5 @@
 {% extends 'admin_dashboard/base.html' %}
+{% load jformat %}
 
 {% block title %}نرخ‌ها{% endblock %}
 
@@ -42,7 +43,7 @@
                     <td>{{ rate.get_transport_mode_display }}</td>
                     <td>{{ rate.origin_city.name }}</td>
                     <td>{{ rate.destination_port.city.country.name }} / {{ rate.destination_port.name }}</td>
-                    <td>{{ rate.valid_until|date:"Y/m/d" }}</td>
+                    <td>{{ rate.valid_until|jformat:"%Y/%m/%d" }}</td>
                     <td>
                         {% if rate.is_currently_active %}
                             <span class="badge-pill badge-green">فعال</span>

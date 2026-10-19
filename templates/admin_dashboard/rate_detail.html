@@ -1,4 +1,5 @@
 {% extends 'admin_dashboard/base.html' %}
+{% load jformat %}
 
 {% block title %}جزئیات نرخ{% endblock %}
 
@@ -37,7 +38,7 @@
         <div class="detail-row"><span class="label">انواع کالای قابل حمل</span><span class="value">
             {% for ct in rate.cargo_types.all %}{{ ct.name }}{% if not forloop.last %}، {% endif %}{% empty %}-{% endfor %}
         </span></div>
-        <div class="detail-row"><span class="label">تاریخ اعتبار</span><span class="value">{{ rate.valid_until|date:"Y/m/d" }}</span></div>
+        <div class="detail-row"><span class="label">تاریخ اعتبار</span><span class="value">{{ rate.valid_until|jformat:"%Y/%m/%d" }}</span></div>
     </div>
 
     <div class="detail-card">

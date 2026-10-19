@@ -150,12 +150,15 @@
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    // متن میلادی نباید به‌عنوان تاریخ شمسی خوانده شود؛ تاریخ قبلی پایین‌تر با setDate اعمال می‌شود
+    dateField.value = '';
 
-    jQuery(dateField).persianDatepicker({
+    // خروجی، شیء خود تقویم است؛ setDate فقط روی همین شیء کار می‌کند (فراخوانی دوباره‌ی
+    // persianDatepicker('setDate') تقویم را با پیش‌فرض «امروز» از نو می‌ساخت).
+    const picker = jQuery(dateField).persianDatepicker({
       format: 'YYYY/MM/DD',
       autoClose: true,
-      initialValue: !!hidden.value,
-      initialValueType: 'gregorian',
+      initialValue: false,
       observer: true,
       minDate: today.getTime(),
       altField: '#hidden_pickup_date',
@@ -166,8 +169,8 @@
         return d.getFullYear() + '-' + mm + '-' + dd;
       }
     });
-    if (hidden.value) {
-      jQuery(dateField).persianDatepicker('setDate', new Date(hidden.value + 'T00:00:00').getTime());
+    if (hidden.value && picker && typeof picker.setDate === 'function') {
+      picker.setDate(new Date(hidden.value + 'T00:00:00').getTime());
     }
   }
 
