@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from accounts.models import User
 from documents.models import DocumentRequirementLevel, DocumentRule, DocumentType
-from forwarders.models import ForwarderCompany
+from forwarders.models import ForwarderCompany, ForwarderStaff
 from locations.models import City, Country, DestinationCity, Port, Province
 from orders.models import CustomerNotification, ForwarderNotification
 from rates.models import CargoType, TransportMode
@@ -264,11 +264,30 @@ class EndToEndViewTests(LandFreightFixtures):
         land_request = LandFreightRequest.objects.get(customer=self.customer)
         self.assertEqual(land_request.destination_city, self.city_a)
 
-    def test_forwarder_cannot_create_land_request(self):
-        carrier = self.make_company("09130000002", service_land_domestic=True, vehicles=[self.nissan])
-        self.client.force_login(carrier.admin_user)
-        response = self.client.get(reverse("land_freight:request_create"))
-        self.assertRedirects(response, reverse("core:home"), fetch_redirect_response=False)
+    def test_any_account_can_post_and_its_own_company_is_not_dispatched(self):
+        own = self.make_company("09130000002", service_land_domestic=True, vehicles=[self.nissan])
+        other = self.make_company("09130000003", service_land_domestic=True, vehicles=[self.nissan])
+
+        self.client.force_login(own.admin_user)
+        self.assertEqual(self.client.get(reverse("land_freight:request_create")).status_code, 200)
+
+        land_request = self.make_request(customer=own.admin_user)
+        self.assertEqual(list(eligible_carriers(land_request)), [other])
+        publish_request(land_request, own.admin_user)
+        self.assertEqual(list(land_request.dispatches.values_list("company_id", flat=True)), [other.id])
+
+        # پیگیری هم برای همان حساب باز است (فقط درخواست‌های خودش)
+        self.assertEqual(self.client.get(reverse("land_freight:request_list")).status_code, 200)
+        self.assertEqual(
+            self.client.get(reverse("land_freight:request_detail", args=[land_request.pk])).status_code, 200,
+        )
+
+    def test_staff_of_a_company_is_not_offered_its_own_request(self):
+        own = self.make_company("09130000004", service_land_domestic=True, vehicles=[self.nissan])
+        staff_user = User.objects.create_user(mobile="09130000005", password="Pass12345!", role=User.Role.FORWARDER_EXPERT)
+        ForwarderStaff.objects.create(company=own, user=staff_user, national_code="0012345679")
+        land_request = self.make_request(customer=staff_user)
+        self.assertNotIn(own, list(eligible_carriers(land_request)))
 
 
 class DeclineTests(LandFreightFixtures):

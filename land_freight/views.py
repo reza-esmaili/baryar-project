@@ -1,6 +1,5 @@
 import os
 from decimal import Decimal, InvalidOperation
-from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -37,16 +36,6 @@ from .services import (
 )
 
 
-def customer_required(view_func):
-    @wraps(view_func)
-    def _wrapped(request, *args, **kwargs):
-        if request.user.role != User.Role.CUSTOMER:
-            messages.error(request, "ثبت و پیگیری درخواست حمل زمینی فقط برای حساب‌های مشتری امکان‌پذیر است.")
-            return redirect("core:home")
-        return view_func(request, *args, **kwargs)
-    return _wrapped
-
-
 def _customer_request_or_404(request, pk):
     return get_object_or_404(
         LandFreightRequest.objects.select_related(
@@ -59,7 +48,6 @@ def _customer_request_or_404(request, pk):
 
 
 @login_required
-@customer_required
 def request_create(request):
     initial_scope = request.GET.get("scope")
     if request.method == "POST":
@@ -97,7 +85,6 @@ def request_create(request):
 
 
 @login_required
-@customer_required
 def request_list(request):
     expire_stale_requests()
 
@@ -157,7 +144,6 @@ def _status_steps(land_request):
 
 
 @login_required
-@customer_required
 def request_detail(request, pk):
     expire_stale_requests()
     land_request = _customer_request_or_404(request, pk)
@@ -179,7 +165,6 @@ def request_detail(request, pk):
 
 
 @login_required
-@customer_required
 @require_POST
 def request_document_upload(request, pk, document_id):
     land_request = _customer_request_or_404(request, pk)
@@ -223,7 +208,6 @@ def document_file(request, document_id):
 
 
 @login_required
-@customer_required
 @require_GET
 def request_status(request, pk):
     """برای به‌روزرسانی زنده‌ی صفحه‌ی جزئیات تا زمان پذیرش."""
@@ -239,7 +223,6 @@ def request_status(request, pk):
 
 
 @login_required
-@customer_required
 @require_POST
 def request_cancel(request, pk):
     land_request = _customer_request_or_404(request, pk)
@@ -252,7 +235,6 @@ def request_cancel(request, pk):
 
 
 @login_required
-@customer_required
 @require_POST
 def request_republish(request, pk):
     land_request = _customer_request_or_404(request, pk)

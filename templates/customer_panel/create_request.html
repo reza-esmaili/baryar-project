@@ -68,18 +68,11 @@
       </div>
     </section>
 
-    <a href="{% url 'land_freight:request_create' %}" class="panel-card" style="display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;border:1px dashed #93c5fd;">
-      <i class="fas fa-truck-moving" style="font-size:24px;color:#2563eb;"></i>
-      <span>
-        <b>حمل زمینی دارید؟</b>
-        <span style="display:block;color:#64748b;font-size:13px;">حمل درون‌شهری، برون‌شهری و بین‌المللی جاده‌ای با اعلام بار و کرایه‌ی پیشنهادی خودتان ثبت می‌شود — اولین شرکت حملی که بپذیرد، بار شما را حمل می‌کند.</span>
-      </span>
-    </a>
-
     <div class="step-progress">
-      <div id="progress-1" class="active">مرحله ۱: مبدا و مقصد</div>
-      <div id="progress-2">مرحله ۲: مشخصات بار</div>
-      <div id="progress-3">مرحله ۳: نتایج</div>
+      <div id="progress-0" class="active">مرحله ۱: نوع حمل</div>
+      <div id="progress-1">مرحله ۲: مبدا و مقصد</div>
+      <div id="progress-2">مرحله ۳: مشخصات بار</div>
+      <div id="progress-3">مرحله ۴: نتایج</div>
     </div>
 
     <form method="post" id="cargo-request-form" class="cargo-form">
@@ -89,8 +82,62 @@
 
       <div class="cargo-layout">
         <div class="cargo-main">
+          <!-- STEP 0: نوع حمل -->
+          <div class="step-section active" id="step-0">
+            <section class="panel-card">
+              <div class="panel-card__header">
+                <h2>نوع حمل‌ونقل را انتخاب کنید</h2>
+              </div>
+
+              <div class="mode-cards" id="mode-cards">
+                <label class="mode-card" data-family="air">
+                  <input type="radio" name="transport_family" value="air" />
+                  <span class="mode-card__icon"><i class="fas fa-plane-departure" aria-hidden="true"></i></span>
+                  <span class="mode-card__title">هوایی</span>
+                  <span class="mode-card__desc">سریع‌ترین روش؛ استعلام و مقایسه‌ی نرخ شرکت‌های حمل هوایی</span>
+                </label>
+                <label class="mode-card" data-family="sea">
+                  <input type="radio" name="transport_family" value="sea" />
+                  <span class="mode-card__icon"><i class="fas fa-ship" aria-hidden="true"></i></span>
+                  <span class="mode-card__title">دریایی</span>
+                  <span class="mode-card__desc">کانتینر کامل (FCL) یا خرده‌بار (LCL) با نرخ شرکت‌های حمل</span>
+                </label>
+                <label class="mode-card" data-family="land">
+                  <input type="radio" name="transport_family" value="land" />
+                  <span class="mode-card__icon"><i class="fas fa-truck-moving" aria-hidden="true"></i></span>
+                  <span class="mode-card__title">زمینی</span>
+                  <span class="mode-card__desc">اعلام بار با کرایه‌ی پیشنهادی شما؛ اولین شرکتی که بپذیرد حمل می‌کند</span>
+                </label>
+              </div>
+
+              <div class="mode-sub" data-sub-for="sea" hidden>
+                <div class="mode-sub__label">نوع حمل دریایی</div>
+                <div class="mode-sub__options">
+                  <label class="mode-option"><input type="radio" name="sea_kind" value="sea_fcl" /> <span><b>کانتینر کامل (FCL)</b><small>یک یا چند کانتینر اختصاصی</small></span></label>
+                  <label class="mode-option"><input type="radio" name="sea_kind" value="sea_lcl" /> <span><b>خرده‌بار (LCL)</b><small>بار کمتر از یک کانتینر، محاسبه بر اساس وزن یا حجم</small></span></label>
+                </div>
+              </div>
+
+              <div class="mode-sub" data-sub-for="land" hidden>
+                <div class="mode-sub__label">نوع حمل زمینی</div>
+                <div class="mode-sub__options">
+                  <label class="mode-option"><input type="radio" name="land_scope" value="intracity" /> <span><b>درون‌شهری</b><small>جابجایی بار داخل یک شهر</small></span></label>
+                  <label class="mode-option"><input type="radio" name="land_scope" value="domestic" /> <span><b>برون‌شهری</b><small>حمل بین شهرهای ایران</small></span></label>
+                  <label class="mode-option"><input type="radio" name="land_scope" value="international" /> <span><b>بین‌المللی</b><small>از ایران به کشور دیگر یا برعکس</small></span></label>
+                </div>
+              </div>
+
+              <div class="mode-error" id="mode-error" role="alert" hidden></div>
+            </section>
+
+            <div class="step-navigation">
+              <div></div>
+              <button type="button" class="btn btn-primary" id="next-step-0">مرحله بعد</button>
+            </div>
+          </div>
+
           <!-- STEP 1 -->
-          <div class="step-section active" id="step-1">
+          <div class="step-section" id="step-1">
             <section class="panel-card">
               <div class="panel-card__header">
                 <h2>اطلاعات مبدا</h2>
@@ -121,7 +168,12 @@
 
                 <div class="form-group">
                   <label>روش حمل</label>
-                  {{ form.transport_mode }}
+                  <div class="mode-chip" id="mode-chip">
+                    <span id="mode-chip-text">-</span>
+                    <button type="button" class="mode-chip__change" id="mode-chip-change">تغییر</button>
+                  </div>
+                  {# انتخاب در مرحله‌ی «نوع حمل» انجام می‌شود؛ خود فیلد برای ارسال فرم و اسکریپت‌های وابسته می‌ماند #}
+                  <div class="mode-select-holder">{{ form.transport_mode }}</div>
                 </div>
               </div>
             </section>
@@ -207,7 +259,7 @@
             </section>
 
             <div class="step-navigation">
-              <div></div>
+              <button type="button" class="btn btn-secondary" id="back-step-0">بازگشت</button>
               <button type="button" class="btn btn-primary" id="next-step-1">مرحله بعد</button>
             </div>
           </div>
@@ -616,6 +668,118 @@
       })
     }
     
+    // ─── مرحله‌ی «نوع حمل» ───────────────────────────────────────────────
+    const LAND_CREATE_URL = "{% url 'land_freight:request_create' %}"
+    const MODE_LABELS = {
+      air: 'هوایی',
+      sea_fcl: 'دریایی — کانتینر کامل (FCL)',
+      sea_lcl: 'دریایی — خرده‌بار (LCL)'
+    }
+    const transportSelect = document.querySelector('[name="transport_mode"]')
+    const modeError = document.getElementById('mode-error')
+    const modeChipText = document.getElementById('mode-chip-text')
+
+    function checkedValue(name) {
+      const input = document.querySelector('input[name="' + name + '"]:checked')
+      return input ? input.value : ''
+    }
+
+    function familyOf(mode) {
+      if (mode === 'air') return 'air'
+      if (mode === 'sea_fcl' || mode === 'sea_lcl') return 'sea'
+      return ''
+    }
+
+    function setModeError(message) {
+      if (!modeError) return
+      modeError.textContent = message || ''
+      modeError.hidden = !message
+    }
+
+    function refreshModeCards() {
+      const family = checkedValue('transport_family')
+      document.querySelectorAll('.mode-card').forEach((card) => {
+        card.classList.toggle('is-selected', card.dataset.family === family)
+      })
+      document.querySelectorAll('.mode-sub').forEach((sub) => {
+        sub.hidden = sub.dataset.subFor !== family
+      })
+      document.querySelectorAll('.mode-option').forEach((option) => {
+        const input = option.querySelector('input')
+        option.classList.toggle('is-selected', !!(input && input.checked))
+      })
+      setModeError('')
+    }
+
+    function applyTransportMode(mode) {
+      if (transportSelect && transportSelect.value !== mode) {
+        transportSelect.value = mode
+        // create_request.js با همین رویداد کشورها، بنادر، نوع کالا و بخش کانتینر/ابعاد را به‌روز می‌کند
+        transportSelect.dispatchEvent(new Event('change'))
+      }
+      if (modeChipText) modeChipText.textContent = MODE_LABELS[mode] || mode
+    }
+
+    document.querySelectorAll('input[name="transport_family"], input[name="sea_kind"], input[name="land_scope"]').forEach((input) => {
+      input.addEventListener('change', refreshModeCards)
+    })
+
+    const nextStep0Btn = document.getElementById('next-step-0')
+    if (nextStep0Btn) {
+      nextStep0Btn.onclick = function () {
+        const family = checkedValue('transport_family')
+        if (!family) {
+          setModeError('نوع حمل‌ونقل را انتخاب کنید.')
+          return
+        }
+        if (family === 'land') {
+          const scope = checkedValue('land_scope')
+          if (!scope) {
+            setModeError('نوع حمل زمینی (درون‌شهری، برون‌شهری یا بین‌المللی) را انتخاب کنید.')
+            return
+          }
+          // حمل زمینی فرم «اعلام بار» جداگانه دارد؛ نوع انتخابی همان‌جا از پیش انتخاب می‌شود
+          window.location.href = LAND_CREATE_URL + '?scope=' + encodeURIComponent(scope)
+          return
+        }
+        if (family === 'sea') {
+          const kind = checkedValue('sea_kind')
+          if (!kind) {
+            setModeError('نوع حمل دریایی (FCL یا LCL) را انتخاب کنید.')
+            return
+          }
+          applyTransportMode(kind)
+        } else {
+          applyTransportMode('air')
+        }
+        showStep(1)
+      }
+    }
+
+    ;['back-step-0', 'mode-chip-change'].forEach((id) => {
+      const button = document.getElementById(id)
+      if (button) button.onclick = function () { showStep(0) }
+    })
+
+    // اگر روش حمل از قبل مشخص است (مثلاً از تب‌های صفحه‌ی اصلی با ?mode=)، مستقیم به مسیر برو
+    ;(function initTransportStep() {
+      const preset = transportSelect ? transportSelect.value : ''
+      const family = familyOf(preset)
+      if (!family) {
+        showStep(0)
+        return
+      }
+      const familyInput = document.querySelector('input[name="transport_family"][value="' + family + '"]')
+      if (familyInput) familyInput.checked = true
+      if (family === 'sea') {
+        const kindInput = document.querySelector('input[name="sea_kind"][value="' + preset + '"]')
+        if (kindInput) kindInput.checked = true
+      }
+      refreshModeCards()
+      applyTransportMode(preset)
+      showStep(1)
+    })()
+
     bindLiveValidation()
   </script>
 {% endblock %}

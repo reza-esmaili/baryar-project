@@ -913,3 +913,70 @@
         font-size: 12px;
     }
 }
+
+/* ─── مرحله‌ی «نوع حمل» ───────────────────────────────────────────────── */
+
+.mode-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+.mode-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.mode-card input { position: absolute; opacity: 0; pointer-events: none; }
+.mode-card:hover { border-color: #93c5fd; transform: translateY(-1px); }
+.mode-card.is-selected { border-color: #2563eb; box-shadow: 0 8px 22px rgba(37, 99, 235, 0.16); }
+.mode-card:focus-within { outline: 2px solid #2563eb; outline-offset: 2px; }
+.mode-card__icon {
+    width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center;
+    background: #eff6ff; color: #2563eb; font-size: 20px;
+}
+.mode-card.is-selected .mode-card__icon { background: #2563eb; color: #fff; }
+.mode-card__title { font-weight: 800; font-size: 17px; color: #0f172a; }
+.mode-card__desc { font-size: 13px; color: #64748b; line-height: 1.8; }
+
+.mode-sub { margin-top: 18px; padding-top: 16px; border-top: 1px dashed #e2e8f0; }
+.mode-sub[hidden] { display: none; }
+.mode-sub__label { font-weight: 700; color: #334155; margin-bottom: 10px; font-size: 14px; }
+.mode-sub__options { display: flex; flex-wrap: wrap; gap: 10px; }
+.mode-option {
+    display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; min-width: 200px; flex: 1 1 200px;
+    border: 1.5px solid #e2e8f0; border-radius: 12px; background: #fff; cursor: pointer;
+}
+.mode-option input { margin-top: 4px; accent-color: #2563eb; }
+.mode-option span { display: flex; flex-direction: column; gap: 2px; }
+.mode-option b { font-size: 14px; color: #0f172a; }
+.mode-option small { font-size: 12px; color: #64748b; }
+.mode-option.is-selected { border-color: #2563eb; background: #eff6ff; }
+
+.mode-error { margin-top: 14px; color: #dc2626; font-size: 13px; font-weight: 700; }
+.mode-error[hidden] { display: none; }
+
+/* روش حمل در مرحله‌ی مسیر فقط نمایش داده می‌شود؛ تغییر از مرحله‌ی «نوع حمل» */
+.mode-chip {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    min-height: 48px; padding: 8px 14px; border: 1px solid #dbeafe; border-radius: 12px;
+    background: #f8fbff; color: #1e3a8a; font-weight: 700; font-size: 14px;
+}
+.mode-chip__change {
+    border: 0; background: none; color: #2563eb; font: inherit; font-size: 13px; cursor: pointer; padding: 2px 4px;
+}
+.mode-chip__change:hover { text-decoration: underline; }
+.mode-select-holder { display: none; }
+
+@media (max-width: 760px) {
+    .mode-cards { grid-template-columns: 1fr; }
+    .mode-card { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 12px; padding: 14px; }
+    .mode-card__desc { flex-basis: 100%; }
+    .step-progress div { font-size: 12px !important; padding: 8px 4px !important; }
+}

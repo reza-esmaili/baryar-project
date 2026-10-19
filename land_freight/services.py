@@ -74,6 +74,15 @@ def eligible_carriers(land_request):
             | Q(land_profile__service_countries__isnull=True)
         )
 
+    # ثبت درخواست به نقش مشتری محدود نیست؛ اگر ثبت‌کننده ادمین یا کارمند یک شرکت حمل
+    # باشد، درخواست خودش برای همان شرکت ارسال نمی‌شود (پذیرفتن بار خود معنا ندارد).
+    customer_id = land_request.customer_id
+    companies = (
+        companies.exclude(admin_user_id=customer_id)
+        .exclude(staff__user_id=customer_id)
+        .exclude(branches__branch_user_id=customer_id)
+    )
+
     return companies.select_related("admin_user").distinct()
 
 
