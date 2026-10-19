@@ -1,0 +1,107 @@
+{% extends 'admin_dashboard/base.html' %}
+{% load jformat %}
+
+{% block title %}حذف کاربر{% endblock %}
+
+{% block content %}
+<div class="p-6 users-page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">حذف کاربر</h1>
+            <p class="page-subtitle">پیش از حذف، اطلاعاتی را که همراه این حساب پاک می‌شود بررسی کنید.</p>
+        </div>
+        <a href="{% url 'staff_dashboard:user_detail' user_obj.id %}" class="btn-soft btn-soft-gray"><i class="fas fa-arrow-right" aria-hidden="true"></i> بازگشت</a>
+    </div>
+
+    <div class="delete-card">
+        <div class="delete-card__user">
+            <span class="avatar avatar-lg avatar-{{ user_obj.role }}" aria-hidden="true">{% if user_obj.first_name %}{{ user_obj.first_name|first }}{% else %}<i class="fas fa-user"></i>{% endif %}</span>
+            <div>
+                <div class="delete-card__name">{% if user_obj.first_name or user_obj.last_name %}{{ user_obj.first_name }} {{ user_obj.last_name }}{% else %}بدون نام{% endif %}</div>
+                <div class="delete-card__meta">
+                    <span class="ltr-cell">{{ user_obj.mobile }}</span> ·
+                    <span class="role-badge role-{{ user_obj.role }}">{{ user_obj.get_role_display }}</span> ·
+                    عضویت از {{ user_obj.created_at|jformat:"%Y/%m/%d" }}
+                </div>
+            </div>
+        </div>
+
+        {% if block_reason %}
+            <div class="alert-box alert-error"><i class="fas fa-ban" aria-hidden="true"></i> {{ block_reason }}</div>
+            <div class="delete-actions">
+                <a href="{% url 'staff_dashboard:user_detail' user_obj.id %}" class="btn-soft btn-soft-gray">بازگشت به صفحه‌ی کاربر</a>
+            </div>
+
+        {% elif protected %}
+            <div class="alert-box alert-warning">
+                <b>این کاربر فعلاً قابل حذف نیست.</b>
+                رکوردهای زیر به این حساب وابسته‌اند و اجازه‌ی حذف نمی‌دهند:
+            </div>
+            <ul class="impact-list">
+                {% for item in protected %}
+                    <li><span>{{ item.label }}</span><b>{{ item.name }}</b></li>
+                {% endfor %}
+            </ul>
+            {% if forwarder_company %}
+                <p class="delete-hint">این کاربر ادمین شرکت «{{ forwarder_company.company_name }}» است. ابتدا ادمین شرکت را تغییر دهید یا شرکت را تعیین تکلیف کنید. برای قطع دسترسی می‌توانید حساب را غیرفعال کنید.</p>
+            {% endif %}
+            <div class="delete-actions">
+                {% if forwarder_company %}<a href="{% url 'staff_dashboard:forwarder_detail' forwarder_company.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-building" aria-hidden="true"></i> صفحه‌ی شرکت</a>{% endif %}
+                {% if user_obj.is_active %}
+                <form method="post" action="{% url 'staff_dashboard:user_detail' user_obj.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_active">
+                    <button type="submit" class="btn-soft btn-soft-gray"><i class="fas fa-ban" aria-hidden="true"></i> غیرفعال کردن حساب</button>
+                </form>
+                {% endif %}
+            </div>
+
+        {% else %}
+            {% if impact %}
+                <p class="delete-lead">با حذف این کاربر، موارد زیر هم برای همیشه حذف می‌شوند:</p>
+                <ul class="impact-list">
+                    {% for item in impact %}
+                        <li><span>{{ item.label }}</span><b>{{ item.count }}</b></li>
+                    {% endfor %}
+                    {% if file_count %}<li><span>فایل‌های پیوست (مدارک و ...)</span><b>{{ file_count }}</b></li>{% endif %}
+                </ul>
+            {% else %}
+                <p class="delete-lead">این کاربر اطلاعات وابسته‌ای ندارد؛ فقط خود حساب حذف می‌شود.</p>
+            {% endif %}
+            <div class="alert-box alert-warning">
+                حذف قابل بازگشت نیست. اگر فقط می‌خواهید دسترسی این کاربر قطع شود، حساب را <b>غیرفعال</b> کنید؛ اطلاعاتش حفظ می‌شود.
+            </div>
+
+            <form method="post" class="delete-form" id="delete-user-form">
+                {% csrf_token %}
+                <label class="confirm-check">
+                    <input type="checkbox" id="confirm-delete" required>
+                    می‌دانم که این حساب و اطلاعات بالا برای همیشه حذف می‌شوند.
+                </label>
+                <div class="delete-actions">
+                    <button type="submit" class="btn-solid btn-solid-red" id="delete-submit" disabled><i class="fas fa-trash-alt" aria-hidden="true"></i> حذف قطعی کاربر</button>
+                    <a href="{% url 'staff_dashboard:user_detail' user_obj.id %}" class="btn-soft btn-soft-gray">انصراف</a>
+                </div>
+            </form>
+            {% if user_obj.is_active %}
+            <form method="post" action="{% url 'staff_dashboard:user_detail' user_obj.id %}" class="deactivate-instead">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle_active">
+                <button type="submit" class="link-btn">به‌جای حذف، حساب را غیرفعال کن</button>
+            </form>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+panelReady(function () {
+    var check = document.getElementById('confirm-delete');
+    var submit = document.getElementById('delete-submit');
+    if (!check || !submit) return;
+    check.addEventListener('change', function () { submit.disabled = !check.checked; });
+});
+</script>
+{% endblock %}

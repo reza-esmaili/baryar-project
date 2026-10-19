@@ -1,60 +1,132 @@
 {% extends 'admin_dashboard/base.html' %}
+{% load jformat %}
 
 {% block title %}کاربران{% endblock %}
 
 {% block content %}
-<div class="p-6">
-    <div class="mb-4" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <h1 style="font-size:1.4rem;font-weight:900;color:#1e293b;">کاربران</h1>
-        <a href="{% url 'staff_dashboard:user_create' %}" class="btn-soft btn-soft-blue"><i class="fas fa-plus"></i> کاربر جدید</a>
+<div class="p-6 users-page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">کاربران</h1>
+            <p class="page-subtitle">حساب‌های مشتریان، شرکت‌های حمل و کارکنان سامانه</p>
+        </div>
+        <a href="{% url 'staff_dashboard:user_create' %}" class="btn-solid btn-solid-blue"><i class="fas fa-user-plus" aria-hidden="true"></i> کاربر جدید</a>
     </div>
 
-    <form method="get" class="data-toolbar">
-        <input type="text" name="q" value="{{ q }}" placeholder="موبایل، نام یا ایمیل...">
-        <select name="role">
-            <option value="">همه نقش‌ها</option>
-            {% for value, label in roles %}
-                <option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
+    <div class="summary-strip">
+        <a href="{% url 'staff_dashboard:user_list' %}" class="summary-tile{% if not status and not selected_role and not q %} is-current{% endif %}">
+            <span class="summary-tile__label">کل کاربران</span>
+            <span class="summary-tile__value">{{ summary.total }}</span>
+        </a>
+        <a href="?status=active" class="summary-tile{% if status == 'active' %} is-current{% endif %}">
+            <span class="summary-tile__label"><span class="dot dot-green" aria-hidden="true"></span>فعال</span>
+            <span class="summary-tile__value">{{ summary.active }}</span>
+        </a>
+        <a href="?status=inactive" class="summary-tile{% if status == 'inactive' %} is-current{% endif %}">
+            <span class="summary-tile__label"><span class="dot dot-gray" aria-hidden="true"></span>غیرفعال</span>
+            <span class="summary-tile__value">{{ summary.inactive }}</span>
+        </a>
+        <div class="summary-tile">
+            <span class="summary-tile__label">عضو جدید در ۷ روز اخیر</span>
+            <span class="summary-tile__value">{{ summary.new_this_week }}</span>
+        </div>
+    </div>
+
+    <nav class="filter-tabs" aria-label="نقش کاربران">
+        <a href="?q={{ q|urlencode }}&status={{ status }}" class="{% if not selected_role %}active{% endif %}">
+            همه <span class="tab-count">{{ filtered_total }}</span>
+        </a>
+        {% for tab in role_tabs %}
+        <a href="?role={{ tab.value }}&q={{ q|urlencode }}&status={{ status }}" class="{% if selected_role == tab.value %}active{% endif %}">
+            {{ tab.label }} <span class="tab-count">{{ tab.count }}</span>
+        </a>
+        {% endfor %}
+    </nav>
+
+    <form method="get" class="data-toolbar" role="search">
+        <input type="hidden" name="role" value="{{ selected_role }}">
+        <label class="search-field">
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <span class="visually-hidden">جستجو</span>
+            <input type="search" name="q" value="{{ q }}" placeholder="جستجو با موبایل، نام یا ایمیل">
+        </label>
+        <label class="visually-hidden" for="status-filter">وضعیت</label>
+        <select name="status" id="status-filter">
+            <option value="">همه‌ی وضعیت‌ها</option>
+            <option value="active" {% if status == 'active' %}selected{% endif %}>فعال</option>
+            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>غیرفعال</option>
         </select>
-        <button type="submit"><i class="fas fa-search"></i> جستجو</button>
+        <button type="submit"><i class="fas fa-filter" aria-hidden="true"></i> اعمال</button>
+        {% if q or status or selected_role %}
+            <a href="{% url 'staff_dashboard:user_list' %}" class="clear-filters">پاک کردن فیلترها</a>
+        {% endif %}
     </form>
 
     <div class="data-table-wrap">
-        <table class="data-table">
+        <table class="data-table users-table">
             <thead>
                 <tr>
+                    <th>کاربر</th>
                     <th>موبایل</th>
-                    <th>نام</th>
-                    <th>ایمیل</th>
                     <th>نقش</th>
                     <th>وضعیت</th>
                     <th>تاریخ ثبت‌نام</th>
-                    <th></th>
+                    <th class="actions-col"><span class="visually-hidden">عملیات</span></th>
                 </tr>
             </thead>
             <tbody>
                 {% for user_obj in page_obj %}
                 <tr>
-                    <td><a class="row-link" href="{% url 'staff_dashboard:user_detail' user_obj.id %}">{{ user_obj.mobile }}</a></td>
-                    <td>{{ user_obj.first_name }} {{ user_obj.last_name }}</td>
-                    <td>{{ user_obj.email|default:"-" }}</td>
-                    <td>{{ user_obj.get_role_display }}</td>
+                    <td>
+                        <a class="user-cell" href="{% url 'staff_dashboard:user_detail' user_obj.id %}">
+                            <span class="avatar avatar-{{ user_obj.role }}" aria-hidden="true">{% if user_obj.first_name %}{{ user_obj.first_name|first }}{% else %}<i class="fas fa-user"></i>{% endif %}</span>
+                            <span class="user-cell__text">
+                                <span class="user-cell__name">{% if user_obj.first_name or user_obj.last_name %}{{ user_obj.first_name }} {{ user_obj.last_name }}{% else %}بدون نام{% endif %}</span>
+                                <span class="user-cell__meta">{{ user_obj.email|default:"ایمیل ثبت نشده" }}</span>
+                            </span>
+                        </a>
+                    </td>
+                    <td class="ltr-cell">{{ user_obj.mobile }}</td>
+                    <td><span class="role-badge role-{{ user_obj.role }}">{{ user_obj.get_role_display }}</span>{% if user_obj.is_superuser %} <span class="role-badge role-super" title="مدیر کل">مدیر کل</span>{% endif %}</td>
                     <td>
                         {% if user_obj.is_active %}
-                            <span class="badge-pill badge-green">فعال</span>
+                            <span class="status-pill status-on"><span class="dot dot-green" aria-hidden="true"></span>فعال</span>
                         {% else %}
-                            <span class="badge-pill badge-red">غیرفعال</span>
+                            <span class="status-pill status-off"><span class="dot dot-gray" aria-hidden="true"></span>غیرفعال</span>
                         {% endif %}
                     </td>
-                    <td>{{ user_obj.created_at|date:"Y/m/d" }}</td>
-                    <td><a href="{% url 'staff_dashboard:user_edit' user_obj.id %}" class="btn-soft btn-soft-blue"><i class="fas fa-edit"></i></a></td>
+                    <td class="date-cell">
+                        <span>{{ user_obj.created_at|jformat:"%Y/%m/%d" }}</span>
+                        <small>{{ user_obj.created_at|jformat:"%H:%M" }}</small>
+                    </td>
+                    <td class="actions-col">
+                        <div class="row-actions">
+                            <a href="{% url 'staff_dashboard:user_detail' user_obj.id %}" class="icon-btn" title="مشاهده" aria-label="مشاهده‌ی {{ user_obj.mobile }}"><i class="fas fa-eye" aria-hidden="true"></i></a>
+                            <a href="{% url 'staff_dashboard:user_edit' user_obj.id %}" class="icon-btn" title="ویرایش" aria-label="ویرایش {{ user_obj.mobile }}"><i class="fas fa-pen" aria-hidden="true"></i></a>
+                            {% if user_obj.pk != request.user.pk %}
+                            <a href="{% url 'staff_dashboard:user_delete' user_obj.id %}" class="icon-btn icon-btn-danger" title="حذف" aria-label="حذف {{ user_obj.mobile }}"><i class="fas fa-trash-alt" aria-hidden="true"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px;">کاربری یافت نشد.</td></tr>
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="fas fa-user-slash" aria-hidden="true"></i>
+                            <p>کاربری با این مشخصات پیدا نشد.</p>
+                            {% if q or status or selected_role %}<a href="{% url 'staff_dashboard:user_list' %}">نمایش همه‌ی کاربران</a>{% endif %}
+                        </div>
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% if page_obj.paginator.count %}
+        <div class="table-footer">
+            نمایش {{ page_obj.start_index }} تا {{ page_obj.end_index }} از {{ page_obj.paginator.count }} کاربر
+        </div>
+        {% endif %}
     </div>
 
     {% include 'admin_dashboard/partials/pagination.html' %}

@@ -15,13 +15,57 @@
         return meta ? meta.content : '';
     }
 
+    var MOBILE_QUERY = window.matchMedia('(max-width: 768px)');
+
+    // در موبایل سایدبار بیرون صفحه است و دکمه‌ی تاگلش داخل خودش؛ یک دکمه‌ی منو بیرون از
+    // سایدبار ساخته می‌شود که آن را به‌صورت کشو باز و بسته می‌کند.
+    function initMobileNav(sidebar) {
+        var opener = document.createElement('button');
+        opener.type = 'button';
+        opener.className = 'mobile-nav-btn';
+        opener.setAttribute('aria-label', 'باز کردن منو');
+        opener.setAttribute('aria-controls', 'mainSidebar');
+        opener.setAttribute('aria-expanded', 'false');
+        opener.innerHTML = '<i class="fas fa-bars" aria-hidden="true"></i>';
+        var backdrop = document.createElement('div');
+        backdrop.className = 'mobile-nav-backdrop';
+        document.body.appendChild(backdrop);
+        document.body.appendChild(opener);
+
+        function setOpen(open) {
+            sidebar.classList.toggle('mobile-open', open);
+            backdrop.classList.toggle('visible', open);
+            opener.hidden = open;
+            opener.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        opener.addEventListener('click', function () { setOpen(true); });
+        backdrop.addEventListener('click', function () { setOpen(false); });
+        sidebar.addEventListener('click', function (event) {
+            if (MOBILE_QUERY.matches && event.target.closest('.sidebar-nav a')) setOpen(false);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && sidebar.classList.contains('mobile-open')) setOpen(false);
+        });
+        if (MOBILE_QUERY.addEventListener) {
+            MOBILE_QUERY.addEventListener('change', function () { setOpen(false); });
+        }
+        return setOpen;
+    }
+
     function initSidebarToggle() {
         var sidebar = document.getElementById('mainSidebar');
         var btn = document.getElementById('sidebarToggle');
         if (!sidebar) return;
         if (localStorage.getItem('sidebarCollapsed') === '1') sidebar.classList.add('collapsed');
+        var setMobileOpen = initMobileNav(sidebar);
         if (btn) {
             btn.addEventListener('click', function () {
+                // در موبایل همین دکمه کشو را می‌بندد؛ جمع کردن سایدبار فقط مخصوص دسکتاپ است
+                if (MOBILE_QUERY.matches) {
+                    setMobileOpen(false);
+                    return;
+                }
                 sidebar.classList.toggle('collapsed');
                 localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
             });

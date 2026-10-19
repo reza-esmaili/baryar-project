@@ -3,11 +3,12 @@
 from datetime import timedelta
 
 from django.contrib import messages
+from django.contrib.admin.utils import NestedObjects
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
-from django.db import transaction
-from django.db.models import Count, F, Max, Q
+from django.db import models, router, transaction
+from django.db.models import Count, F, Max, ProtectedError, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -85,6 +86,15 @@ def user_list(request):
             Q(mobile__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q)
         )
 
+    status = request.GET.get("status", "").strip()
+    if status == "active":
+        qs = qs.filter(is_active=True)
+    elif status == "inactive":
+        qs = qs.filter(is_active=False)
+
+    # شمارش نقش‌ها با همان جستجو/وضعیت تا عدد هر تب با نتیجه‌ی کلیک روی آن یکی باشد
+    role_counts = dict(qs.order_by().values("role").annotate(total=Count("id")).values_list("role", "total"))
+
     role = request.GET.get("role", "").strip()
     if role:
         qs = qs.filter(role=role)
@@ -92,14 +102,99 @@ def user_list(request):
     paginator = Paginator(qs, 25)
     page_obj = paginator.get_page(request.GET.get("page"))
 
+    week_ago = timezone.now() - timedelta(days=7)
     context = {
         "page_obj": page_obj,
         "roles": User.Role.choices,
+        "role_tabs": [
+            {"value": value, "label": label, "count": role_counts.get(value, 0)}
+            for value, label in User.Role.choices
+            if role_counts.get(value) or role == value
+        ],
+        "filtered_total": sum(role_counts.values()),
+        "summary": {
+            "total": User.objects.count(),
+            "active": User.objects.filter(is_active=True).count(),
+            "inactive": User.objects.filter(is_active=False).count(),
+            "new_this_week": User.objects.filter(created_at__gte=week_ago).count(),
+        },
         "q": q,
         "selected_role": role,
+        "status": status,
         "querystring": _querystring(request),
     }
     return render(request, "admin_dashboard/user_list.html", context)
+
+
+def _user_delete_block_reason(actor, user_obj):
+    if actor.pk == user_obj.pk:
+        return "نمی‌توانید حساب کاربری خودتان را حذف کنید."
+    if user_obj.is_superuser and not actor.is_superuser:
+        return "حذف مدیر کل سامانه (superuser) فقط توسط مدیر کل دیگری ممکن است."
+    return ""
+
+
+def _user_deletion_impact(user_obj):
+    """
+    همان محاسبه‌ی پنل ادمین جنگو: چه رکوردهایی همراه کاربر حذف می‌شوند و چه
+    رکوردهایی (on_delete=PROTECT) مانع حذف هستند. فایل‌های پیوست رکوردهای حذفی هم
+    برگردانده می‌شوند تا پس از حذف، از حافظه پاک شوند (حذف آبشاری فایل را پاک نمی‌کند).
+    """
+    collector = NestedObjects(using=router.db_for_write(User))
+    collector.collect([user_obj])
+
+    impact, files = [], []
+    for model, objs in collector.model_objs.items():
+        if model is User or model._meta.auto_created:
+            continue
+        impact.append({"label": model._meta.verbose_name_plural, "count": len(objs)})
+        file_fields = [f for f in model._meta.fields if isinstance(f, models.FileField)]
+        for obj in objs:
+            for field in file_fields:
+                stored = getattr(obj, field.name)
+                if stored:
+                    files.append((stored.storage, stored.name))
+    impact.sort(key=lambda item: -item["count"])
+
+    protected = [
+        {"label": obj._meta.verbose_name, "name": str(obj)} for obj in list(collector.protected)[:20]
+    ]
+    return impact, protected, files
+
+
+@login_required
+@platform_staff_required
+def user_delete(request, user_id):
+    user_obj = get_object_or_404(User, id=user_id)
+    block_reason = _user_delete_block_reason(request.user, user_obj)
+    impact, protected, files = _user_deletion_impact(user_obj)
+
+    if request.method == "POST":
+        if block_reason or protected:
+            messages.error(request, block_reason or "این کاربر به رکوردهایی وابسته است که اجازه‌ی حذف نمی‌دهند.")
+            return redirect("staff_dashboard:user_delete", user_id=user_obj.id)
+
+        label = f"{user_obj.first_name} {user_obj.last_name}".strip() or user_obj.mobile
+        try:
+            with transaction.atomic():
+                user_obj.delete()
+                # فایل‌ها فقط وقتی پاک می‌شوند که حذف رکوردها قطعی شده باشد
+                transaction.on_commit(lambda: [storage.delete(name) for storage, name in files])
+        except ProtectedError:
+            messages.error(request, "این کاربر به رکوردهایی وابسته است که اجازه‌ی حذف نمی‌دهند.")
+            return redirect("staff_dashboard:user_delete", user_id=user_id)
+
+        messages.success(request, f"کاربر «{label}» و اطلاعات وابسته‌اش حذف شد.")
+        return redirect("staff_dashboard:user_list")
+
+    return render(request, "admin_dashboard/user_delete_confirm.html", {
+        "user_obj": user_obj,
+        "block_reason": block_reason,
+        "impact": impact,
+        "protected": protected,
+        "file_count": len(files),
+        "forwarder_company": getattr(user_obj, "forwarder_company", None),
+    })
 
 
 @login_required

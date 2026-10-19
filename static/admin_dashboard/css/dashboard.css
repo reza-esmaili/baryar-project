@@ -139,3 +139,124 @@ table.data-table a.row-link:hover { color: #3498db; }
 .btn-soft-blue:hover { background: #bfdbfe; }
 .btn-soft-gray   { background: #f1f5f9; color: #475569; }
 .btn-soft-gray:hover { background: #e2e8f0; }
+
+/* ==================== اجزای مشترک صفحات فهرست (نسخه‌ی تازه) ==================== */
+
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.page-title { font-size: 1.45rem; font-weight: 900; color: #0f172a; margin: 0 0 4px; }
+.page-subtitle { margin: 0; font-size: 0.85rem; color: #64748b; }
+
+.btn-solid {
+    display: inline-flex; align-items: center; gap: 8px; border: none; border-radius: 10px;
+    padding: 9px 18px; font-size: 0.85rem; font-weight: 700; cursor: pointer; text-decoration: none;
+    transition: background 0.15s, box-shadow 0.15s;
+}
+.btn-solid:focus-visible, .icon-btn:focus-visible, .btn-soft:focus-visible { outline: 2px solid #3498db; outline-offset: 2px; }
+.btn-solid-blue { background: #2563eb; color: #fff; box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25); }
+.btn-solid-blue:hover { background: #1d4ed8; color: #fff; }
+.btn-solid-red { background: #dc2626; color: #fff; }
+.btn-solid-red:hover { background: #b91c1c; color: #fff; }
+.btn-solid:disabled { background: #cbd5e1; box-shadow: none; cursor: not-allowed; }
+
+.summary-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 1rem; }
+@media (max-width: 900px) { .summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.summary-tile {
+    display: flex; flex-direction: column; gap: 6px; background: #fff; border: 1px solid #e8edf3;
+    border-radius: 14px; padding: 14px 16px; text-decoration: none; color: inherit; transition: border-color 0.15s;
+}
+a.summary-tile:hover { border-color: #93c5fd; }
+.summary-tile.is-current { border-color: #2563eb; box-shadow: inset 0 0 0 1px #2563eb; }
+.summary-tile__label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #64748b; font-weight: 600; }
+.summary-tile__value { font-size: 1.5rem; font-weight: 900; color: #0f172a; font-variant-numeric: tabular-nums; }
+
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.dot-green { background: #16a34a; }
+.dot-gray { background: #94a3b8; }
+
+.data-toolbar .search-field {
+    position: relative; flex: 1 1 260px; display: flex; align-items: center; margin: 0;
+}
+.data-toolbar .search-field i { position: absolute; right: 12px; color: #94a3b8; font-size: 0.85rem; pointer-events: none; }
+.data-toolbar .search-field input { width: 100%; padding-right: 34px; }
+.data-toolbar input, .data-toolbar select, .data-toolbar button { height: 38px; }
+.data-toolbar input:focus, .data-toolbar select:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15); }
+.data-toolbar button { display: inline-flex; align-items: center; gap: 6px; }
+.clear-filters { font-size: 0.8rem; font-weight: 600; color: #64748b; text-decoration: none; }
+.clear-filters:hover { color: #dc2626; }
+
+/* جدول‌های پهن روی صفحه‌ی کوچک داخل خودشان اسکرول می‌خورند، نه کل صفحه.
+   position: relative تا عناصر absolute داخل جدول (مثل برچسب‌های visually-hidden) هم
+   داخل همین محدوده بمانند و کل صفحه را پهن نکنند. */
+.data-table-wrap { position: relative; border: 1px solid #eef2f6; overflow-x: auto; }
+table.data-table th { font-size: 0.75rem; letter-spacing: 0.01em; }
+
+.users-table td { padding-top: 10px; padding-bottom: 10px; }
+.user-cell { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; min-width: 200px; }
+.user-cell__text { display: flex; flex-direction: column; min-width: 0; }
+.user-cell__name { font-weight: 700; color: #0f172a; }
+.user-cell:hover .user-cell__name { color: #2563eb; }
+.user-cell__meta { font-size: 0.75rem; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
+.ltr-cell { direction: ltr; unicode-bidi: embed; font-variant-numeric: tabular-nums; }
+.date-cell { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.date-cell small { display: block; color: #94a3b8; font-size: 0.72rem; }
+
+.avatar {
+    flex-shrink: 0; width: 38px; height: 38px; border-radius: 12px; display: inline-grid; place-items: center;
+    font-weight: 800; font-size: 0.95rem; background: #e2e8f0; color: #334155;
+}
+.avatar-lg { width: 56px; height: 56px; border-radius: 16px; font-size: 1.3rem; }
+.avatar-customer { background: #dbeafe; color: #1d4ed8; }
+.avatar-forwarder_admin { background: #ede9fe; color: #6d28d9; }
+.avatar-forwarder_expert { background: #ccfbf1; color: #0f766e; }
+.avatar-forwarder_finance { background: #fef3c7; color: #b45309; }
+.avatar-platform_admin { background: #1e293b; color: #fff; }
+
+.role-badge { display: inline-block; padding: 3px 10px; border-radius: 8px; font-size: 0.74rem; font-weight: 700; white-space: nowrap; background: #f1f5f9; color: #475569; }
+.role-customer { background: #eff6ff; color: #1d4ed8; }
+.role-forwarder_admin { background: #f5f3ff; color: #6d28d9; }
+.role-forwarder_expert { background: #f0fdfa; color: #0f766e; }
+.role-forwarder_finance { background: #fffbeb; color: #b45309; }
+.role-platform_admin, .role-super { background: #1e293b; color: #fff; }
+
+.status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
+.status-on { color: #166534; }
+.status-off { color: #64748b; }
+
+.actions-col { width: 1%; white-space: nowrap; }
+.row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+.icon-btn {
+    width: 32px; height: 32px; border-radius: 9px; display: inline-grid; place-items: center;
+    color: #64748b; background: transparent; text-decoration: none; transition: background 0.15s, color 0.15s;
+}
+.icon-btn:hover { background: #eff6ff; color: #2563eb; }
+.icon-btn-danger:hover { background: #fef2f2; color: #dc2626; }
+
+.empty-state { text-align: center; padding: 36px 12px; color: #94a3b8; }
+.empty-state i { font-size: 1.8rem; margin-bottom: 10px; display: block; }
+.empty-state p { margin: 0 0 6px; color: #64748b; font-weight: 600; }
+.table-footer { padding: 10px 16px; font-size: 0.78rem; color: #64748b; border-top: 1px solid #f1f5f9; background: #fcfdfe; }
+
+.visually-hidden {
+    position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* تایید حذف */
+.delete-card { background: #fff; border: 1px solid #fecaca; border-radius: 1.25rem; padding: 1.5rem; max-width: 720px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+.delete-card__user { display: flex; align-items: center; gap: 14px; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid #f1f5f9; }
+.delete-card__name { font-size: 1.1rem; font-weight: 900; color: #0f172a; }
+.delete-card__meta { font-size: 0.8rem; color: #64748b; margin-top: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.delete-lead { font-weight: 700; color: #334155; margin: 0 0 8px; }
+.delete-hint { font-size: 0.85rem; color: #475569; margin: 0.75rem 0; }
+.impact-list { list-style: none; padding: 0; margin: 0 0 1rem; border: 1px solid #f1f5f9; border-radius: 12px; overflow: hidden; }
+.impact-list li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 14px; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9; }
+.impact-list li:last-child { border-bottom: none; }
+.impact-list li span { color: #475569; }
+.impact-list li b { color: #b91c1c; font-variant-numeric: tabular-nums; }
+.confirm-check { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: #334155; margin: 0.25rem 0 1rem; cursor: pointer; }
+.confirm-check input { width: 18px; height: 18px; }
+.delete-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.delete-actions form { margin: 0; }
+.deactivate-instead { margin-top: 0.75rem; }
+.link-btn { background: none; border: none; padding: 0; color: #2563eb; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
+.link-btn:hover { text-decoration: underline; }

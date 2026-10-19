@@ -1,4 +1,5 @@
 {% extends 'admin_dashboard/base.html' %}
+{% load jformat %}
 
 {% block title %}{{ user_obj.first_name }} {{ user_obj.last_name }}{% endblock %}
 
@@ -16,11 +17,14 @@
                 {% csrf_token %}
                 <input type="hidden" name="action" value="toggle_active">
                 {% if user_obj.is_active %}
-                    <button type="submit" class="btn-soft btn-soft-red"><i class="fas fa-ban"></i> غیرفعال کردن</button>
+                    <button type="submit" class="btn-soft btn-soft-gray"><i class="fas fa-ban"></i> غیرفعال کردن</button>
                 {% else %}
                     <button type="submit" class="btn-soft btn-soft-green"><i class="fas fa-check"></i> فعال کردن</button>
                 {% endif %}
             </form>
+            {% if user_obj.pk != request.user.pk %}
+            <a href="{% url 'staff_dashboard:user_delete' user_obj.id %}" class="btn-soft btn-soft-red"><i class="fas fa-trash-alt"></i> حذف کاربر</a>
+            {% endif %}
         </div>
     </div>
 
@@ -32,7 +36,7 @@
         <div class="detail-row"><span class="label">وضعیت</span><span class="value">
             {% if user_obj.is_active %}<span class="badge-pill badge-green">فعال</span>{% else %}<span class="badge-pill badge-red">غیرفعال</span>{% endif %}
         </span></div>
-        <div class="detail-row"><span class="label">تاریخ ثبت‌نام</span><span class="value">{{ user_obj.created_at|date:"Y/m/d H:i" }}</span></div>
+        <div class="detail-row"><span class="label">تاریخ ثبت‌نام</span><span class="value">{{ user_obj.created_at|jformat:"%Y/%m/%d %H:%M" }}</span></div>
     </div>
 
     {% if forwarder_company %}
@@ -102,7 +106,7 @@
                 <tr>
                     <td><a class="row-link" href="{% url 'staff_dashboard:order_detail' order.id %}">#{{ order.id }}</a></td>
                     <td>{{ order.get_status_display }}</td>
-                    <td>{{ order.created_at|date:"Y/m/d" }}</td>
+                    <td>{{ order.created_at|jformat:"%Y/%m/%d" }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
