@@ -1,7 +1,10 @@
+import sys
 from datetime import timedelta
 from decimal import Decimal
+from unittest import mock
 
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
@@ -10,7 +13,37 @@ from forwarders.models import ForwarderCompany
 from locations.models import City, Country, DestinationCity, Port, Province
 from rates.models import CargoType, PricingUnit, Rate, RateTier, TransportMode
 
+from . import views as order_views
+from .models import CargoRequest
 from .services import calculate_and_match_rates
+
+
+class InvoiceWithoutPdfLibrariesTests(TestCase):
+    """WeasyPrint بدون کتابخانه‌های GTK سیستم بارگذاری نمی‌شود؛ این نباید کل سایت را از کار بیندازد."""
+
+    def test_order_views_do_not_load_weasyprint_at_import(self):
+        self.assertNotIn("HTML", vars(order_views))
+
+    def test_invoice_shows_a_message_when_pdf_libraries_are_missing(self):
+        iran = Country.objects.filter(code="IRN").first() or Country.objects.create(name="ایران-آزمون", code="IRN")
+        abroad = Country.objects.create(name="مقصد-فاکتور-آزمون", code="TSF")
+        city = City.objects.create(province=Province.objects.create(country=iran, name="استان-فاکتور"), name="شهر-فاکتور")
+        port = Port.objects.create(
+            city=DestinationCity.objects.create(country=abroad, name="شهر-مقصد-فاکتور"),
+            name="فرودگاه-فاکتور", port_type="air",
+        )
+        cargo = CargoType.objects.create(name="کالای-فاکتور", transport_mode=TransportMode.AIR)
+        user = User.objects.create_user(mobile="09710000001", password="Pass12345!", role=User.Role.CUSTOMER)
+        order = CargoRequest.objects.create(
+            customer=user, origin_city=city, destination_port=port, transport_mode=TransportMode.AIR,
+            cargo_type=cargo, actual_weight=Decimal("10"),
+        )
+        self.client.force_login(user)
+
+        # None در sys.modules یعنی import آن ماژول شکست می‌خورد (مثل سیستم بدون GTK)
+        with mock.patch.dict(sys.modules, {"weasyprint": None}), self.assertLogs("orders.views", "ERROR"):
+            response = self.client.get(reverse("orders:generate_invoice", args=[order.pk]))
+        self.assertRedirects(response, reverse("customer:order_detail", args=[order.pk]), fetch_redirect_response=False)
 
 
 class RateMatchingTests(TestCase):

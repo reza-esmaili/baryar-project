@@ -1,3 +1,5 @@
+import logging
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
@@ -6,7 +8,6 @@ from django.utils import timezone
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 from decimal import Decimal
-from weasyprint import HTML
 
 from .forms import CargoRequestForm, CargoDimensionFormSet, OrderCompletionForm
 from .services import calculate_and_match_rates, calculate_extra_charge, money, get_forwarder_notification_target
@@ -22,6 +23,8 @@ from core.services.notifications.events import (
     RATE_MATCH_FOUND_FORWARDER,
     ORDER_FINALIZED,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # ════════════════════════════════════════════════════════════════
@@ -528,10 +531,18 @@ def generate_order_invoice_pdf(request, order_id):
     import base64
     from pathlib import Path
     from django.contrib.staticfiles.finders import find as static_find
-    from weasyprint import HTML, CSS
-    from weasyprint.text.fonts import FontConfiguration
 
     order = get_object_or_404(CargoRequest, id=order_id, customer=request.user)
+
+    # WeasyPrint به کتابخانه‌های سیستمی GTK/Pango نیاز دارد. عمداً فقط همین‌جا import
+    # می‌شود تا نبودِ آن‌ها روی یک سیستم فقط ساخت PDF را از کار بیندازد، نه کل سایت را.
+    try:
+        from weasyprint import HTML, CSS
+        from weasyprint.text.fonts import FontConfiguration
+    except (ImportError, OSError):
+        logger.exception("WeasyPrint is unavailable; cannot build invoice PDF for order %s", order.id)
+        messages.error(request, "ساخت فاکتور PDF روی این سرور فعال نیست. لطفاً با پشتیبانی تماس بگیرید.")
+        return redirect('customer:order_detail', pk=order.id)
 
     # ── فونت: base64 داخل CSS (مطمئن‌ترین روش روی Windows) ────
     font_css = ''
