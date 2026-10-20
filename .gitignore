@@ -12,6 +12,9 @@ env/
 # Database
 db.sqlite3
 
+# Archives (e.g. zipped database/media made to move data between machines; may hold personal data)
+*.zip
+
 # Environment / secrets
 .env
 
