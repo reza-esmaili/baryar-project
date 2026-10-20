@@ -5,7 +5,10 @@
 
 ## ۱. پیش‌نیازها
 
-- Python نسخه‌ی **3.12 یا بالاتر** (Django 6 با نسخه‌های قدیمی‌تر نصب نمی‌شود)
+- Python نسخه‌ی **3.12** (همان نسخه‌ای که پروژه با آن ساخته و آزمایش شده است).
+  نسخه‌های قدیمی‌تر برای Django 6 کافی نیستند. برای نسخه‌های خیلی جدید (مثلاً 3.15) هم هنوز نسخه‌ی آماده‌ی
+  بسته‌هایی مثل Pillow، numpy، pandas و lxml منتشر نشده و `pip install` شکست می‌خورد.
+  اگر نسخه‌ی دیگری هم نصب است، محیط را با `py -3.12 -m venv .venv` بسازید.
 - Git
 - برای ساخت PDF فاکتور (WeasyPrint):
   - ویندوز: نصب GTK/Pango طبق [راهنمای WeasyPrint برای ویندوز](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows)
@@ -24,6 +27,21 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
+```
+
+اگر سیستم به PyPI دسترسی ندارد (خطای `Read timed out` یا `Failed to resolve 'files.pythonhosted.org'`)،
+روی سیستمی که دسترسی دارد بسته‌ها را دانلود کنید و پوشه را منتقل کنید:
+
+```bash
+# pydotplus تنها بسته‌ای است که نسخه‌ی آماده ندارد؛ اول همان ساخته می‌شود
+pip wheel --no-deps pydotplus==2.0.2 -w packages
+pip download -r requirements.txt -d packages --find-links packages --only-binary=:all: --platform win_amd64 --python-version 3.12 --implementation cp
+```
+
+و روی سیستم جدید بدون اینترنت نصب کنید:
+
+```bash
+pip install --no-index --find-links <مسیر پوشه‌ی packages> -r requirements.txt
 ```
 
 ## ۳. فایل تنظیمات `.env`
